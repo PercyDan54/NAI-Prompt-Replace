@@ -9,10 +9,10 @@ public class Config
     public string Prompt { get; set; } = string.Empty;
     public string Replace { get; set; } = string.Empty;
     public string Model { get; set; } = "nai-diffusion-3";
-    public GenerationConfig GenerationConfig { get; set; } = new GenerationConfig();
+    public GenerationParameter GenerationParameter { get; set; } = new GenerationParameter();
 }
 
-public class GenerationConfig
+public class GenerationParameter
 {
     public string NegativePrompt { get; set; } = string.Empty;
     public string Sampler { get; set; } = "k_euler";
@@ -33,5 +33,5 @@ public class GenerationConfig
     public short Width { get; set; } = 832;
     public short Height { get; set; } = 1216;
 
-    public GenerationConfig Clone() => (GenerationConfig) MemberwiseClone();
+    public GenerationParameter Clone() => (GenerationParameter) MemberwiseClone();
 }
