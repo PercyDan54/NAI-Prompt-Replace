@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NAI-Prompt-Replace", "NAI-Prompt-Replace\NAI-Prompt-Replace.csproj", "{67FD8E8E-5909-472F-B434-C2BAFEB56602}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{67FD8E8E-5909-472F-B434-C2BAFEB56602}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67FD8E8E-5909-472F-B434-C2BAFEB56602}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67FD8E8E-5909-472F-B434-C2BAFEB56602}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67FD8E8E-5909-472F-B434-C2BAFEB56602}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
