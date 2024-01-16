@@ -93,7 +93,7 @@ public partial class MainWindow : Window
             {
                 using var zip = new ZipArchive(await resp.Content.ReadAsStreamAsync());
                 string fileName = generationParameter.Seed + " - ";
-                fileName = getValidFileName(fileName + prompt[..(128 - fileName.Length - Environment.CurrentDirectory.Length)]) + ".png";
+                fileName = getValidFileName(fileName + prompt[..(128 - fileName.Length - Environment.CurrentDirectory.Length)] + ".png");
 
                 await using var file = File.OpenWrite(fileName);
                 foreach (var entry in zip.Entries)
@@ -120,15 +120,16 @@ public partial class MainWindow : Window
         {
             originalFileName = originalFileName.Replace(invalid, '_');
         }
-        string fileName = originalFileName;
+        string fileName = Path.GetFileNameWithoutExtension(originalFileName);
+        string extension = Path.GetExtension(originalFileName);
 
         int i = 0;
-        while (File.Exists(fileName))
+        while (File.Exists(fileName + extension))
         {
             fileName = originalFileName + " (" + ++i + ")";
         }
 
-        return fileName;
+        return fileName + extension;
     }
 
     private async void RunButton_OnClick(object? sender, RoutedEventArgs e)
