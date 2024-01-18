@@ -3,8 +3,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:naiPromptReplace="clr-namespace:NAI_Prompt_Replace"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="650"
-        Width="800" Height="650"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="750"
+        Width="800" Height="750"
         x:Class="NAI_Prompt_Replace.MainWindow"
         x:DataType="naiPromptReplace:Config"
         Closing="Window_OnClosing"
@@ -12,10 +12,12 @@
     <Panel Margin="20, 10">
         <StackPanel Orientation="Vertical" Spacing="10">
             <Button Content="Open" Click="Button_OnClick"></Button>
-            <TabControl Name="TabControl" SelectionChanged="TabControl_OnSelectionChanged" />
+            <TabControl Name="TabControl" SelectionChanged="TabControl_OnSelectionChanged">
+                <TabItem Header="1"></TabItem>
+            </TabControl>
             <Grid Margin="0,20,0,20" RowDefinitions="Auto,1*" ColumnDefinitions="Auto, 5*">
-                <Button Grid.Row="0" Grid.Column="0" Name="RunButton" Click="RunButton_OnClick" Content="Run" Width="60" HorizontalContentAlignment="Center" VerticalAlignment="Center" />
-                <TextBox Grid.Row="0" Grid.Column="1" Name="LogTextBox" IsReadOnly="True" VerticalAlignment="Center" Height="100" TextWrapping="Wrap" />
+                <Button Grid.Row="0" Grid.Column="0" Name="RunButton" Click="RunButton_OnClick" Content="Run" Width="70" HorizontalContentAlignment="Center" VerticalAlignment="Center" />
+                <TextBox Grid.Row="0" Grid.Column="1" Name="LogTextBox" IsReadOnly="True" VerticalAlignment="Center" Height="150" TextWrapping="Wrap" />
                 <ProgressBar Name="ProgressBar" Grid.Row="1" Grid.Column="1" ShowProgressText="True"></ProgressBar>
             </Grid>
         </StackPanel>

@@ -2,15 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 
 namespace NAI_Prompt_Replace;
 
@@ -27,6 +29,7 @@ public partial class MainWindow : Window
     };
 
     private Config config { get; set; } = new Config();
+    private CancellationTokenSource? cancellationTokenSource;
 
     public MainWindow()
     {
@@ -131,37 +134,65 @@ public partial class MainWindow : Window
         return fileName + extension;
     }
 
-    private async void RunButton_OnClick(object? sender, RoutedEventArgs e)
+    private void RunButton_OnClick(object? sender, RoutedEventArgs e)
     {
         if (Design.IsDesignMode)
             return;
 
-        var tasks = new List<GenerationConfig>();
+        if (cancellationTokenSource != null)
+        {
+            RunButton.Content = "Run";
+            cancellationTokenSource.Cancel();
+            cancellationTokenSource = null;
+        }
+        else
+        {
+            RunButton.Content = "Cancel";
+            cancellationTokenSource = new CancellationTokenSource();
+            var configs = getGenerationParameterControls().Select(p => p.Config).ToList();
+            Task.Factory.StartNew(_ => runGeneration(configs, cancellationTokenSource.Token), null, TaskCreationOptions.LongRunning);
+        }
+    }
+
+    private List<GenerationParameterControl> getGenerationParameterControls()
+    {
+        var list = new List<GenerationParameterControl>();
 
         foreach (var item in TabControl.Items)
         {
             if (((TabItem)item).Content is GenerationParameterControl parameterControl)
             {
-                var generationConfig = parameterControl.Config;
-                string prompt = generationConfig.Prompt;
+                list.Add(parameterControl);
+            }
+        }
 
-                var g = generationConfig.Clone();
-                g.GenerationParameter.Seed ??= random.Next();
-                tasks.Add(g);
+        return list;
+    }
 
-                string[] replaces = generationConfig.Replace.Split(',', StringSplitOptions.TrimEntries);
+    private async Task runGeneration(IEnumerable<GenerationConfig> configs, CancellationToken token)
+    {
+        var tasks = new List<GenerationConfig>();
 
-                if (replaces.Length > 1)
+        foreach (var generationConfig in configs)
+        {
+            string prompt = generationConfig.Prompt;
+
+            var g = generationConfig.Clone();
+            g.GenerationParameter.Seed ??= random.Next();
+            tasks.Add(g);
+
+            string[] replaces = generationConfig.Replace.Split(',', StringSplitOptions.TrimEntries);
+
+            if (replaces.Length > 1)
+            {
+                string toReplace = replaces[0];
+                string[] replaces1 = replaces[1..];
+
+                foreach (var r in replaces1)
                 {
-                    string toReplace = replaces[0];
-                    string[] replaces1 = replaces[1..];
-
-                    foreach (var r in replaces1)
-                    {
-                        var clone = g.Clone();
-                        clone.Prompt = prompt.Replace(toReplace, r);
-                        tasks.Add(clone);
-                    }
+                    var clone = g.Clone();
+                    clone.Prompt = prompt.Replace(toReplace, r);
+                    tasks.Add(clone);
                 }
             }
         }
@@ -170,12 +201,13 @@ public partial class MainWindow : Window
         int retry = 0;
         const int maxRetries = 5;
 
-        RunButton.IsEnabled = false;
-        ProgressBar.Value = 0;
+        Dispatcher.UIThread.Invoke(() => ProgressBar.Value = 0);
+
         clearLog();
 
         while (i < tasks.Count)
         {
+            token.ThrowIfCancellationRequested();
             writeLog($"Running task {i + 1} / {tasks.Count}: ");
             bool success = await generate(tasks[i]);
 
@@ -187,12 +219,16 @@ public partial class MainWindow : Window
             else
             {
                 retry = 0;
-                ProgressBar.Value = ((i + 1.0) / tasks.Count) * 100;
+                Dispatcher.UIThread.Invoke(() => ProgressBar.Value = ((i + 1.0) / tasks.Count) * 100);
                 i++;
             }
         }
 
-        RunButton.IsEnabled = true;
+        Dispatcher.UIThread.Invoke(() =>
+        {
+            RunButton.Content = "Run";
+            cancellationTokenSource = null;
+        });
     }
 
     private void writeLogLine(object obj)
@@ -202,12 +238,12 @@ public partial class MainWindow : Window
 
     private void writeLog(object obj)
     {
-        LogTextBox.Text += obj;
+        Dispatcher.UIThread.Invoke(() => LogTextBox.Text += obj);
     }
 
     private void clearLog()
     {
-        LogTextBox.Text = string.Empty;
+        Dispatcher.UIThread.Invoke(() => LogTextBox.Text = string.Empty);
     }
 
     private async void Button_OnClick(object? sender, RoutedEventArgs e)
@@ -221,17 +257,27 @@ public partial class MainWindow : Window
 
         foreach (var file in files)
         {
-            var config = JsonSerializer.Deserialize<GenerationConfig>(await File.ReadAllTextAsync(file.Path.AbsolutePath));
-
-            if (config != null)
+            try
             {
-                TabControl.Items.Add(new TabItem { Header = file.Name, Content = new GenerationParameterControl(config) });
+                var config = JsonSerializer.Deserialize<GenerationConfig>(await File.ReadAllTextAsync(file.Path.AbsolutePath), new JsonSerializerOptions
+                {
+                    UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow
+                });
+
+                if (config != null)
+                {
+                    TabControl.Items.Add(new TabItem { Header = file.Name, Content = new GenerationParameterControl(config) });
+                }
+            }
+            catch (Exception exception)
+            {
+                writeLogLine(exception.Message);
             }
         }
     }
 
     private void TabControl_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        TabControl.InvalidateMeasure();
+        TabControl?.InvalidateMeasure();
     }
 }
