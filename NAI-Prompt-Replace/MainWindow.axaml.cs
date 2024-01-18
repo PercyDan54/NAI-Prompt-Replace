@@ -7,8 +7,10 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 
 namespace NAI_Prompt_Replace;
 
@@ -18,8 +20,6 @@ public partial class MainWindow : Window
     private const string novelai_api = "https://api.novelai.net/";
     private readonly HttpClient httpClient = new HttpClient();
     private readonly Random random = new Random(7);
-    private readonly List<string> models = ["nai-diffusion-3", "safe-diffusion", "nai-diffusion-furry", "nai-diffusion-inpainting", "nai-diffusion-3-inpainting", "safe-diffusion-inpainting", "furry-diffusion-inpainting", "kandinsky-vanilla", "nai-diffusion-2", "nai-diffusion"];
-    private readonly List<string> samplers = ["k_euler", "k_euler_ancestral", "k_dpmpp_2s_ancestral", "k_dpmpp_2m", "k_dpmpp_sde", "ddim_v3"];
 
     private readonly JsonSerializerOptions apiSerializerOptions = new JsonSerializerOptions
     {
@@ -32,7 +32,6 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         loadConfig();
-        DataContext = config;
     }
 
     private void loadConfig()
@@ -41,10 +40,6 @@ public partial class MainWindow : Window
         {
             config = JsonSerializer.Deserialize<Config>(File.ReadAllText(config_file)) ?? config;
         }
-
-        ModelComboBox.ItemsSource = models;
-        ModelComboBox.SelectedIndex = models.IndexOf(config.Model);
-        SamplerComboBox.SelectedIndex = samplers.IndexOf(config.GenerationParameter.Sampler);
     }
 
     private void Window_OnClosing(object? sender, WindowClosingEventArgs e)
@@ -59,8 +54,6 @@ public partial class MainWindow : Window
 
         try
         {
-            config.Model = models[ModelComboBox.SelectedIndex];
-            config.GenerationParameter.Sampler = samplers[SamplerComboBox.SelectedIndex];
             File.WriteAllText(config_file, JsonSerializer.Serialize(config, new JsonSerializerOptions
             {
                 WriteIndented = true
@@ -71,19 +64,22 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task<bool> generate(GenerationParameter generationParameter, string prompt)
+    private async Task<bool> generate(GenerationConfig generationConfig)
     {
         var req = new HttpRequestMessage(HttpMethod.Post, novelai_api + "ai/generate-image");
         req.Headers.Add("Authorization", "Bearer " + config.AccessToken);
+
         var data = new Dictionary<string, object>
         {
-            { "input", prompt },
-            { "model", models[ModelComboBox.SelectedIndex] },
+            { "input", generationConfig.Prompt },
+            { "model", generationConfig.Model },
             { "action", "generate" },
-            { "parameters", generationParameter }
+            { "parameters", generationConfig.GenerationParameter }
         };
+
         req.Content = new StringContent(JsonSerializer.Serialize(data, apiSerializerOptions));
         req.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
         try
         {
             var resp = await httpClient.SendAsync(req);
@@ -92,10 +88,11 @@ public partial class MainWindow : Window
             if (resp.IsSuccessStatusCode)
             {
                 using var zip = new ZipArchive(await resp.Content.ReadAsStreamAsync());
-                string fileName = generationParameter.Seed + " - ";
-                fileName = getValidFileName(fileName + prompt[..(128 - fileName.Length - Environment.CurrentDirectory.Length)] + ".png");
+                string fileName = generationConfig.GenerationParameter.Seed + " - ";
+                fileName = getValidFileName(fileName + generationConfig.Prompt[..(128 - fileName.Length)] + ".png");
 
                 await using var file = File.OpenWrite(fileName);
+
                 foreach (var entry in zip.Entries)
                 {
                     using var s = entry.Open();
@@ -120,10 +117,12 @@ public partial class MainWindow : Window
         {
             originalFileName = originalFileName.Replace(invalid, '_');
         }
+
         string fileName = Path.GetFileNameWithoutExtension(originalFileName);
         string extension = Path.GetExtension(originalFileName);
 
         int i = 0;
+
         while (File.Exists(fileName + extension))
         {
             fileName = originalFileName + " (" + ++i + ")";
@@ -137,24 +136,33 @@ public partial class MainWindow : Window
         if (Design.IsDesignMode)
             return;
 
-        RunButton.IsEnabled = false;
-        ProgressBar.Value = 0;
-        clearLog();
+        var tasks = new List<GenerationConfig>();
 
-        config.GenerationParameter.Sampler = samplers[SamplerComboBox.SelectedIndex];
-        string prompt = config.Prompt;
-        List<string> tasks = [prompt];
-        var g = config.GenerationParameter.Clone();
-        g.Seed ??= random.Next();
-
-        string[] replaces = config.Replace.Split(',', StringSplitOptions.TrimEntries);
-        if (replaces.Length > 1)
+        foreach (var item in TabControl.Items)
         {
-            string toReplace = replaces[0];
-            string[] replaces1 = replaces[1..];
-            foreach (var r in replaces1)
+            if (((TabItem)item).Content is GenerationParameterControl parameterControl)
             {
-                tasks.Add(prompt.Replace(toReplace, r));
+                var generationConfig = parameterControl.Config;
+                string prompt = generationConfig.Prompt;
+
+                var g = generationConfig.Clone();
+                g.GenerationParameter.Seed ??= random.Next();
+                tasks.Add(g);
+
+                string[] replaces = generationConfig.Replace.Split(',', StringSplitOptions.TrimEntries);
+
+                if (replaces.Length > 1)
+                {
+                    string toReplace = replaces[0];
+                    string[] replaces1 = replaces[1..];
+
+                    foreach (var r in replaces1)
+                    {
+                        var clone = g.Clone();
+                        clone.Prompt = prompt.Replace(toReplace, r);
+                        tasks.Add(clone);
+                    }
+                }
             }
         }
 
@@ -162,10 +170,15 @@ public partial class MainWindow : Window
         int retry = 0;
         const int maxRetries = 5;
 
+        RunButton.IsEnabled = false;
+        ProgressBar.Value = 0;
+        clearLog();
+
         while (i < tasks.Count)
         {
             writeLog($"Running task {i + 1} / {tasks.Count}: ");
-            bool success = await generate(g, tasks[i]);
+            bool success = await generate(tasks[i]);
+
             if (!success && ++retry < maxRetries)
             {
                 writeLogLine($"Failed, Retrying {retry} / {maxRetries}");
@@ -197,12 +210,28 @@ public partial class MainWindow : Window
         LogTextBox.Text = string.Empty;
     }
 
-    private void preventNullValue(object? sender, NumericUpDownValueChangedEventArgs e)
+    private async void Button_OnClick(object? sender, RoutedEventArgs e)
     {
-        if (e.NewValue == null)
+        var files = await GetTopLevel(this).StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            var numericUpDown = (NumericUpDown)sender;
-            numericUpDown.Value = numericUpDown.Minimum;
+            Title = "Open Text File",
+            FileTypeFilter = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }],
+            AllowMultiple = true
+        });
+
+        foreach (var file in files)
+        {
+            var config = JsonSerializer.Deserialize<GenerationConfig>(await File.ReadAllTextAsync(file.Path.AbsolutePath));
+
+            if (config != null)
+            {
+                TabControl.Items.Add(new TabItem { Header = file.Name, Content = new GenerationParameterControl(config) });
+            }
         }
+    }
+
+    private void TabControl_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        TabControl.InvalidateMeasure();
     }
 }

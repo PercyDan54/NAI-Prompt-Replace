@@ -1,0 +1,60 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:naiPromptReplace="clr-namespace:NAI_Prompt_Replace"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="350"
+             x:Class="NAI_Prompt_Replace.GenerationParameterControl"
+             x:DataType="naiPromptReplace:GenerationConfig" Height="350">
+    <Grid RowDefinitions="Auto,1*,1*,Auto" ColumnDefinitions="Auto, 5*">
+        <TextBlock Text="Prompt" VerticalAlignment="Center" />
+        <TextBox Grid.Row="0" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding Prompt}" />
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Negative" VerticalAlignment="Center" />
+        <TextBox Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" Text="{Binding GenerationParameter.NegativePrompt}" />
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Replace" VerticalAlignment="Center" />
+        <TextBox Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" Text="{Binding Replace}" />
+        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Vertical" Spacing="5" Margin="10">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+                <CheckBox Content="Smea" IsChecked="{Binding GenerationParameter.Smea}" />
+                <CheckBox Content="Dyn" IsChecked="{Binding GenerationParameter.Dyn}" />
+                <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
+                    <TextBlock Text="Width" VerticalAlignment="Center"></TextBlock>
+                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.Width}" Minimum="1" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
+                    <TextBlock Text="Height" VerticalAlignment="Center"></TextBlock>
+                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.Height}" Minimum="1" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
+                    <TextBlock Text="Seed" VerticalAlignment="Center"></TextBlock>
+                    <NumericUpDown Value="{Binding GenerationParameter.Seed}" MinWidth="200" />
+                </StackPanel>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="5">
+                <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
+                    <TextBlock Text="Sampler" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <ComboBox Name="SamplerComboBox" SelectionChanged="SamplerComboBox_OnSelectionChanged" MinWidth="150">
+                        <ComboBoxItem Content="Euler"></ComboBoxItem>
+                        <ComboBoxItem Content="Euler Ancestral"></ComboBoxItem>
+                        <ComboBoxItem Content="DPM++ 2S Ancestral"></ComboBoxItem>
+                        <ComboBoxItem Content="DPM++ 2M"></ComboBoxItem>
+                        <ComboBoxItem Content="DPM++ SDE"></ComboBoxItem>
+                        <ComboBoxItem Content="DDIM"></ComboBoxItem>
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
+                    <TextBlock Text="Model" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <ComboBox Name="ModelComboBox" SelectionChanged="ModelComboBox_OnSelectionChanged" MinWidth="120"></ComboBox>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
+                    <TextBlock Text="Steps" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.Steps}" Minimum="1" Maximum="50" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
+                    <TextBlock Text="Scale" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.Scale}" Increment="0.1" Minimum="0" Maximum="10" />
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</UserControl>
