@@ -1,5 +1,4 @@
-﻿using Avalonia;
-using System;
+using Avalonia;
 
 namespace NAI_Prompt_Replace;
 

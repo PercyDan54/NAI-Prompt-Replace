@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace NAI_Prompt_Replace;
 
@@ -7,6 +7,7 @@ public class GenerationConfig
     public string Prompt { get; set; } = string.Empty;
     public string Replace { get; set; } = string.Empty;
     public string Model { get; set; } = "nai-diffusion-3";
+    public int BatchSize { get; set; } = 1;
 
     public GenerationParameter GenerationParameter { get; set; } = new GenerationParameter();
     

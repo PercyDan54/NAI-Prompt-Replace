@@ -1,5 +1,3 @@
-﻿using System.Collections.Generic;
-
 namespace NAI_Prompt_Replace;
 
 public class Config

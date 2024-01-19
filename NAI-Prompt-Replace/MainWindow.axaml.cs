@@ -1,18 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
+using System.Globalization;
 using System.IO.Compression;
-using System.Linq;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using CsvHelper;
+using CsvHelper.Configuration;
 
 namespace NAI_Prompt_Replace;
 
@@ -21,7 +17,12 @@ public partial class MainWindow : Window
     private const string config_file = "config.json";
     private const string novelai_api = "https://api.novelai.net/";
     private readonly HttpClient httpClient = new HttpClient();
-    private readonly Random random = new Random(7);
+#if DEBUG
+    private readonly Random random = new Random(1337);
+    #else
+    private readonly Random random = new Random();
+#endif
+    private List<TextReplacement> replacements { get; set; } = new();
 
     private readonly JsonSerializerOptions apiSerializerOptions = new JsonSerializerOptions
     {
@@ -35,6 +36,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         loadConfig();
+        DataContext = config;
     }
 
     private void loadConfig()
@@ -86,24 +88,30 @@ public partial class MainWindow : Window
         try
         {
             var resp = await httpClient.SendAsync(req);
-            writeLogLine($"{(int)resp.StatusCode} {resp.ReasonPhrase}");
 
             if (resp.IsSuccessStatusCode)
             {
+                writeLogLine($"{(int)resp.StatusCode} {resp.ReasonPhrase}");
                 using var zip = new ZipArchive(await resp.Content.ReadAsStreamAsync());
                 string fileName = generationConfig.GenerationParameter.Seed + " - ";
-                fileName = getValidFileName(fileName + generationConfig.Prompt[..(128 - fileName.Length)] + ".png");
+                fileName = getValidFileName(fileName + generationConfig.Prompt[..128] + ".png");
 
                 await using var file = File.OpenWrite(fileName);
 
                 foreach (var entry in zip.Entries)
                 {
-                    using var s = entry.Open();
-                    s.CopyTo(file);
+                    await using var s = entry.Open();
+                    await s.CopyToAsync(file);
                     file.Close();
                 }
 
                 return true;
+            }
+            else if (resp.Content.Headers.ContentType?.MediaType == "application/json")
+            {
+                string content = await resp.Content.ReadAsStringAsync();
+                var response = JsonSerializer.Deserialize<NovelAIGenerationResponse>(content);
+                writeLogLine($"{response.StatusCode} {response.Message}");
             }
         }
         catch (Exception exception)
@@ -154,19 +162,15 @@ public partial class MainWindow : Window
         }
     }
 
-    private List<GenerationParameterControl> getGenerationParameterControls()
+    private IEnumerable<GenerationParameterControl> getGenerationParameterControls()
     {
-        var list = new List<GenerationParameterControl>();
-
         foreach (var item in TabControl.Items)
         {
             if (((TabItem)item).Content is GenerationParameterControl parameterControl)
             {
-                list.Add(parameterControl);
+                yield return parameterControl;
             }
         }
-
-        return list;
     }
 
     private async Task runGeneration(IEnumerable<GenerationConfig> configs, CancellationToken token)
@@ -175,24 +179,44 @@ public partial class MainWindow : Window
 
         foreach (var generationConfig in configs)
         {
-            string prompt = generationConfig.Prompt;
-
             var g = generationConfig.Clone();
             g.GenerationParameter.Seed ??= random.Next();
-            tasks.Add(g);
+            long seed = g.GenerationParameter.Seed.Value;
 
-            string[] replaces = generationConfig.Replace.Split(',', StringSplitOptions.TrimEntries);
+            foreach (var replacement in replacements)
+            {
+                g.Prompt = g.Prompt.Replace(replacement.Target, replacement.Replace);
+                g.Replace = generationConfig.Replace.Replace(replacement.Target, replacement.Replace);
+            }
+
+            string prompt = g.Prompt;
+            for (int j = 0; j < g.BatchSize; j++)
+            {
+                var clone = g.Clone();
+                clone.GenerationParameter.Seed = seed + j;
+                tasks.Add(g);
+            }
+
+            string[] replaces = g.Replace.Split(',', StringSplitOptions.TrimEntries);
 
             if (replaces.Length > 1)
             {
                 string toReplace = replaces[0];
-                string[] replaces1 = replaces[1..];
 
-                foreach (var r in replaces1)
+                if (prompt.Contains(toReplace))
                 {
-                    var clone = g.Clone();
-                    clone.Prompt = prompt.Replace(toReplace, r);
-                    tasks.Add(clone);
+                    string[] replaces1 = replaces[1..];
+
+                    foreach (var r in replaces1)
+                    {
+                        for (int j = 0; j < g.BatchSize; j++)
+                        {
+                            var clone = g.Clone();
+                            clone.GenerationParameter.Seed = seed + j;
+                            clone.Prompt = prompt.Replace(toReplace, r);
+                            tasks.Add(clone);
+                        }
+                    }
                 }
             }
         }
@@ -251,7 +275,10 @@ public partial class MainWindow : Window
         var files = await GetTopLevel(this).StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Open Text File",
-            FileTypeFilter = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }],
+            FileTypeFilter = 
+            [
+                new FilePickerFileType("JSON or CSV") { Patterns = ["*.json", "*.csv"] },
+            ],
             AllowMultiple = true
         });
 
@@ -259,14 +286,29 @@ public partial class MainWindow : Window
         {
             try
             {
-                var config = JsonSerializer.Deserialize<GenerationConfig>(await File.ReadAllTextAsync(file.Path.AbsolutePath), new JsonSerializerOptions
+                switch (Path.GetExtension(file.Name))
                 {
-                    UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow
-                });
+                    case ".json":
+                        var config = JsonSerializer.Deserialize<GenerationConfig>(await File.ReadAllTextAsync(file.Path.LocalPath), new JsonSerializerOptions
+                        {
+                            UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow
+                        });
 
-                if (config != null)
-                {
-                    TabControl.Items.Add(new TabItem { Header = file.Name, Content = new GenerationParameterControl(config) });
+                        if (config != null)
+                        {
+                            TabControl.Items.Add(new TabItem { Header = file.Name, Content = new GenerationParameterControl(config) });
+                        }
+
+                        break;
+                    
+                    case ".csv":
+                        using (var reader = File.OpenText(file.Path.LocalPath))
+                        using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false }))
+                        {
+                            replacements = csv.GetRecords<TextReplacement>().ToList();
+                            ReplacementDataGrid.ItemsSource = replacements;
+                        }
+                        break;
                 }
             }
             catch (Exception exception)
@@ -279,5 +321,25 @@ public partial class MainWindow : Window
     private void TabControl_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         TabControl?.InvalidateMeasure();
+    }
+
+    private void ReplacementDataGrid_OnAutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
+    {
+        e.Column.Width = DataGridLength.Auto;
+    }
+
+    private void ShowPasswordButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        TokenTextBox.RevealPassword = !TokenTextBox.RevealPassword;
+        ShowPasswordButton.Content = TokenTextBox.RevealPassword ? "Hide" : "Show";
+    }
+
+    private class NovelAIGenerationResponse
+    {
+        [JsonPropertyName("statusCode")]
+        public int StatusCode { get; set; }
+        
+        [JsonPropertyName("message")]
+        public string Message { get; set; }
     }
 }

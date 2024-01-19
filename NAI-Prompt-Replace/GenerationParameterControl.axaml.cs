@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 
 namespace NAI_Prompt_Replace;
@@ -45,6 +44,11 @@ public partial class GenerationParameterControl : UserControl
     private void SamplerComboBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         Config.GenerationParameter.Sampler = samplers[SamplerComboBox.SelectedIndex];
+
+        if (SamplerComboBox.SelectedIndex == 5 && ModelComboBox.SelectedIndex != 0)
+        {
+            Config.GenerationParameter.Sampler = "ddim";
+        }
     }
 
     private void ModelComboBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
