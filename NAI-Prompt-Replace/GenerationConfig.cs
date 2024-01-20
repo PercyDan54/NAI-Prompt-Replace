@@ -11,7 +11,12 @@ public class GenerationConfig
 
     public GenerationParameter GenerationParameter { get; set; } = new GenerationParameter();
     
-    public GenerationConfig Clone() => (GenerationConfig)MemberwiseClone();
+    public GenerationConfig Clone()
+    {
+        var clone = (GenerationConfig) MemberwiseClone();
+        clone.GenerationParameter = GenerationParameter.Clone();
+        return clone;
+    }
 }
 
 public class GenerationParameter
@@ -34,4 +39,6 @@ public class GenerationParameter
 
     public short Width { get; set; } = 832;
     public short Height { get; set; } = 1216;
+
+    public GenerationParameter Clone() => (GenerationParameter) MemberwiseClone();
 }

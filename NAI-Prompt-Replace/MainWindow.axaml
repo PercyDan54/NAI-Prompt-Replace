@@ -16,7 +16,7 @@
                 <TextBox Name="TokenTextBox" PasswordChar="*" Width="650" Text="{Binding  AccessToken}" />
                 <Button Name="ShowPasswordButton" Content="Show" Click="ShowPasswordButton_OnClick"/>
             </StackPanel>
-            <Button Content="Open" Click="Button_OnClick"></Button>
+            <Button Content="Open" Click="OpenButton_OnClick"></Button>
             <ScrollViewer Height="300">
                 <TabControl Name="TabControl" SelectionChanged="TabControl_OnSelectionChanged" />
             </ScrollViewer>

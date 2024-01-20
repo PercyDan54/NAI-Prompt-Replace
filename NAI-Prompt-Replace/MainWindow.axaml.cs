@@ -94,7 +94,7 @@ public partial class MainWindow : Window
                 writeLogLine($"{(int)resp.StatusCode} {resp.ReasonPhrase}");
                 using var zip = new ZipArchive(await resp.Content.ReadAsStreamAsync());
                 string fileName = generationConfig.GenerationParameter.Seed + " - ";
-                fileName = getValidFileName(fileName + generationConfig.Prompt[..128] + ".png");
+                fileName = getValidFileName(fileName + generationConfig.Prompt[..(Math.Min(128, generationConfig.Prompt.Length))] + ".png");
 
                 await using var file = File.OpenWrite(fileName);
 
@@ -111,7 +111,7 @@ public partial class MainWindow : Window
             {
                 string content = await resp.Content.ReadAsStringAsync();
                 var response = JsonSerializer.Deserialize<NovelAIGenerationResponse>(content);
-                writeLogLine($"{response.StatusCode} {response.Message}");
+                writeLogLine($"Error: {response?.StatusCode} {response?.Message}");
             }
         }
         catch (Exception exception)
@@ -151,6 +151,7 @@ public partial class MainWindow : Window
         {
             RunButton.Content = "Run";
             cancellationTokenSource.Cancel();
+            ProgressBar.Value = 0;
             cancellationTokenSource = null;
         }
         else
@@ -158,6 +159,8 @@ public partial class MainWindow : Window
             RunButton.Content = "Cancel";
             cancellationTokenSource = new CancellationTokenSource();
             var configs = getGenerationParameterControls().Select(p => p.Config).ToList();
+            ProgressBar.Value = 0;
+            clearLog();
             Task.Factory.StartNew(_ => runGeneration(configs, cancellationTokenSource.Token), null, TaskCreationOptions.LongRunning);
         }
     }
@@ -186,15 +189,16 @@ public partial class MainWindow : Window
             foreach (var replacement in replacements)
             {
                 g.Prompt = g.Prompt.Replace(replacement.Target, replacement.Replace);
-                g.Replace = generationConfig.Replace.Replace(replacement.Target, replacement.Replace);
+                g.Replace = g.Replace.Replace(replacement.Target, replacement.Replace);
             }
 
             string prompt = g.Prompt;
+
             for (int j = 0; j < g.BatchSize; j++)
             {
                 var clone = g.Clone();
                 clone.GenerationParameter.Seed = seed + j;
-                tasks.Add(g);
+                tasks.Add(clone);
             }
 
             string[] replaces = g.Replace.Split(',', StringSplitOptions.TrimEntries);
@@ -203,19 +207,19 @@ public partial class MainWindow : Window
             {
                 string toReplace = replaces[0];
 
-                if (prompt.Contains(toReplace))
-                {
-                    string[] replaces1 = replaces[1..];
+                if (!prompt.Contains(toReplace))
+                    continue;
 
-                    foreach (var r in replaces1)
+                string[] replaces1 = replaces[1..];
+
+                foreach (var r in replaces1)
+                {
+                    for (int j = 0; j < g.BatchSize; j++)
                     {
-                        for (int j = 0; j < g.BatchSize; j++)
-                        {
-                            var clone = g.Clone();
-                            clone.GenerationParameter.Seed = seed + j;
-                            clone.Prompt = prompt.Replace(toReplace, r);
-                            tasks.Add(clone);
-                        }
+                        var clone = g.Clone();
+                        clone.GenerationParameter.Seed = seed + j;
+                        clone.Prompt = prompt.Replace(toReplace, r);
+                        tasks.Add(clone);
                     }
                 }
             }
@@ -225,15 +229,12 @@ public partial class MainWindow : Window
         int retry = 0;
         const int maxRetries = 5;
 
-        Dispatcher.UIThread.Invoke(() => ProgressBar.Value = 0);
-
-        clearLog();
-
         while (i < tasks.Count)
         {
             token.ThrowIfCancellationRequested();
             writeLog($"Running task {i + 1} / {tasks.Count}: ");
             bool success = await generate(tasks[i]);
+            token.ThrowIfCancellationRequested();
 
             if (!success && ++retry < maxRetries)
             {
@@ -270,7 +271,7 @@ public partial class MainWindow : Window
         Dispatcher.UIThread.Invoke(() => LogTextBox.Text = string.Empty);
     }
 
-    private async void Button_OnClick(object? sender, RoutedEventArgs e)
+    private async void OpenButton_OnClick(object? sender, RoutedEventArgs e)
     {
         var files = await GetTopLevel(this).StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
