@@ -8,22 +8,25 @@ public class GenerationConfig
     public string Replace { get; set; } = string.Empty;
     public string Model { get; set; } = "nai-diffusion-3";
     public int BatchSize { get; set; } = 1;
+    public bool AllRandom { get; set; } = false;
 
     public GenerationParameter GenerationParameter { get; set; } = new GenerationParameter();
-    
+
     public GenerationConfig Clone()
     {
         var clone = (GenerationConfig) MemberwiseClone();
         clone.GenerationParameter = GenerationParameter.Clone();
         return clone;
     }
+
+    public override string ToString() => $"{GenerationParameter.Seed} - {Prompt}";
 }
 
 public class GenerationParameter
 {
     public string NegativePrompt { get; set; } = string.Empty;
     public string Sampler { get; set; } = "k_euler";
-    
+
     [JsonPropertyName("sm")]
     public bool Smea { get; set; } = true;
 

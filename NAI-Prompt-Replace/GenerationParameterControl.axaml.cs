@@ -1,5 +1,8 @@
-﻿using Avalonia;
+using System.Text.Json;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 
 namespace NAI_Prompt_Replace;
 
@@ -54,5 +57,30 @@ public partial class GenerationParameterControl : UserControl
     private void ModelComboBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         Config.Model = models[ModelComboBox.SelectedIndex];
+    }
+
+    private async void Button_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var file = await TopLevel.GetTopLevel(this)?.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            FileTypeChoices =
+            [
+                new FilePickerFileType("JSON")
+                {
+                    Patterns = ["*.json"]
+                }
+            ]
+        });
+
+        if (file == null)
+            return;
+
+        try
+        {
+            await File.WriteAllTextAsync(file.Path.LocalPath, JsonSerializer.Serialize(Config, new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch
+        {
+        }
     }
 }

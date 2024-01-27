@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.IO.Compression;
-using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Avalonia.Controls;
@@ -15,19 +14,13 @@ namespace NAI_Prompt_Replace;
 public partial class MainWindow : Window
 {
     private const string config_file = "config.json";
-    private const string novelai_api = "https://api.novelai.net/";
-    private readonly HttpClient httpClient = new HttpClient();
 #if DEBUG
     private readonly Random random = new Random(1337);
     #else
     private readonly Random random = new Random();
 #endif
-    private List<TextReplacement> replacements { get; set; } = new();
-
-    private readonly JsonSerializerOptions apiSerializerOptions = new JsonSerializerOptions
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-    };
+    private Dictionary<string, string> replacements { get; set; } = new();
+    private readonly NovelAIApi api = new NovelAIApi();
 
     private Config config { get; set; } = new Config();
     private CancellationTokenSource? cancellationTokenSource;
@@ -67,59 +60,6 @@ public partial class MainWindow : Window
         catch (Exception e)
         {
         }
-    }
-
-    private async Task<bool> generate(GenerationConfig generationConfig)
-    {
-        var req = new HttpRequestMessage(HttpMethod.Post, novelai_api + "ai/generate-image");
-        req.Headers.Add("Authorization", "Bearer " + config.AccessToken);
-
-        var data = new Dictionary<string, object>
-        {
-            { "input", generationConfig.Prompt },
-            { "model", generationConfig.Model },
-            { "action", "generate" },
-            { "parameters", generationConfig.GenerationParameter }
-        };
-
-        req.Content = new StringContent(JsonSerializer.Serialize(data, apiSerializerOptions));
-        req.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-
-        try
-        {
-            var resp = await httpClient.SendAsync(req);
-
-            if (resp.IsSuccessStatusCode)
-            {
-                writeLogLine($"{(int)resp.StatusCode} {resp.ReasonPhrase}");
-                using var zip = new ZipArchive(await resp.Content.ReadAsStreamAsync());
-                string fileName = generationConfig.GenerationParameter.Seed + " - ";
-                fileName = getValidFileName(fileName + generationConfig.Prompt[..(Math.Min(128, generationConfig.Prompt.Length))] + ".png");
-
-                await using var file = File.OpenWrite(fileName);
-
-                foreach (var entry in zip.Entries)
-                {
-                    await using var s = entry.Open();
-                    await s.CopyToAsync(file);
-                    file.Close();
-                }
-
-                return true;
-            }
-            else if (resp.Content.Headers.ContentType?.MediaType == "application/json")
-            {
-                string content = await resp.Content.ReadAsStringAsync();
-                var response = JsonSerializer.Deserialize<NovelAIGenerationResponse>(content);
-                writeLogLine($"Error: {response?.StatusCode} {response?.Message}");
-            }
-        }
-        catch (Exception exception)
-        {
-            writeLogLine(exception.Message);
-        }
-
-        return false;
     }
 
     private string getValidFileName(string originalFileName)
@@ -176,6 +116,27 @@ public partial class MainWindow : Window
         }
     }
 
+    private string replaceText(string text)
+    {
+        string[] lines = text.Split(Environment.NewLine);
+        List<string> newLines = [];
+
+        foreach (string line in lines)
+        {
+            string[] words = line.Split(',', StringSplitOptions.TrimEntries);
+
+            for (int i = 0; i < words.Length; i++)
+            {
+                if (replacements.ContainsKey(words[i]))
+                    words[i] = replacements[words[i]];
+            }
+
+            newLines.Add(string.Join(',', words));
+        }
+
+        return string.Join(Environment.NewLine, newLines);
+    }
+
     private async Task runGeneration(IEnumerable<GenerationConfig> configs, CancellationToken token)
     {
         var tasks = new List<GenerationConfig>();
@@ -186,41 +147,59 @@ public partial class MainWindow : Window
             g.GenerationParameter.Seed ??= random.Next();
             long seed = g.GenerationParameter.Seed.Value;
 
-            foreach (var replacement in replacements)
-            {
-                g.Prompt = g.Prompt.Replace(replacement.Target, replacement.Replace);
-                g.Replace = g.Replace.Replace(replacement.Target, replacement.Replace);
-            }
+            g.Prompt = replaceText(g.Prompt);
+            g.Replace = replaceText(g.Replace);
 
             string prompt = g.Prompt;
 
-            for (int j = 0; j < g.BatchSize; j++)
+            var replaceLines = g.Replace.Split(Environment.NewLine).Select(s => s.Split(',', StringSplitOptions.TrimEntries)).ToArray();
+            
+            // TODO: Rewrite this
+            void replacePrompt(int now, string ss)
             {
-                var clone = g.Clone();
-                clone.GenerationParameter.Seed = seed + j;
-                tasks.Add(clone);
-            }
-
-            string[] replaces = g.Replace.Split(',', StringSplitOptions.TrimEntries);
-
-            if (replaces.Length > 1)
-            {
-                string toReplace = replaces[0];
-
-                if (!prompt.Contains(toReplace))
-                    continue;
-
-                string[] replaces1 = replaces[1..];
-
-                foreach (var r in replaces1)
+                if (now == prompt.Length)
                 {
                     for (int j = 0; j < g.BatchSize; j++)
                     {
                         var clone = g.Clone();
-                        clone.GenerationParameter.Seed = seed + j;
-                        clone.Prompt = prompt.Replace(toReplace, r);
+                        clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
+                        clone.Prompt = ss;
                         tasks.Add(clone);
                     }
+                    return;
+                }
+
+                bool ok = false;
+
+                foreach (string[] replaces in replaceLines)
+                {
+                    if (now + replaces[0].Length <= prompt.Length && prompt[now..(now + replaces[0].Length)] == replaces[0])
+                    {
+                        ok = true;
+
+                        foreach (string t1 in replaces)
+                        {
+                            replacePrompt(now + replaces[0].Length, ss + t1);
+                        }
+                    }
+                }
+                if (!ok)
+                {
+                    replacePrompt(now + 1,ss+prompt[now]);
+                }
+            }
+
+            if (replaceLines.Length > 0 && replaceLines[0].Length > 1)
+            {
+                replacePrompt(0, string.Empty);
+            }
+            else
+            {
+                for (int j = 0; j < g.BatchSize; j++)
+                {
+                    var clone = g.Clone();
+                    clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
+                    tasks.Add(clone);
                 }
             }
         }
@@ -231,10 +210,35 @@ public partial class MainWindow : Window
 
         while (i < tasks.Count)
         {
+            var task = tasks[i];
             token.ThrowIfCancellationRequested();
             writeLog($"Running task {i + 1} / {tasks.Count}: ");
-            bool success = await generate(tasks[i]);
+            var resp = await api.Generate(task);
+            bool success = resp.IsSuccessStatusCode;
             token.ThrowIfCancellationRequested();
+
+            if (success)
+            {
+                writeLogLine($"{(int)resp.StatusCode} {resp.ReasonPhrase}");
+                using var zip = new ZipArchive(await resp.Content.ReadAsStreamAsync());
+                string fileName = task.GenerationParameter.Seed + " - ";
+                fileName = getValidFileName(fileName + task.Prompt[..Math.Min(128, task.Prompt.Length)] + ".png");
+
+                await using var file = File.OpenWrite(fileName);
+
+                foreach (var entry in zip.Entries)
+                {
+                    await using var s = entry.Open();
+                    await s.CopyToAsync(file);
+                    file.Close();
+                }
+            }
+            if (resp.Content.Headers.ContentType?.MediaType == "application/json")
+            {
+                string content = await resp.Content.ReadAsStringAsync();
+                var response = JsonSerializer.Deserialize<NovelAIGenerationResponse>(content);
+                writeLogLine($"Error: {response?.StatusCode} {response?.Message}");
+            }
 
             if (!success && ++retry < maxRetries)
             {
@@ -273,7 +277,7 @@ public partial class MainWindow : Window
 
     private async void OpenButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        var files = await GetTopLevel(this).StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Open Text File",
             FileTypeFilter = 
@@ -306,8 +310,9 @@ public partial class MainWindow : Window
                         using (var reader = File.OpenText(file.Path.LocalPath))
                         using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false }))
                         {
-                            replacements = csv.GetRecords<TextReplacement>().ToList();
-                            ReplacementDataGrid.ItemsSource = replacements;
+                            var records = csv.GetRecords<TextReplacement>().ToList();
+                            ReplacementDataGrid.ItemsSource = records;
+                            replacements = records.ToDictionary(r => r.Text, r => r.Replace);
                         }
                         break;
                 }
@@ -317,6 +322,22 @@ public partial class MainWindow : Window
                 writeLogLine(exception.Message);
             }
         }
+    }
+    
+    private void TokenTextBox_OnTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        api.AccessToken = config.AccessToken;
+    }
+
+    private void NewButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        TabControl.Items.Add(new TabItem { Header = "New Config", Content = new GenerationParameterControl(new GenerationConfig()) });
+    }
+
+    private void CloseButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (TabControl.Items.Count > 0)
+            TabControl.Items.RemoveAt(TabControl.SelectedIndex);
     }
 
     private void TabControl_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)

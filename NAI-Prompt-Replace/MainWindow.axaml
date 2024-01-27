@@ -13,10 +13,14 @@
         <StackPanel Orientation="Vertical" Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Token" VerticalAlignment="Center" />
-                <TextBox Name="TokenTextBox" PasswordChar="*" Width="650" Text="{Binding  AccessToken}" />
+                <TextBox Name="TokenTextBox" PasswordChar="*" Width="650" TextChanged="TokenTextBox_OnTextChanged" Text="{Binding  AccessToken}" />
                 <Button Name="ShowPasswordButton" Content="Show" Click="ShowPasswordButton_OnClick"/>
             </StackPanel>
-            <Button Content="Open" Click="OpenButton_OnClick"></Button>
+            <StackPanel Orientation="Horizontal" Spacing="5">
+                <Button Content="New" Click="NewButton_OnClick"></Button>
+                <Button Content="Open" Click="OpenButton_OnClick"></Button>
+                <Button Content="Close" Click="CloseButton_OnClick"></Button>
+            </StackPanel>
             <ScrollViewer Height="300">
                 <TabControl Name="TabControl" SelectionChanged="TabControl_OnSelectionChanged" />
             </ScrollViewer>

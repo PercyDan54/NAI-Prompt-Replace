@@ -12,11 +12,11 @@
         <TextBlock Grid.Row="1" Grid.Column="0" Text="Negative" VerticalAlignment="Center" />
         <TextBox Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" Text="{Binding GenerationParameter.NegativePrompt}" />
         <TextBlock Grid.Row="2" Grid.Column="0" Text="Replace" VerticalAlignment="Center" />
-        <TextBox Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" Text="{Binding Replace}" />
+        <TextBox Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding Replace}" />
         <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Vertical" Spacing="5" Margin="10">
             <StackPanel Orientation="Horizontal" Spacing="5">
-                <CheckBox Content="Smea" IsChecked="{Binding GenerationParameter.Smea}" />
-                <CheckBox Content="Dyn" IsChecked="{Binding GenerationParameter.Dyn}" />
+                <CheckBox Content="SMEA" IsChecked="{Binding GenerationParameter.Smea}" />
+                <CheckBox Content="DYN" IsChecked="{Binding GenerationParameter.Dyn}" />
                 <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
                     <TextBlock Text="Width" VerticalAlignment="Center"></TextBlock>
                     <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationParameter.Width}" Minimum="1" />
@@ -58,6 +58,10 @@
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <TextBlock Text="Batch Size"  HorizontalAlignment="Center" VerticalAlignment="Center" />
                 <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding BatchSize}" Minimum="1" MinWidth="130" HorizontalContentAlignment="Center" />
+                <CheckBox Content="Random All Image Seeds" IsChecked="{Binding AllRandom}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="5" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center"  >
+                <Button Content="Save Config" Click="Button_OnClick" />
             </StackPanel>
         </StackPanel>
     </Grid>
