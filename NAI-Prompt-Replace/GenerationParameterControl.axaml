@@ -3,9 +3,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:naiPromptReplace="clr-namespace:NAI_Prompt_Replace"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="600"
              x:Class="NAI_Prompt_Replace.GenerationParameterControl"
-             x:DataType="naiPromptReplace:GenerationConfig" Height="450">
+             x:DataType="naiPromptReplace:GenerationConfig" Height="600">
     <Grid RowDefinitions="Auto,1*,1*,2*" ColumnDefinitions="Auto, 3*">
         <TextBlock Text="Prompt" VerticalAlignment="Center" />
         <TextBox Grid.Row="0" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding Prompt}" />
@@ -18,33 +18,33 @@
                 <CheckBox Content="SMEA" IsChecked="{Binding GenerationParameter.Smea}" />
                 <CheckBox Content="DYN" IsChecked="{Binding GenerationParameter.Dyn}" />
                 <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
-                    <TextBlock Text="Width" VerticalAlignment="Center"></TextBlock>
+                    <TextBlock Text="Width" VerticalAlignment="Center" />
                     <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationParameter.Width}" Minimum="1" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
-                    <TextBlock Text="Height" VerticalAlignment="Center"></TextBlock>
+                    <TextBlock Text="Height" VerticalAlignment="Center" />
                     <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationParameter.Height}" Minimum="1" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
-                    <TextBlock Text="Seed" VerticalAlignment="Center"></TextBlock>
+                    <TextBlock Text="Seed" VerticalAlignment="Center" />
                     <NumericUpDown FormatString="0" Value="{Binding GenerationParameter.Seed}" HorizontalContentAlignment="Center" MinWidth="200" />
                 </StackPanel>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <TextBlock Text="Sampler" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <ComboBox Name="SamplerComboBox" SelectionChanged="SamplerComboBox_OnSelectionChanged" MinWidth="150">
-                        <ComboBoxItem Content="Euler"></ComboBoxItem>
-                        <ComboBoxItem Content="Euler Ancestral"></ComboBoxItem>
-                        <ComboBoxItem Content="DPM++ 2S Ancestral"></ComboBoxItem>
-                        <ComboBoxItem Content="DPM++ 2M"></ComboBoxItem>
-                        <ComboBoxItem Content="DPM++ SDE"></ComboBoxItem>
-                        <ComboBoxItem Content="DDIM"></ComboBoxItem>
+                    <ComboBox Name="SamplerComboBox" SelectionChanged="SamplerComboBox_OnSelectionChanged" MinWidth="150" HorizontalContentAlignment="Center">
+                        <ComboBoxItem Content="Euler" />
+                        <ComboBoxItem Content="Euler Ancestral" />
+                        <ComboBoxItem Content="DPM++ 2S Ancestral" />
+                        <ComboBoxItem Content="DPM++ 2M" />
+                        <ComboBoxItem Content="DPM++ SDE" />
+                        <ComboBoxItem Content="DDIM" />
                     </ComboBox>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <TextBlock Text="Model" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <ComboBox Name="ModelComboBox" SelectionChanged="ModelComboBox_OnSelectionChanged" MinWidth="120"></ComboBox>
+                    <ComboBox Name="ModelComboBox" SelectionChanged="ModelComboBox_OnSelectionChanged" MinWidth="120" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <TextBlock Text="Steps" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -56,11 +56,29 @@
                 </StackPanel>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
-                <TextBlock Text="Batch Size"  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <TextBlock Text="Undesired Content Strength" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <NumericUpDown ValueChanged="preventNullValue" FormatString="P0" Value="{Binding GenerationParameter.UncondScale}" Minimum="0" Maximum="1.5" Increment="0.05" MinWidth="130" HorizontalContentAlignment="Center" />
+                <TextBlock Text="Prompt Guidance Rescale" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <NumericUpDown ValueChanged="preventNullValue" Minimum="0" Maximum="1" FormatString="0.##" Increment="0.01" Value="{Binding GenerationParameter.CfgRescale}" MinWidth="130" HorizontalContentAlignment="Center" />
+
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
+                <TextBlock Text="Noise Schedule" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <ComboBox Name="ScheduleComboBox" SelectionChanged="ScheduleComboBox_OnSelectionChanged" MinWidth="100" HorizontalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <TextBlock Text="Batch Size" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding BatchSize}" Minimum="1" MinWidth="130" HorizontalContentAlignment="Center" />
                 <CheckBox Content="Random All Image Seeds" IsChecked="{Binding AllRandom}" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="5" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center"  >
+            <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
+                <CheckBox Content="Legacy V3 Extend" IsChecked="{Binding GenerationParameter.LegacyV3Extend}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5" Height="30">
+                <TextBlock Text="Output Path" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <TextBox Name="OutputPathTextBox" Width="500" Text="{Binding  OutputPath}" />
+                <Button Name="BrowseButton" Content="Browse" Click="BrowseButton_OnClick"/>
+                <Button Name="OpenButton" Content="Open" Click="OpenButton_OnClick"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="5" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Button Content="Save Config" Click="Button_OnClick" />
             </StackPanel>
         </StackPanel>
