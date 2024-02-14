@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -30,6 +31,23 @@ public partial class MainWindow : Window
         InitializeComponent();
         loadConfig();
         DataContext = config;
+        AddHandler(DragDrop.DropEvent, onDrop);
+    }
+
+    private async void onDrop(object? sender, DragEventArgs e)
+    {
+        if (e.Data.Contains(DataFormats.Files))
+        {
+            var files = e.Data.GetFiles() ?? Array.Empty<IStorageItem>();
+
+            foreach (var item in files)
+            {
+                if (item is IStorageFile file)
+                {
+                    await openFile(file);
+                }
+            }
+        }
     }
 
     private void loadConfig()
@@ -62,24 +80,36 @@ public partial class MainWindow : Window
         }
     }
 
-    private string getValidFileName(string originalFileName)
+    private void TokenTextBox_OnTextChanged(object? sender, TextChangedEventArgs e)
     {
-        foreach (var invalid in Path.GetInvalidFileNameChars())
-        {
-            originalFileName = originalFileName.Replace(invalid, '_');
-        }
+        api.AccessToken = config.AccessToken;
+    }
 
-        string fileName = Path.GetFileNameWithoutExtension(originalFileName);
-        string extension = Path.GetExtension(originalFileName);
+    private void NewButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        TabControl.Items.Add(new TabItem { Header = "New Config", Content = new GenerationParameterControl(new GenerationConfig()) });
+    }
 
-        int i = 0;
+    private void CloseButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (TabControl.Items.Count > 0)
+            TabControl.Items.RemoveAt(TabControl.SelectedIndex);
+    }
 
-        while (File.Exists(fileName + extension))
-        {
-            fileName = originalFileName + " (" + ++i + ")";
-        }
+    private void TabControl_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        TabControl?.InvalidateMeasure();
+    }
 
-        return fileName + extension;
+    private void ReplacementDataGrid_OnAutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
+    {
+        e.Column.Width = DataGridLength.Auto;
+    }
+
+    private void ShowPasswordButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        TokenTextBox.RevealPassword = !TokenTextBox.RevealPassword;
+        ShowPasswordButton.Content = TokenTextBox.RevealPassword ? "Hide" : "Show";
     }
 
     private void RunButton_OnClick(object? sender, RoutedEventArgs e)
@@ -137,6 +167,39 @@ public partial class MainWindow : Window
         return string.Join(Environment.NewLine, newLines);
     }
 
+    private void writeLogLine(object obj)
+    {
+        writeLog(obj + Environment.NewLine);
+    }
+
+    private void writeLog(object obj)
+    {
+        Dispatcher.UIThread.Invoke(() => LogTextBox.Text += obj);
+    }
+
+    private void clearLog()
+    {
+        Dispatcher.UIThread.Invoke(() => LogTextBox.Text = string.Empty);
+    }
+
+    private async void OpenButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Open File",
+            FileTypeFilter =
+            [
+                new FilePickerFileType("JSON, PNG or CSV") { Patterns = ["*.json", "*.csv", "*.png"] },
+            ],
+            AllowMultiple = true
+        });
+
+        foreach (var file in files)
+        {
+            await openFile(file);
+        }
+    }
+
     private async Task createAndRunTasks(IEnumerable<GenerationConfig> configs, CancellationToken token)
     {
         var tasks = new List<GenerationConfig>();
@@ -166,6 +229,7 @@ public partial class MainWindow : Window
                         clone.Prompt = ss;
                         tasks.Add(clone);
                     }
+
                     return;
                 }
 
@@ -207,11 +271,12 @@ public partial class MainWindow : Window
         int i = 0;
         int retry = 0;
         const int maxRetries = 5;
+        var date = DateTime.Now;
 
         while (i < tasks.Count)
         {
             var task = tasks[i];
-            token.ThrowIfCancellationRequested();
+            token.ThrowIfCancellationRequested() ;
             writeLog($"Running task {i + 1} / {tasks.Count}: ");
             var resp = await api.Generate(task);
             bool success = resp.IsSuccessStatusCode;
@@ -221,8 +286,25 @@ public partial class MainWindow : Window
                 writeLogLine($"{(int)resp.StatusCode} {resp.ReasonPhrase}");
                 using var zip = new ZipArchive(await resp.Content.ReadAsStreamAsync());
                 string fileName = task.GenerationParameter.Seed + "-";
-                fileName = getValidFileName(fileName + task.Prompt[..Math.Min(128, task.Prompt.Length)] + ".png");
-                fileName = Path.Combine(task.OutputPath, fileName);
+                fileName = Util.GetValidFileName(fileName + task.Prompt[..Math.Min(128, task.Prompt.Length)] + ".png");
+
+                string path = string.IsNullOrWhiteSpace(task.OutputPath) ? Environment.CurrentDirectory : task.OutputPath;
+                string[] split = path.Split(Path.DirectorySeparatorChar);
+
+                for (int index = 0; index < split.Length; index++)
+                {
+                    string dir = split[index];
+
+                    if (Path.IsPathRooted(dir))
+                        continue;
+
+                    split[index] = Util.GetValidDirectoryName(dir.Replace("${date}", date.ToShortDateString())
+                        .Replace("${time}", date.ToShortTimeString()));
+                }
+
+                path = string.Join(Path.DirectorySeparatorChar, split);
+                Directory.CreateDirectory(path);
+                fileName = Path.Combine(path, fileName);
 
                 await using var file = File.OpenWrite(fileName);
 
@@ -242,10 +324,10 @@ public partial class MainWindow : Window
 
             token.ThrowIfCancellationRequested();
 
-            if (!success && ++retry < maxRetries)
+            if (!success && retry < maxRetries)
             {
-                writeLogLine($"Failed, Retrying {retry} / {maxRetries}");
-                Thread.Sleep(3000);
+                writeLogLine($"Failed, Retrying {++retry} / {maxRetries}");
+                Thread.Sleep(retry >= 3 ? 5000 : 3000);
             }
             else
             {
@@ -261,105 +343,44 @@ public partial class MainWindow : Window
             cancellationTokenSource = null;
         });
     }
-
-    private void writeLogLine(object obj)
+    
+    private async Task openFile(IStorageFile file)
     {
-        writeLog(obj + Environment.NewLine);
-    }
-
-    private void writeLog(object obj)
-    {
-        Dispatcher.UIThread.Invoke(() => LogTextBox.Text += obj);
-    }
-
-    private void clearLog()
-    {
-        Dispatcher.UIThread.Invoke(() => LogTextBox.Text = string.Empty);
-    }
-
-    private async void OpenButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        try
         {
-            Title = "Open File",
-            FileTypeFilter = 
-            [
-                new FilePickerFileType("JSON, PNG or CSV") { Patterns = ["*.json", "*.csv", "*.png"] },
-            ],
-            AllowMultiple = true
-        });
+            string path = file.Path.LocalPath;
+            GenerationConfig? config = null;
 
-        foreach (var file in files)
-        {
-            try
+            switch (Path.GetExtension(file.Name))
             {
-                string path = file.Path.LocalPath;
-                GenerationConfig? config = null;
+                case ".json":
+                    config = JsonSerializer.Deserialize<GenerationConfig>(await File.ReadAllTextAsync(path));
+                    break;
 
-                switch (Path.GetExtension(file.Name))
-                {
-                    case ".json":
-                        config = JsonSerializer.Deserialize<GenerationConfig>(await File.ReadAllTextAsync(path));
-
-                        break;
-
-                    case ".png":
-                        config = PngMetadataReader.FromFile(path);
-                        break;
+                case ".png":
+                    config = PngMetadataReader.FromFile(path);
+                    break;
                     
-                    case ".csv":
-                        using (var reader = File.OpenText(path))
-                        using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false }))
-                        {
-                            var records = csv.GetRecords<TextReplacement>().ToList();
-                            ReplacementDataGrid.ItemsSource = records;
-                            replacements = records.ToDictionary(r => r.Text, r => r.Replace);
-                        }
-                        break;
-                }
-
-                if (config != null)
-                {
-                    TabControl.Items.Add(new TabItem { Header = file.Name[..Math.Min(32, file.Name.Length)], Content = new GenerationParameterControl(config) });
-                }
+                case ".csv":
+                    using (var reader = File.OpenText(path))
+                    using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false }))
+                    {
+                        var records = csv.GetRecords<TextReplacement>().ToList();
+                        ReplacementDataGrid.ItemsSource = records;
+                        replacements = records.ToDictionary(r => r.Text, r => r.Replace);
+                    }
+                    break;
             }
-            catch (Exception exception)
+
+            if (config != null)
             {
-                writeLogLine(exception.Message);
+                TabControl.Items.Add(new TabItem { Header = file.Name[..Math.Min(32, file.Name.Length)], Content = new GenerationParameterControl(config) });
             }
         }
-    }
-    
-    private void TokenTextBox_OnTextChanged(object? sender, TextChangedEventArgs e)
-    {
-        api.AccessToken = config.AccessToken;
-    }
-
-    private void NewButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        TabControl.Items.Add(new TabItem { Header = "New Config", Content = new GenerationParameterControl(new GenerationConfig()) });
-    }
-
-    private void CloseButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (TabControl.Items.Count > 0)
-            TabControl.Items.RemoveAt(TabControl.SelectedIndex);
-    }
-
-    private void TabControl_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        TabControl?.InvalidateMeasure();
-    }
-
-    private void ReplacementDataGrid_OnAutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
-    {
-        e.Column.Width = DataGridLength.Auto;
-    }
-
-    private void ShowPasswordButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        TokenTextBox.RevealPassword = !TokenTextBox.RevealPassword;
-        ShowPasswordButton.Content = TokenTextBox.RevealPassword ? "Hide" : "Show";
+        catch (Exception exception)
+        {
+            writeLogLine(exception.Message);
+        }
     }
 
     private class NovelAIGenerationResponse

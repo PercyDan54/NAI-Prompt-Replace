@@ -8,7 +8,8 @@
         x:Class="NAI_Prompt_Replace.MainWindow"
         x:DataType="naiPromptReplace:Config"
         Closing="Window_OnClosing"
-        Title="NAI Prompt Replace V1.05">
+        Title="NAI Prompt Replace V1.05"
+        DragDrop.AllowDrop="True">
     <Panel Margin="20, 10">
         <StackPanel Orientation="Vertical" Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="5">
