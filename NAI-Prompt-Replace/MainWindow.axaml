@@ -8,28 +8,34 @@
         x:Class="NAI_Prompt_Replace.MainWindow"
         x:DataType="naiPromptReplace:Config"
         Closing="Window_OnClosing"
-        Title="NAI Prompt Replace V1.05"
+        Title="NAI Prompt Replace V1.06"
         DragDrop.AllowDrop="True">
     <Panel Margin="20, 10">
         <StackPanel Orientation="Vertical" Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Token" VerticalAlignment="Center" />
-                <TextBox Name="TokenTextBox" PasswordChar="*" Width="650" TextChanged="TokenTextBox_OnTextChanged" Text="{Binding  AccessToken}" />
-                <Button Name="ShowPasswordButton" Content="Show" Click="ShowPasswordButton_OnClick"/>
+                <TextBox Name="TokenTextBox" PasswordChar="*" Width="600" Text="{Binding  AccessToken}" />
+                <Button Name="ShowPasswordButton" Content="Show" Click="ShowPasswordButton_OnClick" />
+                <Button Name="LoginButton" Content="Login" Click="LoginButton_OnClick" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
-                <Button Content="New" Click="NewButton_OnClick"></Button>
-                <Button Content="Open" Click="OpenButton_OnClick"></Button>
-                <Button Content="Close" Click="CloseButton_OnClick"></Button>
+                <Button Content="New" Click="NewButton_OnClick" />
+                <Button Content="Open" Click="OpenButton_OnClick" />
+                <Button Content="Close" Click="CloseButton_OnClick" />
+                <TextBlock Name="AccountInfo" Text="Not logged in" Margin="15,0" VerticalAlignment="Center" />
+                <naiPromptReplace:AnlasDisplay Name="AccountAnlasDisplay" Height="20" />
             </StackPanel>
             <ScrollViewer Height="300">
                 <TabControl Name="TabControl" SelectionChanged="TabControl_OnSelectionChanged" />
             </ScrollViewer>
-            <DataGrid Name="ReplacementDataGrid" Height="100" AutoGenerateColumns="True" AutoGeneratingColumn="ReplacementDataGrid_OnAutoGeneratingColumn"/>
+            <DataGrid Name="ReplacementDataGrid" Height="100" AutoGenerateColumns="True" AutoGeneratingColumn="ReplacementDataGrid_OnAutoGeneratingColumn" />
             <Grid Margin="0,20,0,20" RowDefinitions="Auto,1*" ColumnDefinitions="Auto, 5*">
-                <Button Grid.Row="0" Grid.Column="0" Name="RunButton" Click="RunButton_OnClick" Content="Run" Width="70" HorizontalContentAlignment="Center" VerticalAlignment="Center" />
+                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="5" VerticalAlignment="Center" Orientation="Vertical">
+                    <Button Name="RunButton" Click="RunButton_OnClick" Content="Run" Width="70" HorizontalContentAlignment="Center" VerticalAlignment="Center" />
+                    <naiPromptReplace:AnlasDisplay Name="TotalAnlas" HorizontalAlignment="Center" Height="20" />
+                </StackPanel>
                 <TextBox Grid.Row="0" Grid.Column="1" Name="LogTextBox" IsReadOnly="True" VerticalAlignment="Center" Height="130" TextWrapping="Wrap" />
-                <ProgressBar Name="ProgressBar" Grid.Row="1" Grid.Column="1" ShowProgressText="True"></ProgressBar>
+                <ProgressBar Name="ProgressBar" Grid.Row="1" Grid.Column="1" ShowProgressText="True" />
             </Grid>
         </StackPanel>
     </Panel>

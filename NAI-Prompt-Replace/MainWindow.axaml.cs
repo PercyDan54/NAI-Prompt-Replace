@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.IO.Compression;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using CsvHelper;
@@ -20,7 +20,7 @@ public partial class MainWindow : Window
     #else
     private readonly Random random = new Random();
 #endif
-    private Dictionary<string, string> replacements { get; set; } = new();
+    private Dictionary<string, string> replacements { get; set; } = new Dictionary<string, string>();
     private readonly NovelAIApi api = new NovelAIApi();
 
     private Config config { get; set; } = new Config();
@@ -55,6 +55,7 @@ public partial class MainWindow : Window
         if (File.Exists(config_file))
         {
             config = JsonSerializer.Deserialize<Config>(File.ReadAllText(config_file)) ?? config;
+            updateAccountInfo().ConfigureAwait(false);
         }
     }
 
@@ -80,20 +81,53 @@ public partial class MainWindow : Window
         }
     }
 
-    private void TokenTextBox_OnTextChanged(object? sender, TextChangedEventArgs e)
-    {
-        api.AccessToken = config.AccessToken;
-    }
-
     private void NewButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        TabControl.Items.Add(new TabItem { Header = "New Config", Content = new GenerationParameterControl(new GenerationConfig()) });
+        addTab("New config", new GenerationConfig());
+    }
+
+    private void addTab(string header, GenerationConfig config)
+    {
+        var control = new GenerationParameterControl(config, api);
+        TabControl.Items.Add(new TabItem { Header = header, Content = control });
+        control.AnlasChanged += updateTotalAnlas;
+        updateTotalAnlas(null, null);
+    }
+
+    private void updateTotalAnlas(object? sender, EventArgs? e)
+    {
+        Dispatcher.UIThread.Invoke(() =>
+        {
+            int total = 0;
+
+            foreach (var control in getGenerationParameterControls())
+            {
+                var config = control.Config;
+                int cost = control.AnlasDisplay.Value;
+                var replaceLines = config.Replace.Split(Environment.NewLine).Select(l => Math.Max(l.Split(',').Length, 1));
+
+                foreach (int line in replaceLines)
+                    cost *= line;
+
+                total += cost;
+            }
+
+            TotalAnlas.Value = total;
+        });
     }
 
     private void CloseButton_OnClick(object? sender, RoutedEventArgs e)
     {
         if (TabControl.Items.Count > 0)
+        {
+            if (TabControl.Items[TabControl.SelectedIndex] is GenerationParameterControl control)
+            {
+                control.AnlasChanged -= updateTotalAnlas;
+            }
+
             TabControl.Items.RemoveAt(TabControl.SelectedIndex);
+            updateTotalAnlas(null, null);
+        }
     }
 
     private void TabControl_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -128,7 +162,7 @@ public partial class MainWindow : Window
         {
             RunButton.Content = "Cancel";
             cancellationTokenSource = new CancellationTokenSource();
-            var configs = getGenerationParameterControls().Select(p => p.Config).ToList();
+            var configs = getGenerationConfigs().ToList();
             ProgressBar.Value = 0;
             clearLog();
             Task.Factory.StartNew(_ => createAndRunTasks(configs, cancellationTokenSource.Token), null, TaskCreationOptions.LongRunning);
@@ -137,7 +171,7 @@ public partial class MainWindow : Window
 
     private IEnumerable<GenerationParameterControl> getGenerationParameterControls()
     {
-        foreach (var item in TabControl.Items)
+        foreach (object? item in TabControl.Items)
         {
             if (((TabItem)item).Content is GenerationParameterControl parameterControl)
             {
@@ -145,6 +179,8 @@ public partial class MainWindow : Window
             }
         }
     }
+
+    private IEnumerable<GenerationConfig> getGenerationConfigs() => getGenerationParameterControls().Select(p => p.Config);
 
     private string replaceText(string text)
     {
@@ -189,7 +225,7 @@ public partial class MainWindow : Window
             Title = "Open File",
             FileTypeFilter =
             [
-                new FilePickerFileType("JSON, PNG or CSV") { Patterns = ["*.json", "*.csv", "*.png"] },
+                new FilePickerFileType("JSON, PNG or CSV") { Patterns = ["*.json", "*.csv", "*.png"] }
             ],
             AllowMultiple = true
         });
@@ -215,8 +251,8 @@ public partial class MainWindow : Window
 
             string prompt = g.Prompt;
 
-            var replaceLines = g.Replace.Split(Environment.NewLine).Select(s => s.Split(',', StringSplitOptions.TrimEntries)).ToArray();
-            
+            string[][]? replaceLines = g.Replace.Split(Environment.NewLine).Select(s => s.Split(',', StringSplitOptions.TrimEntries)).ToArray();
+
             // TODO: Rewrite this
             void replacePrompt(int now, string ss)
             {
@@ -249,7 +285,7 @@ public partial class MainWindow : Window
                 }
                 if (!ok)
                 {
-                    replacePrompt(now + 1,ss+prompt[now]);
+                    replacePrompt(now + 1, ss + prompt[now]);
                 }
             }
 
@@ -276,9 +312,10 @@ public partial class MainWindow : Window
         while (i < tasks.Count)
         {
             var task = tasks[i];
-            token.ThrowIfCancellationRequested() ;
+            token.ThrowIfCancellationRequested();
             writeLog($"Running task {i + 1} / {tasks.Count}: ");
             var resp = await api.Generate(task);
+            Dispatcher.UIThread.Invoke(updateAccountInfo);
             bool success = resp.IsSuccessStatusCode;
 
             if (success)
@@ -326,13 +363,19 @@ public partial class MainWindow : Window
 
             if (!success && retry < maxRetries)
             {
+                if (Util.CalculateCost(task, api.SubscriptionInfo) > 0 && !task.RetryAll)
+                {
+                    i++;
+                    continue;
+                }
+
                 writeLogLine($"Failed, Retrying {++retry} / {maxRetries}");
                 Thread.Sleep(retry >= 3 ? 5000 : 3000);
             }
             else
             {
                 retry = 0;
-                Dispatcher.UIThread.Invoke(() => ProgressBar.Value = ((i + 1.0) / tasks.Count) * 100);
+                Dispatcher.UIThread.Invoke(() => ProgressBar.Value = (i + 1.0) / tasks.Count * 100);
                 i++;
             }
         }
@@ -343,7 +386,7 @@ public partial class MainWindow : Window
             cancellationTokenSource = null;
         });
     }
-    
+
     private async Task openFile(IStorageFile file)
     {
         try
@@ -360,7 +403,7 @@ public partial class MainWindow : Window
                 case ".png":
                     config = PngMetadataReader.FromFile(path);
                     break;
-                    
+
                 case ".csv":
                     using (var reader = File.OpenText(path))
                     using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false }))
@@ -374,7 +417,7 @@ public partial class MainWindow : Window
 
             if (config != null)
             {
-                TabControl.Items.Add(new TabItem { Header = file.Name[..Math.Min(32, file.Name.Length)], Content = new GenerationParameterControl(config) });
+                addTab(file.Name[..Math.Min(32, file.Name.Length)], config);
             }
         }
         catch (Exception exception)
@@ -383,12 +426,23 @@ public partial class MainWindow : Window
         }
     }
 
-    private class NovelAIGenerationResponse
+    private async void LoginButton_OnClick(object? sender, RoutedEventArgs? e)
     {
-        [JsonPropertyName("statusCode")]
-        public int StatusCode { get; set; }
-        
-        [JsonPropertyName("message")]
-        public string Message { get; set; }
+        await updateAccountInfo();
+    }
+
+    private async Task updateAccountInfo()
+    {
+        if (Design.IsDesignMode)
+            return;
+
+        var subscriptionInfo = await api.UpdateToken(config.AccessToken);
+
+        if (subscriptionInfo != null)
+        {
+            AccountInfo.Text = subscriptionInfo.ToString();
+            AccountInfo.Foreground = new SolidColorBrush(subscriptionInfo.Active ? Colors.Black : Colors.Red);
+            AccountAnlasDisplay.Value = subscriptionInfo.TotalTrainingStepsLeft;
+        }
     }
 }

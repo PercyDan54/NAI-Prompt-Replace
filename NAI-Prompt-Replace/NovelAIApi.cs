@@ -5,7 +5,7 @@ namespace NAI_Prompt_Replace;
 
 public class NovelAIApi
 {
-    public string AccessToken;
+    private string accessToken;
     private const string novelai_api = "https://api.novelai.net/";
     
     private readonly HttpClient httpClient = new HttpClient();
@@ -13,6 +13,12 @@ public class NovelAIApi
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
     };
+    private static readonly JsonSerializerOptions camelCaseJsonSerializerOptions = new JsonSerializerOptions
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    public SubscriptionInfo? SubscriptionInfo { get; private set; }
 
     public static string ModelNameFromDescription(string des)
     {
@@ -40,10 +46,28 @@ public class NovelAIApi
         }
     }
 
+    public async Task<SubscriptionInfo?> UpdateToken(string token)
+    {
+        var req = new HttpRequestMessage(HttpMethod.Get, novelai_api + "user/subscription");
+        req.Headers.Add("Authorization", "Bearer " + token);
+        var resp = await httpClient.SendAsync(req);
+
+        if (resp.IsSuccessStatusCode)
+        {
+            string str = await resp.Content.ReadAsStringAsync();
+            SubscriptionInfo = JsonSerializer.Deserialize<SubscriptionInfo>(str, camelCaseJsonSerializerOptions);
+            accessToken = token;
+
+            return SubscriptionInfo;
+        }
+
+        return null;
+    }
+
     public async Task<HttpResponseMessage> Generate(GenerationConfig generationConfig)
     {
         var req = new HttpRequestMessage(HttpMethod.Post, novelai_api + "ai/generate-image");
-        req.Headers.Add("Authorization", "Bearer " + AccessToken);
+        req.Headers.Add("Authorization", "Bearer " + accessToken);
 
         var data = new Dictionary<string, object>
         {

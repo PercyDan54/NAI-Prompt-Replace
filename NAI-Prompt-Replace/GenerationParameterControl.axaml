@@ -15,8 +15,8 @@
         <TextBox Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding Replace}" />
         <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Vertical" Spacing="5" Margin="10">
             <StackPanel Orientation="Horizontal" Spacing="5">
-                <CheckBox Content="SMEA" IsChecked="{Binding GenerationParameter.Smea}" />
-                <CheckBox Content="DYN" IsChecked="{Binding GenerationParameter.Dyn}" />
+                <CheckBox Name="SmeaCheckBox" Content="SMEA" IsChecked="{Binding GenerationParameter.Smea}" />
+                <CheckBox Name="DynCheckBox" Content="DYN" IsChecked="{Binding GenerationParameter.Dyn}" />
                 <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
                     <TextBlock Text="Width" VerticalAlignment="Center" />
                     <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationParameter.Width}" Minimum="1" />
@@ -71,6 +71,8 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <CheckBox Content="Legacy V3 Extend" IsChecked="{Binding GenerationParameter.LegacyV3Extend}" />
+                <CheckBox Content="Retry non-free tasks" IsChecked="{Binding RetryAll}" />
+                <naiPromptReplace:AnlasDisplay Margin="30,0,0,0" Name="AnlasDisplay" Height="20"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5" Height="30">
                 <TextBlock Text="Output Path" HorizontalAlignment="Center" VerticalAlignment="Center" />

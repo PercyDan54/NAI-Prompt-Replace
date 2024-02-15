@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
 using Avalonia;
@@ -16,28 +17,43 @@ public partial class GenerationParameterControl : UserControl
 
     public static readonly StyledProperty<GenerationConfig> ConfigProperty = AvaloniaProperty.Register<GenerationParameterControl, GenerationConfig>(nameof(Config));
 
+    public GenerationConfig Config
+    {
+        get => GetValue(ConfigProperty);
+        set => SetValue(ConfigProperty, value);
+    }
+
+    private readonly NovelAIApi? api;
+
+    public event EventHandler? AnlasChanged;
+
     // For designer preview
-    public GenerationParameterControl() : this(new GenerationConfig())
+    public GenerationParameterControl() : this(new GenerationConfig(), null)
     {
     }
 
-    public GenerationParameterControl(GenerationConfig config)
+    public GenerationParameterControl(GenerationConfig config, NovelAIApi? api)
     {
         InitializeComponent();
         DataContext = config;
         SetValue(ConfigProperty, config);
+        this.api = api;
+        Config.GenerationParameter.PropertyChanged += GenerationParameterOnPropertyChanged;
+        Config.PropertyChanged += GenerationParameterOnPropertyChanged;
 
         ModelComboBox.ItemsSource = models;
         ScheduleComboBox.ItemsSource = schedulers;
         ModelComboBox.SelectedIndex = models.IndexOf(config.Model);
         SamplerComboBox.SelectedIndex = samplers.IndexOf(config.GenerationParameter.Sampler);
         ScheduleComboBox.SelectedIndex = schedulers.IndexOf(config.GenerationParameter.NoiseSchedule);
+        GenerationParameterOnPropertyChanged(null, null);
     }
 
-    public GenerationConfig Config
+    private void GenerationParameterOnPropertyChanged(object? sender, PropertyChangedEventArgs? e)
     {
-        get => GetValue(ConfigProperty);
-        set => SetValue(ConfigProperty, value);
+        var cost = Util.CalculateCost(Config, api?.SubscriptionInfo);
+        Dispatcher.UIThread.Invoke(() => AnlasDisplay.Value = cost);
+        AnlasChanged?.Invoke(this, null);
     }
 
     private void preventNullValue(object? sender, NumericUpDownValueChangedEventArgs e)
@@ -52,10 +68,14 @@ public partial class GenerationParameterControl : UserControl
     private void SamplerComboBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         Config.GenerationParameter.Sampler = samplers[SamplerComboBox.SelectedIndex];
+        SmeaCheckBox.IsEnabled = DynCheckBox.IsEnabled = true;
 
-        if (SamplerComboBox.SelectedIndex == 5 && ModelComboBox.SelectedIndex != 0)
+        if (SamplerComboBox.SelectedIndex == 5)
         {
-            Config.GenerationParameter.Sampler = "ddim";
+            if (ModelComboBox.SelectedIndex != 0)
+                Config.GenerationParameter.Sampler = "ddim";
+            Config.GenerationParameter.Smea = Config.GenerationParameter.Dyn = false;
+            SmeaCheckBox.IsEnabled = DynCheckBox.IsEnabled = false;
         }
     }
 
