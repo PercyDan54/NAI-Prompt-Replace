@@ -81,6 +81,8 @@ public class GenerationParameter : INotifyPropertyChanged
 
     public string NoiseSchedule { get; set; } = "native";
 
+    public double Scale { get; set; } = 5;
+
     [JsonPropertyName("sm")]
     public bool Smea
     {
@@ -112,8 +114,6 @@ public class GenerationParameter : INotifyPropertyChanged
             NotifyPropertyChanged();
         }
     }
-
-    public double Scale { get; set; } = 5;
 
     public double UncondScale
     {

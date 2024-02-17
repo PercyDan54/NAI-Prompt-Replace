@@ -96,24 +96,7 @@ public partial class MainWindow : Window
 
     private void updateTotalAnlas(object? sender, EventArgs? e)
     {
-        Dispatcher.UIThread.Invoke(() =>
-        {
-            int total = 0;
-
-            foreach (var control in getGenerationParameterControls())
-            {
-                var config = control.Config;
-                int cost = control.AnlasDisplay.Value;
-                var replaceLines = config.Replace.Split(Environment.NewLine).Select(l => Math.Max(l.Split(',').Length, 1));
-
-                foreach (int line in replaceLines)
-                    cost *= line;
-
-                total += cost;
-            }
-
-            TotalAnlas.Value = total;
-        });
+        Dispatcher.UIThread.Invoke(() => TotalAnlas.Value = getGenerationParameterControls().Sum(c => c.AnlasDisplay.Value));
     }
 
     private void CloseButton_OnClick(object? sender, RoutedEventArgs e)
@@ -246,9 +229,6 @@ public partial class MainWindow : Window
             g.GenerationParameter.Seed ??= random.Next();
             long seed = g.GenerationParameter.Seed.Value;
 
-            g.Prompt = replaceText(g.Prompt);
-            g.Replace = replaceText(g.Replace);
-
             string prompt = g.Prompt;
 
             string[][]? replaceLines = g.Replace.Split(Environment.NewLine).Select(s => s.Split(',', StringSplitOptions.TrimEntries)).ToArray();
@@ -262,7 +242,7 @@ public partial class MainWindow : Window
                     {
                         var clone = g.Clone();
                         clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
-                        clone.Prompt = ss;
+                        clone.Prompt = replaceText(ss);
                         tasks.Add(clone);
                     }
 
@@ -299,6 +279,7 @@ public partial class MainWindow : Window
                 {
                     var clone = g.Clone();
                     clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
+                    clone.Prompt = replaceText(clone.Prompt);
                     tasks.Add(clone);
                 }
             }
@@ -314,9 +295,19 @@ public partial class MainWindow : Window
             var task = tasks[i];
             token.ThrowIfCancellationRequested();
             writeLog($"Running task {i + 1} / {tasks.Count}: ");
-            var resp = await api.Generate(task);
+            HttpResponseMessage? resp = null;
+
+            try
+            {
+                resp = await api.Generate(task).WaitAsync(TimeSpan.FromMinutes(2));
+            }
+            catch (Exception e)
+            {
+                writeLogLine(e.Message);
+            }
+
             Dispatcher.UIThread.Invoke(updateAccountInfo);
-            bool success = resp.IsSuccessStatusCode;
+            bool success = resp?.IsSuccessStatusCode ?? false;
 
             if (success)
             {
@@ -352,7 +343,7 @@ public partial class MainWindow : Window
                     file.Close();
                 }
             }
-            if (resp.Content.Headers.ContentType?.MediaType == "application/json")
+            if (resp?.Content.Headers.ContentType?.MediaType == "application/json")
             {
                 string content = await resp.Content.ReadAsStringAsync();
                 var response = JsonSerializer.Deserialize<NovelAIGenerationResponse>(content);
@@ -436,13 +427,19 @@ public partial class MainWindow : Window
         if (Design.IsDesignMode)
             return;
 
-        var subscriptionInfo = await api.UpdateToken(config.AccessToken);
-
-        if (subscriptionInfo != null)
+        try
         {
-            AccountInfo.Text = subscriptionInfo.ToString();
-            AccountInfo.Foreground = new SolidColorBrush(subscriptionInfo.Active ? Colors.Black : Colors.Red);
-            AccountAnlasDisplay.Value = subscriptionInfo.TotalTrainingStepsLeft;
+            var subscriptionInfo = await api.UpdateToken(config.AccessToken);
+
+            if (subscriptionInfo != null)
+            {
+                AccountInfo.Text = subscriptionInfo.ToString();
+                AccountInfo.Foreground = new SolidColorBrush(subscriptionInfo.Active ? Colors.Black : Colors.Red);
+                AccountAnlasDisplay.Value = subscriptionInfo.TotalTrainingStepsLeft;
+            }
+        }
+        catch
+        {
         }
     }
 }

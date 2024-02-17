@@ -52,6 +52,11 @@ public partial class GenerationParameterControl : UserControl
     private void GenerationParameterOnPropertyChanged(object? sender, PropertyChangedEventArgs? e)
     {
         var cost = Util.CalculateCost(Config, api?.SubscriptionInfo);
+        var replaceLines = Config.Replace.Split(Environment.NewLine).Select(l => Math.Max(l.Split(',').Length, 1));
+
+        foreach (int line in replaceLines)
+            cost *= line;
+
         Dispatcher.UIThread.Invoke(() => AnlasDisplay.Value = cost);
         AnlasChanged?.Invoke(this, null);
     }
