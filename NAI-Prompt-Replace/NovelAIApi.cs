@@ -5,9 +5,9 @@ namespace NAI_Prompt_Replace;
 
 public class NovelAIApi
 {
-    private string accessToken;
     private const string novelai_api = "https://api.novelai.net/";
-    
+
+    private string accessToken = string.Empty;
     private readonly HttpClient httpClient = new HttpClient();
     public static readonly JsonSerializerOptions ApiSerializerOptions = new JsonSerializerOptions
     {

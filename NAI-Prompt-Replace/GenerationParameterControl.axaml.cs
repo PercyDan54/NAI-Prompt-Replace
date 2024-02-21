@@ -38,27 +38,30 @@ public partial class GenerationParameterControl : UserControl
         DataContext = config;
         SetValue(ConfigProperty, config);
         this.api = api;
-        Config.GenerationParameter.PropertyChanged += GenerationParameterOnPropertyChanged;
-        Config.PropertyChanged += GenerationParameterOnPropertyChanged;
+        Config.GenerationParameter.PropertyChanged += GenerationParameterChanged;
+        Config.PropertyChanged += GenerationParameterChanged;
 
         ModelComboBox.ItemsSource = models;
         ScheduleComboBox.ItemsSource = schedulers;
         ModelComboBox.SelectedIndex = models.IndexOf(config.Model);
         SamplerComboBox.SelectedIndex = samplers.IndexOf(config.GenerationParameter.Sampler);
         ScheduleComboBox.SelectedIndex = schedulers.IndexOf(config.GenerationParameter.NoiseSchedule);
-        GenerationParameterOnPropertyChanged(null, null);
+        GenerationParameterChanged(null, null);
     }
 
-    private void GenerationParameterOnPropertyChanged(object? sender, PropertyChangedEventArgs? e)
+    private void GenerationParameterChanged(object? sender, PropertyChangedEventArgs? e)
     {
-        var cost = Util.CalculateCost(Config, api?.SubscriptionInfo);
+        int cost = Util.CalculateCost(Config, api?.SubscriptionInfo);
         var replaceLines = Config.Replace.Split(Environment.NewLine).Select(l => Math.Max(l.Split(',').Length, 1));
 
         foreach (int line in replaceLines)
             cost *= line;
 
-        Dispatcher.UIThread.Invoke(() => AnlasDisplay.Value = cost);
-        AnlasChanged?.Invoke(this, null);
+        Dispatcher.UIThread.Invoke(() =>
+        {
+            AnlasDisplay.Value = cost;
+            AnlasChanged?.Invoke(this, null);
+        });
     }
 
     private void preventNullValue(object? sender, NumericUpDownValueChangedEventArgs e)

@@ -176,8 +176,22 @@ public partial class MainWindow : Window
 
             for (int i = 0; i < words.Length; i++)
             {
-                if (replacements.ContainsKey(words[i]))
-                    words[i] = replacements[words[i]];
+                string word = words[i];
+                string bracketStart = string.Empty;
+                string bracketEnd = string.Empty;
+
+                foreach (var c in word)
+                {
+                    if (c is '{' or '[')
+                        bracketStart += c;
+                    else if (c is '}' or ']')
+                        bracketEnd += c;
+                }
+
+                word = words[i].TrimStart('{', '[').TrimEnd('}', ']');
+
+                if (replacements.TryGetValue(word, out string? replacement))
+                    words[i] = $"{bracketStart}{replacement}{bracketEnd}";
             }
 
             newLines.Add(string.Join(',', words));
