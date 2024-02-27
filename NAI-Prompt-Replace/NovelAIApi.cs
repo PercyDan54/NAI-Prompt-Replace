@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
@@ -19,6 +20,9 @@ public class NovelAIApi
     };
 
     public SubscriptionInfo? SubscriptionInfo { get; private set; }
+    public string AccessToken => accessToken;
+
+    public event EventHandler? SubscriptionChanged;
 
     public static string ModelNameFromDescription(string des)
     {
@@ -46,7 +50,11 @@ public class NovelAIApi
         }
     }
 
-    public async Task<SubscriptionInfo?> UpdateToken(string token)
+    public async Task<SubscriptionInfo?> UpdateToken(string token) => await getSubscription(token);
+
+    public async Task<SubscriptionInfo?> GetSubscription() => await getSubscription(accessToken);
+
+    private async Task<SubscriptionInfo?> getSubscription(string token)
     {
         var req = new HttpRequestMessage(HttpMethod.Get, novelai_api + "user/subscription");
         req.Headers.Add("Authorization", "Bearer " + token);
@@ -55,10 +63,15 @@ public class NovelAIApi
         if (resp.IsSuccessStatusCode)
         {
             string str = await resp.Content.ReadAsStringAsync();
-            SubscriptionInfo = JsonSerializer.Deserialize<SubscriptionInfo>(str, camelCaseJsonSerializerOptions);
-            accessToken = token;
+            var subscriptionInfo = JsonSerializer.Deserialize<SubscriptionInfo>(str, camelCaseJsonSerializerOptions);
 
-            return SubscriptionInfo;
+            if (subscriptionInfo != null)
+            {
+                accessToken = token;
+                SubscriptionInfo = subscriptionInfo;
+                SubscriptionChanged?.Invoke(this, null);
+                return SubscriptionInfo;
+            }
         }
 
         return null;

@@ -28,16 +28,20 @@ public partial class GenerationParameterControl : UserControl
     public event EventHandler? AnlasChanged;
 
     // For designer preview
-    public GenerationParameterControl() : this(new GenerationConfig(), null)
+    public GenerationParameterControl() : this(new GenerationConfig())
     {
     }
 
-    public GenerationParameterControl(GenerationConfig config, NovelAIApi? api)
+    public GenerationParameterControl(GenerationConfig config, NovelAIApi? api = null)
     {
         InitializeComponent();
         DataContext = config;
         SetValue(ConfigProperty, config);
         this.api = api;
+
+        if (api != null)
+            api.SubscriptionChanged += GenerationParameterChanged;
+
         Config.GenerationParameter.PropertyChanged += GenerationParameterChanged;
         Config.PropertyChanged += GenerationParameterChanged;
 
@@ -49,7 +53,7 @@ public partial class GenerationParameterControl : UserControl
         GenerationParameterChanged(null, null);
     }
 
-    private void GenerationParameterChanged(object? sender, PropertyChangedEventArgs? e)
+    private void GenerationParameterChanged(object? sender, EventArgs? e)
     {
         int cost = Util.CalculateCost(Config, api?.SubscriptionInfo);
         var replaceLines = Config.Replace.Split(Environment.NewLine).Select(l => Math.Max(l.Split(',').Length, 1));

@@ -25,6 +25,7 @@ public partial class MainWindow : Window
 
     private Config config { get; set; } = new Config();
     private CancellationTokenSource? cancellationTokenSource;
+    private static readonly CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false, TrimOptions = TrimOptions.Trim};
 
     public MainWindow()
     {
@@ -55,7 +56,7 @@ public partial class MainWindow : Window
         if (File.Exists(config_file))
         {
             config = JsonSerializer.Deserialize<Config>(File.ReadAllText(config_file)) ?? config;
-            updateAccountInfo().ConfigureAwait(false);
+            updateAccountInfo(true).ConfigureAwait(false);
         }
     }
 
@@ -71,6 +72,7 @@ public partial class MainWindow : Window
 
         try
         {
+            config.AccessToken = api.AccessToken;
             File.WriteAllText(config_file, JsonSerializer.Serialize(config, new JsonSerializerOptions
             {
                 WriteIndented = true
@@ -244,8 +246,16 @@ public partial class MainWindow : Window
             long seed = g.GenerationParameter.Seed.Value;
 
             string prompt = g.Prompt;
+            List<string[]> replaceLines = [];
 
-            string[][]? replaceLines = g.Replace.Split(Environment.NewLine).Select(s => s.Split(',', StringSplitOptions.TrimEntries)).ToArray();
+            using var reader = new StringReader(g.Replace);
+            using (var csv = new CsvParser(reader, csvConfiguration))
+            {
+                while (csv.Read())
+                {
+                    replaceLines.Add(csv.Record);
+                }
+            }
 
             // TODO: Rewrite this
             void replacePrompt(int now, string ss)
@@ -283,7 +293,7 @@ public partial class MainWindow : Window
                 }
             }
 
-            if (replaceLines.Length > 0 && replaceLines[0].Length > 1)
+            if (replaceLines.Count > 0 && replaceLines[0].Length > 1)
             {
                 replacePrompt(0, string.Empty);
             }
@@ -320,7 +330,7 @@ public partial class MainWindow : Window
                 writeLogLine(e.Message);
             }
 
-            Dispatcher.UIThread.Invoke(updateAccountInfo);
+            Dispatcher.UIThread.Invoke(() => updateAccountInfo());
             bool success = resp?.IsSuccessStatusCode ?? false;
 
             if (success)
@@ -366,23 +376,16 @@ public partial class MainWindow : Window
 
             token.ThrowIfCancellationRequested();
 
-            if (!success && retry < maxRetries)
+            if (!success && retry < maxRetries && (Util.CalculateCost(task, api.SubscriptionInfo) == 0 || task.RetryAll))
             {
-                if (Util.CalculateCost(task, api.SubscriptionInfo) > 0 && !task.RetryAll)
-                {
-                    i++;
-                    continue;
-                }
-
                 writeLogLine($"Failed, Retrying {++retry} / {maxRetries}");
                 Thread.Sleep(retry >= 3 ? 5000 : 3000);
+                continue;
             }
-            else
-            {
-                retry = 0;
-                Dispatcher.UIThread.Invoke(() => ProgressBar.Value = (i + 1.0) / tasks.Count * 100);
-                i++;
-            }
+
+            retry = 0;
+            Dispatcher.UIThread.Invoke(() => ProgressBar.Value = (i + 1.0) / tasks.Count * 100);
+            i++;
         }
 
         Dispatcher.UIThread.Invoke(() =>
@@ -411,7 +414,7 @@ public partial class MainWindow : Window
 
                 case ".csv":
                     using (var reader = File.OpenText(path))
-                    using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false }))
+                    using (var csv = new CsvReader(reader, csvConfiguration))
                     {
                         var records = csv.GetRecords<TextReplacement>().ToList();
                         ReplacementDataGrid.ItemsSource = records;
@@ -433,17 +436,17 @@ public partial class MainWindow : Window
 
     private async void LoginButton_OnClick(object? sender, RoutedEventArgs? e)
     {
-        await updateAccountInfo();
+        await updateAccountInfo(true);
     }
 
-    private async Task updateAccountInfo()
+    private async Task updateAccountInfo(bool accountChanged = false)
     {
         if (Design.IsDesignMode)
             return;
 
         try
         {
-            var subscriptionInfo = await api.UpdateToken(config.AccessToken);
+            var subscriptionInfo = accountChanged ? await api.UpdateToken(config.AccessToken): await api.GetSubscription();
 
             if (subscriptionInfo != null)
             {
