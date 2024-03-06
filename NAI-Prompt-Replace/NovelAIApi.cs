@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
@@ -14,7 +13,7 @@ public class NovelAIApi
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
     };
-    private static readonly JsonSerializerOptions camelCaseJsonSerializerOptions = new JsonSerializerOptions
+    public static readonly JsonSerializerOptions CamelCaseJsonSerializerOptions = new JsonSerializerOptions
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
@@ -63,14 +62,14 @@ public class NovelAIApi
         if (resp.IsSuccessStatusCode)
         {
             string str = await resp.Content.ReadAsStringAsync();
-            var subscriptionInfo = JsonSerializer.Deserialize<SubscriptionInfo>(str, camelCaseJsonSerializerOptions);
+            var subscriptionInfo = JsonSerializer.Deserialize<SubscriptionInfo>(str, CamelCaseJsonSerializerOptions);
 
             if (subscriptionInfo != null)
             {
                 accessToken = token;
                 SubscriptionInfo = subscriptionInfo;
                 SubscriptionChanged?.Invoke(this, null);
-                return SubscriptionInfo;
+                return subscriptionInfo;
             }
         }
 

@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
 using Avalonia;
@@ -24,6 +23,16 @@ public partial class GenerationParameterControl : UserControl
     }
 
     private readonly NovelAIApi? api;
+    private static readonly FilePickerSaveOptions filePickerSaveOptions = new FilePickerSaveOptions
+    {
+        FileTypeChoices =
+        [
+            new FilePickerFileType("JSON")
+            {
+                Patterns = ["*.json"]
+            }
+        ]
+    };
 
     public event EventHandler? AnlasChanged;
 
@@ -108,16 +117,7 @@ public partial class GenerationParameterControl : UserControl
         if (topLevel == null)
             return;
 
-        var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-        {
-            FileTypeChoices =
-            [
-                new FilePickerFileType("JSON")
-                {
-                    Patterns = ["*.json"]
-                }
-            ]
-        });
+        var file = await topLevel.StorageProvider.SaveFilePickerAsync(filePickerSaveOptions);
 
         if (file == null)
             return;

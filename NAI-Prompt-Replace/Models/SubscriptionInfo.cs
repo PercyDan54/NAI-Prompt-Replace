@@ -16,7 +16,7 @@ public class SubscriptionInfo
 
     public int TotalTrainingStepsLeft => TrainingStepsLeft.FixedTrainingStepsLeft + TrainingStepsLeft.PurchasedTrainingSteps;
 
-    public override string ToString() => $"Active: {Active}, Tier: {Tier}, Expires at: {expiresAt}";
+    public override string ToString() => $"Active: {Active}, Tier: {Tier}, Expire{(Active ? "s" : "d")} at: {expiresAt}";
 }
 
 public class TrainingSteps

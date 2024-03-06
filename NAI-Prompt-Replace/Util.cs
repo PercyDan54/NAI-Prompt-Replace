@@ -2,21 +2,23 @@ namespace NAI_Prompt_Replace;
 
 public static class Util
 {
-    public static string GetValidFileName(string originalFileName)
+    public static string GetValidFileName(string path)
     {
-        originalFileName = replaceInvalidFileNameChars(originalFileName);
+        string directory = Path.GetDirectoryName(path) ?? string.Empty;
+        string originalFileName = replaceInvalidFileNameChars(Path.GetFileName(path));
 
         string fileName = Path.GetFileNameWithoutExtension(originalFileName);
         string extension = Path.GetExtension(originalFileName);
 
         int i = 0;
+        string current = Path.Combine(directory, Path.ChangeExtension(fileName, extension));
 
-        while (File.Exists(fileName + extension))
+        while (File.Exists(current))
         {
-            fileName = originalFileName + " (" + ++i + ")";
+            current = Path.Combine(directory, Path.ChangeExtension(fileName + " (" + ++i + ")", extension));
         }
 
-        return fileName + extension;
+        return current;
     }
 
     public static string GetValidDirectoryName(string originalPath)
@@ -24,9 +26,28 @@ public static class Util
         return replaceInvalidFileNameChars(originalPath);
     }
 
+    // https://stackoverflow.com/questions/32571057/generate-all-combinations-from-multiple-n-lists
+    public static List<List<string>> GetAllPossibleCombos(List<string[]> strings)
+    {
+        IEnumerable<List<string>> combos = [[]];
+
+        foreach (string[] inner in strings)
+        {
+            combos = combos.SelectMany(r => inner
+                .Select(x =>
+                {
+                    var n = r.ToList();
+                    n.Add(x);
+                    return n;
+                }));
+        }
+
+        return combos.ToList();
+    }
+
     private static string replaceInvalidFileNameChars(string original)
     {
-        foreach (var invalid in Path.GetInvalidFileNameChars())
+        foreach (char invalid in Path.GetInvalidFileNameChars())
         {
             original = original.Replace(invalid, '_');
         }
@@ -34,7 +55,7 @@ public static class Util
         return original;
     }
 
-    public static int CalculateCost(GenerationConfig config, SubscriptionInfo? subscriptionInfo)
+    public static int CalculateCost(GenerationConfig config, SubscriptionInfo? subscription)
     {
         int width = config.GenerationParameter.Width;
         int height = config.GenerationParameter.Height;
@@ -44,7 +65,7 @@ public static class Util
         int batchSize = config.BatchSize;
         float v = 0;
 
-        if (subscriptionInfo?.Tier >= 3 && steps <= 28 && imageSize <= 1048576)
+        if (subscription?.Tier >= 3 && subscription.Active && steps <= 28 && imageSize <= 1048576)
             batchSize = 0;
 
         if (model == "nai-diffusion-3")

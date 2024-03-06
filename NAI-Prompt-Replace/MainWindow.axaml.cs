@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO.Compression;
+using System.Net;
 using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -26,6 +27,15 @@ public partial class MainWindow : Window
     private Config config { get; set; } = new Config();
     private CancellationTokenSource? cancellationTokenSource;
     private static readonly CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false, TrimOptions = TrimOptions.Trim};
+    private static readonly FilePickerOpenOptions filePickerOptions = new FilePickerOpenOptions
+    {
+        Title = "Open File",
+        FileTypeFilter =
+        [
+            new FilePickerFileType("JSON, PNG or CSV") { Patterns = ["*.json", "*.csv", "*.png"] }
+        ],
+        AllowMultiple = true
+    };
 
     public MainWindow()
     {
@@ -167,7 +177,7 @@ public partial class MainWindow : Window
 
     private IEnumerable<GenerationConfig> getGenerationConfigs() => getGenerationParameterControls().Select(p => p.Config);
 
-    private string replaceText(string text)
+    private string replaceText(string text, Dictionary<string, string> replaces)
     {
         string[] lines = text.Split(Environment.NewLine);
         List<string> newLines = [];
@@ -182,7 +192,7 @@ public partial class MainWindow : Window
                 string bracketStart = string.Empty;
                 string bracketEnd = string.Empty;
 
-                foreach (var c in word)
+                foreach (char c in word)
                 {
                     if (c is '{' or '[')
                         bracketStart += c;
@@ -190,10 +200,16 @@ public partial class MainWindow : Window
                         bracketEnd += c;
                 }
 
-                word = words[i].TrimStart('{', '[').TrimEnd('}', ']');
+                string wordsNoBracket = words[i].TrimStart('{', '[').TrimEnd('}', ']');
 
-                if (replacements.TryGetValue(word, out string? replacement))
+                if (replaces.TryGetValue(word, out string? replacement))
+                {
+                    words[i] = replacement;
+                }
+                else if (replaces.TryGetValue(wordsNoBracket, out replacement))
+                {
                     words[i] = $"{bracketStart}{replacement}{bracketEnd}";
+                }
             }
 
             newLines.Add(string.Join(',', words));
@@ -219,15 +235,7 @@ public partial class MainWindow : Window
 
     private async void OpenButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "Open File",
-            FileTypeFilter =
-            [
-                new FilePickerFileType("JSON, PNG or CSV") { Patterns = ["*.json", "*.csv", "*.png"] }
-            ],
-            AllowMultiple = true
-        });
+        var files = await StorageProvider.OpenFilePickerAsync(filePickerOptions);
 
         foreach (var file in files)
         {
@@ -245,57 +253,47 @@ public partial class MainWindow : Window
             g.GenerationParameter.Seed ??= random.Next();
             long seed = g.GenerationParameter.Seed.Value;
 
-            string prompt = g.Prompt;
             List<string[]> replaceLines = [];
+            string[] tags = g.Prompt.Split(',', StringSplitOptions.TrimEntries);
 
             using var reader = new StringReader(g.Replace);
             using (var csv = new CsvParser(reader, csvConfiguration))
             {
                 while (csv.Read())
                 {
-                    replaceLines.Add(csv.Record);
-                }
-            }
+                    string[] records = csv.Record;
+                    string toReplace = records[0];
 
-            // TODO: Rewrite this
-            void replacePrompt(int now, string ss)
-            {
-                if (now == prompt.Length)
-                {
-                    for (int j = 0; j < g.BatchSize; j++)
+                    if (tags.Any(tag => tag == toReplace || tag.TrimStart('{', '[').TrimEnd('}', ']') == toReplace))
                     {
-                        var clone = g.Clone();
-                        clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
-                        clone.Prompt = replaceText(ss);
-                        tasks.Add(clone);
+                        replaceLines.Add(records);
                     }
-
-                    return;
-                }
-
-                bool ok = false;
-
-                foreach (string[] replaces in replaceLines)
-                {
-                    if (now + replaces[0].Length <= prompt.Length && prompt[now..(now + replaces[0].Length)] == replaces[0])
-                    {
-                        ok = true;
-
-                        foreach (string t1 in replaces)
-                        {
-                            replacePrompt(now + replaces[0].Length, ss + t1);
-                        }
-                    }
-                }
-                if (!ok)
-                {
-                    replacePrompt(now + 1, ss + prompt[now]);
                 }
             }
 
             if (replaceLines.Count > 0 && replaceLines[0].Length > 1)
             {
-                replacePrompt(0, string.Empty);
+                var combos = Util.GetAllPossibleCombos(replaceLines);
+                var toReplaces = replaceLines.Select(l => l[0]).ToList();
+
+                for (int j = 0; j < g.BatchSize; j++)
+                {
+                    foreach (var combo in combos)
+                    {
+                        var clone = g.Clone();
+                        clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
+                        string prompt = g.Prompt;
+                        var dict = new Dictionary<string, string>();
+       
+                        for (int k = 0; k < combo.Count; k++)
+                        {
+                            dict.Add(toReplaces[k], combo[k]);
+                        }
+
+                        clone.Prompt = replaceText(replaceText(prompt, dict), replacements);
+                        tasks.Add(clone);
+                    }
+                }
             }
             else
             {
@@ -303,7 +301,7 @@ public partial class MainWindow : Window
                 {
                     var clone = g.Clone();
                     clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
-                    clone.Prompt = replaceText(clone.Prompt);
+                    clone.Prompt = replaceText(clone.Prompt, replacements);
                     tasks.Add(clone);
                 }
             }
@@ -337,10 +335,8 @@ public partial class MainWindow : Window
             {
                 writeLogLine($"{(int)resp.StatusCode} {resp.ReasonPhrase}");
                 using var zip = new ZipArchive(await resp.Content.ReadAsStreamAsync());
-                string fileName = task.GenerationParameter.Seed + "-";
-                fileName = Util.GetValidFileName(fileName + task.Prompt[..Math.Min(128, task.Prompt.Length)] + ".png");
-
                 string path = string.IsNullOrWhiteSpace(task.OutputPath) ? Environment.CurrentDirectory : task.OutputPath;
+
                 string[] split = path.Split(Path.DirectorySeparatorChar);
 
                 for (int index = 0; index < split.Length; index++)
@@ -354,9 +350,11 @@ public partial class MainWindow : Window
                         .Replace("${time}", date.ToShortTimeString()));
                 }
 
-                path = string.Join(Path.DirectorySeparatorChar, split);
+                path = Path.GetFullPath(string.Join(Path.DirectorySeparatorChar, split));
                 Directory.CreateDirectory(path);
-                fileName = Path.Combine(path, fileName);
+
+                string fileName = task.GenerationParameter.Seed + "-";
+                fileName = Util.GetValidFileName(Path.Combine(path, fileName + task.Prompt[..Math.Min(128, task.Prompt.Length)].TrimEnd() + ".png"));
 
                 await using var file = File.OpenWrite(fileName);
 
@@ -370,7 +368,7 @@ public partial class MainWindow : Window
             if (resp?.Content.Headers.ContentType?.MediaType == "application/json")
             {
                 string content = await resp.Content.ReadAsStringAsync();
-                var response = JsonSerializer.Deserialize<NovelAIGenerationResponse>(content);
+                var response = JsonSerializer.Deserialize<NovelAIGenerationResponse>(content, NovelAIApi.CamelCaseJsonSerializerOptions);
                 writeLogLine($"Error: {response?.StatusCode} {response?.Message}");
             }
 
@@ -379,7 +377,7 @@ public partial class MainWindow : Window
             if (!success && retry < maxRetries && (Util.CalculateCost(task, api.SubscriptionInfo) == 0 || task.RetryAll))
             {
                 writeLogLine($"Failed, Retrying {++retry} / {maxRetries}");
-                Thread.Sleep(retry >= 3 ? 5000 : 3000);
+                Thread.Sleep(retry >= 3 || resp?.StatusCode == HttpStatusCode.TooManyRequests ? 5000 : 3000);
                 continue;
             }
 
@@ -439,14 +437,14 @@ public partial class MainWindow : Window
         await updateAccountInfo(true);
     }
 
-    private async Task updateAccountInfo(bool accountChanged = false)
+    private async Task updateAccountInfo(bool tokenChanged = false)
     {
         if (Design.IsDesignMode)
             return;
 
         try
         {
-            var subscriptionInfo = accountChanged ? await api.UpdateToken(config.AccessToken): await api.GetSubscription();
+            var subscriptionInfo = tokenChanged ? await api.UpdateToken(config.AccessToken): await api.GetSubscription();
 
             if (subscriptionInfo != null)
             {
