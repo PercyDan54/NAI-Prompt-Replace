@@ -55,6 +55,16 @@ public partial class GenerationParameterControl : UserControl
         SetValue(ConfigProperty, config);
         this.api = api;
 
+        foreach (var control in WrapPanel.Children)
+        {
+            control.Margin = new Thickness(0,0,5,5);
+        }
+
+        foreach (var control in MainGrid.Children)
+        {
+            control.Margin = new Thickness(0,0,0,5);
+        }
+
         if (api != null)
             api.SubscriptionChanged += GenerationParameterChanged;
 

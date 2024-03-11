@@ -21,7 +21,7 @@ public partial class MainWindow : Window
     private const string config_file = "config.json";
 #if DEBUG
     private readonly Random random = new Random(1337);
-    #else
+#else
     private readonly Random random = new Random();
 #endif
     private Dictionary<string, string> replacements { get; set; } = new Dictionary<string, string>();
