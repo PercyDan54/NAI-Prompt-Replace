@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
 using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -10,6 +12,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using CsvHelper;
 using CsvHelper.Configuration;
+using SkiaSharp;
 
 namespace NAI_Prompt_Replace;
 
@@ -26,7 +29,7 @@ public partial class MainWindow : Window
 
     private Config config { get; set; } = new Config();
     private CancellationTokenSource? cancellationTokenSource;
-    private static readonly CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false, TrimOptions = TrimOptions.Trim};
+    private static readonly CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false, TrimOptions = TrimOptions.Trim };
     private static readonly FilePickerOpenOptions filePickerOptions = new FilePickerOpenOptions
     {
         Title = "Open File",
@@ -100,7 +103,7 @@ public partial class MainWindow : Window
 
     private void addTab(string header, GenerationConfig config)
     {
-        var control = new GenerationParameterControl(config, api);
+        var control = new GenerationParameterControl(config, api) { Name = header };
         TabControl.Items.Add(new TabItem { Header = header, Content = control });
         control.AnlasChanged += updateTotalAnlas;
         updateTotalAnlas(null, null);
@@ -160,7 +163,13 @@ public partial class MainWindow : Window
             var configs = getGenerationConfigs().ToList();
             ProgressBar.Value = 0;
             clearLog();
-            Task.Factory.StartNew(_ => createAndRunTasks(configs, cancellationTokenSource.Token), null, TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(_ => createAndRunTasks(configs, cancellationTokenSource.Token).ContinueWith(task =>
+            {
+                if (task.Exception?.InnerException != null)
+                {
+                    writeLogLine($"Tasks Failed with an exception, please report this: {task.Exception.InnerException}");
+                }
+            }), null, TaskCreationOptions.LongRunning);
         }
     }
 
@@ -253,8 +262,11 @@ public partial class MainWindow : Window
             g.GenerationParameter.Seed ??= random.Next();
             long seed = g.GenerationParameter.Seed.Value;
 
-            List<string[]> replaceLines = [];
+            // Trim spaces between words
             string[] tags = g.Prompt.Split(',', StringSplitOptions.TrimEntries);
+            string prompt = g.Prompt = string.Join(',', tags);
+            g.Replace = string.Join(',', g.Replace.Split(',', StringSplitOptions.TrimEntries));
+            List<string[]> replaceLines = [];
 
             using var reader = new StringReader(g.Replace);
             using (var csv = new CsvParser(reader, csvConfiguration))
@@ -263,8 +275,11 @@ public partial class MainWindow : Window
                 {
                     string[] records = csv.Record;
                     string toReplace = records[0];
+                    int index = g.Prompt.IndexOf(toReplace, StringComparison.Ordinal);
+                    int end = index + toReplace.Length;
 
-                    if (tags.Any(tag => tag == toReplace || tag.TrimStart('{', '[').TrimEnd('}', ']') == toReplace))
+                    // Ensure the matched tag is a full word split by comma
+                    if (index >= 0 && (index == 0 || end == prompt.Length || Regex.IsMatch(prompt, $@",(?:\{{|\[)*{Regex.Escape(toReplace)}(?:\}}|\])*,")))
                     {
                         replaceLines.Add(records);
                     }
@@ -282,15 +297,14 @@ public partial class MainWindow : Window
                     {
                         var clone = g.Clone();
                         clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
-                        string prompt = g.Prompt;
-                        var dict = new Dictionary<string, string>();
-       
+
                         for (int k = 0; k < combo.Count; k++)
                         {
-                            dict.Add(toReplaces[k], combo[k]);
+                            clone.Prompt = clone.Prompt.Replace(toReplaces[k], combo[k]);
                         }
 
-                        clone.Prompt = replaceText(replaceText(prompt, dict), replacements);
+                        clone.Prompt = replaceText(clone.Prompt, replacements);
+                        clone.CurrentReplace = replaceText(string.Join(',', combo), replacements);
                         tasks.Add(clone);
                     }
                 }
@@ -301,7 +315,8 @@ public partial class MainWindow : Window
                 {
                     var clone = g.Clone();
                     clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
-                    clone.Prompt = replaceText(clone.Prompt, replacements);
+                    clone.Prompt = replaceText(prompt, replacements);
+                    clone.CurrentReplace = clone.Prompt;
                     tasks.Add(clone);
                 }
             }
@@ -338,6 +353,22 @@ public partial class MainWindow : Window
                 string path = string.IsNullOrWhiteSpace(task.OutputPath) ? Environment.CurrentDirectory : task.OutputPath;
 
                 string[] split = path.Split(Path.DirectorySeparatorChar);
+                var placeholders = new Dictionary<string, string>(StringComparer.Ordinal) 
+                {
+                    { "date", date.ToShortDateString() },
+                    { "time", date.ToShortTimeString() },
+                    { "seed", task.GenerationParameter.Seed.ToString() ?? string.Empty },
+                    { "prompt", task.Prompt },
+                    { "replace", task.CurrentReplace },
+                };
+
+                string replacePlaceHolders(string text)
+                {
+                    return Regex.Replace(
+                        text,
+                        @"\{(?<name>.*?)\}",
+                        match => placeholders.TryGetValue(match.Groups["name"].Value, out string? value) ? value : match.Groups["name"].Value);
+                }
 
                 for (int index = 0; index < split.Length; index++)
                 {
@@ -346,15 +377,18 @@ public partial class MainWindow : Window
                     if (Path.IsPathRooted(dir))
                         continue;
 
-                    split[index] = Util.GetValidDirectoryName(dir.Replace("${date}", date.ToShortDateString())
-                        .Replace("${time}", date.ToShortTimeString()));
+                    split[index] = Util.GetValidDirectoryName(replacePlaceHolders(dir));
                 }
 
                 path = Path.GetFullPath(string.Join(Path.DirectorySeparatorChar, split));
                 Directory.CreateDirectory(path);
 
-                string fileName = task.GenerationParameter.Seed + "-";
-                fileName = Util.GetValidFileName(Path.Combine(path, fileName + task.Prompt[..Math.Min(128, task.Prompt.Length)].TrimEnd() + ".png"));
+                string fileName = Util.ReplaceInvalidFileNameChars(replacePlaceHolders(task.OutputFilename).TrimEnd());
+
+                if (string.IsNullOrWhiteSpace(fileName))
+                    fileName = replacePlaceHolders(GenerationConfig.DEFAULT_OUTPUT_FILE_NAME);
+
+                fileName = Util.GetValidFileName(Path.Combine(path, fileName[..Math.Min(fileName.Length, 128)] + ".png"));
 
                 await using var file = File.OpenWrite(fileName);
 
@@ -363,6 +397,14 @@ public partial class MainWindow : Window
                     await using var s = entry.Open();
                     await s.CopyToAsync(file);
                     file.Close();
+                }
+
+                if (task.SaveJpeg)
+                {
+                    using var image = SKImage.FromEncodedData(fileName);
+                    using var data = image.Encode(SKEncodedImageFormat.Jpeg, 100);
+                    using var outputStream = File.OpenWrite(Path.ChangeExtension(fileName, "jpg"));
+                    data.SaveTo(outputStream);
                 }
             }
             if (resp?.Content.Headers.ContentType?.MediaType == "application/json")
@@ -398,16 +440,16 @@ public partial class MainWindow : Window
         try
         {
             string path = file.Path.LocalPath;
-            GenerationConfig? config = null;
+            GenerationConfig? generationConfig = null;
 
             switch (Path.GetExtension(file.Name))
             {
                 case ".json":
-                    config = JsonSerializer.Deserialize<GenerationConfig>(await File.ReadAllTextAsync(path));
+                    generationConfig = JsonSerializer.Deserialize<GenerationConfig>(await File.ReadAllTextAsync(path));
                     break;
 
                 case ".png":
-                    config = PngMetadataReader.FromFile(path);
+                    generationConfig = PngMetadataReader.FromFile(path);
                     break;
 
                 case ".csv":
@@ -421,14 +463,33 @@ public partial class MainWindow : Window
                     break;
             }
 
-            if (config != null)
+            if (generationConfig != null)
             {
-                addTab(file.Name[..Math.Min(32, file.Name.Length)], config);
+                addTab(file.Name[..Math.Min(32, file.Name.Length)].Trim(), generationConfig);
             }
         }
         catch (Exception exception)
         {
             writeLogLine(exception.Message);
+        }
+    }
+
+    private async void SaveAllButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (TabControl.Items.Count == 0)
+            return;
+
+        var file = await GetTopLevel(this)?.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            AllowMultiple = false
+        });
+
+        if (file.Count == 0)
+            return;
+
+        foreach (var control in getGenerationParameterControls())
+        {
+            control.SaveConfig(Util.GetValidFileName(Path.Combine(file[0].Path.LocalPath, (Path.ChangeExtension(control.Name, string.Empty) ?? "Untitled") + ".json")));
         }
     }
 
@@ -456,5 +517,14 @@ public partial class MainWindow : Window
         catch
         {
         }
+    }
+
+    private void HelpButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "https://docs.qq.com/doc/DVkhyZk5tUmNhZVd1",
+            UseShellExecute = true
+        });
     }
 }

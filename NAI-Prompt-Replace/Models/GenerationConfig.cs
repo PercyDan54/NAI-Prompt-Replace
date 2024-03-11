@@ -8,6 +8,8 @@ public class GenerationConfig : INotifyPropertyChanged
 {
     private int batchSize = 1;
     private string replace = string.Empty;
+    public const string DEFAULT_OUTPUT_FILE_NAME = "{seed}-{prompt}";
+
     public string Prompt { get; set; } = "best quality, amazing quality, very aesthetic, absurdres";
 
     public string Replace
@@ -24,6 +26,11 @@ public class GenerationConfig : INotifyPropertyChanged
 
     public string OutputPath { get; set; } = string.Empty;
 
+    public string OutputFilename { get; set; } = DEFAULT_OUTPUT_FILE_NAME;
+
+    [JsonIgnore]
+    public string CurrentReplace { get; set; } = string.Empty;
+
     public int BatchSize
     {
         get => batchSize;
@@ -37,6 +44,8 @@ public class GenerationConfig : INotifyPropertyChanged
     public bool AllRandom { get; set; }
 
     public bool RetryAll { get; set; }
+
+    public bool SaveJpeg { get; set; }
 
     public GenerationParameter GenerationParameter { get; set; } = new GenerationParameter();
 

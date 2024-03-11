@@ -3,9 +3,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:naiPromptReplace="clr-namespace:NAI_Prompt_Replace"
-             mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="600"
+             mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="650"
              x:Class="NAI_Prompt_Replace.GenerationParameterControl"
-             x:DataType="naiPromptReplace:GenerationConfig" Height="600">
+             x:DataType="naiPromptReplace:GenerationConfig" Height="650">
     <Grid RowDefinitions="Auto,1*,1*,2*" ColumnDefinitions="Auto, 3*">
         <TextBlock Text="Prompt" VerticalAlignment="Center" />
         <TextBox Grid.Row="0" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding Prompt}" />
@@ -13,22 +13,20 @@
         <TextBox Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" Text="{Binding GenerationParameter.NegativePrompt}" />
         <TextBlock Grid.Row="2" Grid.Column="0" Text="Replace" VerticalAlignment="Center" />
         <TextBox Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding Replace}" />
-        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Vertical" Spacing="5" Margin="10">
+        <WrapPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="10" ItemHeight="35">
+            <CheckBox Name="SmeaCheckBox" Content="SMEA" IsChecked="{Binding GenerationParameter.Smea}" />
+            <CheckBox Name="DynCheckBox" Content="DYN" IsChecked="{Binding GenerationParameter.Dyn}" />
+            <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
+                <TextBlock Text="Width" VerticalAlignment="Center" />
+                <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationParameter.Width}" Minimum="1" />
+            </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
-                <CheckBox Name="SmeaCheckBox" Content="SMEA" IsChecked="{Binding GenerationParameter.Smea}" />
-                <CheckBox Name="DynCheckBox" Content="DYN" IsChecked="{Binding GenerationParameter.Dyn}" />
-                <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
-                    <TextBlock Text="Width" VerticalAlignment="Center" />
-                    <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationParameter.Width}" Minimum="1" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
-                    <TextBlock Text="Height" VerticalAlignment="Center" />
-                    <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationParameter.Height}" Minimum="1" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
-                    <TextBlock Text="Seed" VerticalAlignment="Center" />
-                    <NumericUpDown FormatString="0" Value="{Binding GenerationParameter.Seed}" HorizontalContentAlignment="Center" MinWidth="200" />
-                </StackPanel>
+                <TextBlock Text="Height" VerticalAlignment="Center" />
+                <NumericUpDown Theme="{StaticResource NumericUpDown}" ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationParameter.Height}" Minimum="1" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
+                <TextBlock Text="Seed" VerticalAlignment="Center" />
+                <NumericUpDown FormatString="0" Value="{Binding GenerationParameter.Seed}" HorizontalContentAlignment="Center" MinWidth="200" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <StackPanel Orientation="Horizontal" Spacing="5">
@@ -60,7 +58,6 @@
                 <NumericUpDown ValueChanged="preventNullValue" FormatString="P0" Value="{Binding GenerationParameter.UncondScale}" Minimum="0" Maximum="1.5" Increment="0.05" MinWidth="130" HorizontalContentAlignment="Center" />
                 <TextBlock Text="Prompt Guidance Rescale" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 <NumericUpDown ValueChanged="preventNullValue" Minimum="0" Maximum="1" FormatString="0.##" Increment="0.01" Value="{Binding GenerationParameter.CfgRescale}" MinWidth="130" HorizontalContentAlignment="Center" />
-
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <TextBlock Text="Noise Schedule" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -72,17 +69,22 @@
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <CheckBox Content="Legacy V3 Extend" IsChecked="{Binding GenerationParameter.LegacyV3Extend}" />
                 <CheckBox Content="Retry non-free tasks" IsChecked="{Binding RetryAll}" />
-                <naiPromptReplace:AnlasDisplay Margin="30,0,0,0" Name="AnlasDisplay" Height="20"/>
+                <CheckBox Content="Save JPEG copy" IsChecked="{Binding SaveJpeg}" />
+                <naiPromptReplace:AnlasDisplay Margin="30,0,0,0" Name="AnlasDisplay" Height="20" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5" Height="30">
-                <TextBlock Text="Output Path" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Spacing="5" Height="30">
+                <TextBlock Text="Output Path" VerticalAlignment="Center" />
                 <TextBox Name="OutputPathTextBox" Width="500" Text="{Binding  OutputPath}" />
-                <Button Name="BrowseButton" Content="Browse" Click="BrowseButton_OnClick"/>
-                <Button Name="OpenButton" Content="Open" Click="OpenButton_OnClick"/>
+                <Button Name="BrowseButton" Content="Browse" Click="BrowseButton_OnClick" />
+                <Button Name="OpenButton" Content="Open" Click="OpenButton_OnClick" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Spacing="5" Height="30">
+                <TextBlock Text="Output File Name" VerticalAlignment="Center" />
+                <TextBox Width="500" Text="{Binding  OutputFilename}" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Button Content="Save Config" Click="Button_OnClick" />
             </StackPanel>
-        </StackPanel>
+        </WrapPanel>
     </Grid>
 </UserControl>

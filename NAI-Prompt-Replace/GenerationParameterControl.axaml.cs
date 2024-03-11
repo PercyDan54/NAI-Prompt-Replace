@@ -10,8 +10,15 @@ namespace NAI_Prompt_Replace;
 
 public partial class GenerationParameterControl : UserControl
 {
-    private static readonly List<string> models = ["nai-diffusion-3", "safe-diffusion", "nai-diffusion-furry", "nai-diffusion-inpainting", "nai-diffusion-3-inpainting", "safe-diffusion-inpainting", "furry-diffusion-inpainting", "kandinsky-vanilla", "nai-diffusion-2", "nai-diffusion"];
+    private static readonly List<string> models =
+    [
+        "nai-diffusion-3", "safe-diffusion", "nai-diffusion-furry", "nai-diffusion-inpainting",
+        "nai-diffusion-3-inpainting", "safe-diffusion-inpainting", "furry-diffusion-inpainting", "kandinsky-vanilla",
+        "nai-diffusion-2", "nai-diffusion"
+    ];
+
     private static readonly List<string> samplers = ["k_euler", "k_euler_ancestral", "k_dpmpp_2s_ancestral", "k_dpmpp_2m", "k_dpmpp_sde", "ddim_v3"];
+
     private static readonly List<string> schedulers = ["native", "karras", "exponential", "polyexponential"];
 
     public static readonly StyledProperty<GenerationConfig> ConfigProperty = AvaloniaProperty.Register<GenerationParameterControl, GenerationConfig>(nameof(Config));
@@ -23,7 +30,7 @@ public partial class GenerationParameterControl : UserControl
     }
 
     private readonly NovelAIApi? api;
-    private static readonly FilePickerSaveOptions filePickerSaveOptions = new FilePickerSaveOptions
+    public static readonly FilePickerSaveOptions SaveConfigFilePickerOptions = new FilePickerSaveOptions
     {
         FileTypeChoices =
         [
@@ -117,14 +124,19 @@ public partial class GenerationParameterControl : UserControl
         if (topLevel == null)
             return;
 
-        var file = await topLevel.StorageProvider.SaveFilePickerAsync(filePickerSaveOptions);
+        var file = await topLevel.StorageProvider.SaveFilePickerAsync(SaveConfigFilePickerOptions);
 
         if (file == null)
             return;
 
+        SaveConfig(file.Path.LocalPath);
+    }
+
+    public void SaveConfig(string path)
+    {
         try
         {
-            await File.WriteAllTextAsync(file.Path.LocalPath, JsonSerializer.Serialize(Config, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(path, JsonSerializer.Serialize(Config, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch
         {

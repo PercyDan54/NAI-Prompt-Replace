@@ -5,7 +5,7 @@ public static class Util
     public static string GetValidFileName(string path)
     {
         string directory = Path.GetDirectoryName(path) ?? string.Empty;
-        string originalFileName = replaceInvalidFileNameChars(Path.GetFileName(path));
+        string originalFileName = ReplaceInvalidFileNameChars(Path.GetFileName(path));
 
         string fileName = Path.GetFileNameWithoutExtension(originalFileName);
         string extension = Path.GetExtension(originalFileName);
@@ -23,7 +23,7 @@ public static class Util
 
     public static string GetValidDirectoryName(string originalPath)
     {
-        return replaceInvalidFileNameChars(originalPath);
+        return ReplaceInvalidFileNameChars(originalPath);
     }
 
     // https://stackoverflow.com/questions/32571057/generate-all-combinations-from-multiple-n-lists
@@ -45,9 +45,9 @@ public static class Util
         return combos.ToList();
     }
 
-    private static string replaceInvalidFileNameChars(string original)
+    public static string ReplaceInvalidFileNameChars(string original)
     {
-        foreach (char invalid in Path.GetInvalidFileNameChars())
+        foreach (char invalid in Path.GetInvalidFileNameChars().Append(Path.AltDirectorySeparatorChar))
         {
             original = original.Replace(invalid, '_');
         }
@@ -78,7 +78,7 @@ public static class Util
         int a = Math.Max((int)MathF.Ceiling(v), 2);
 
         if (config.GenerationParameter.UncondScale != 1)
-            a = (int)Math.Ceiling(1.3f * a);
+            a = (int)MathF.Ceiling(1.3f * a);
 
         return a * batchSize;
     }

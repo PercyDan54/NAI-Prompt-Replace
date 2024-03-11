@@ -8,23 +8,29 @@
         x:Class="NAI_Prompt_Replace.MainWindow"
         x:DataType="naiPromptReplace:Config"
         Closing="Window_OnClosing"
-        Title="NAI Prompt Replace V1.07"
+        Title="NAI Prompt Replace V1.08"
         DragDrop.AllowDrop="True">
     <Panel Margin="20, 10">
         <StackPanel Orientation="Vertical" Spacing="10">
-            <StackPanel Orientation="Horizontal" Spacing="5">
-                <TextBlock Text="Token" VerticalAlignment="Center" />
-                <TextBox Name="TokenTextBox" PasswordChar="*" Width="600" Text="{Binding  AccessToken}" />
-                <Button Name="ShowPasswordButton" Content="Show" Click="ShowPasswordButton_OnClick" />
-                <Button Name="LoginButton" Content="Login" Click="LoginButton_OnClick" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="5">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                    <TextBlock Text="Token" VerticalAlignment="Center" Margin="0,0,5,0" />
+                    <TextBox Grid.Column="1" Name="TokenTextBox" PasswordChar="*" HorizontalAlignment="Stretch" MinWidth="550" Margin="0,0,5,0" Text="{Binding  AccessToken}" />
+                    <DockPanel Grid.Column="2" Dock="Right" HorizontalAlignment="Right" LastChildFill="False">
+                        <Button Name="ShowPasswordButton" Content="Show" Click="ShowPasswordButton_OnClick" />
+                        <Button Name="LoginButton" Content="Login" Click="LoginButton_OnClick" />
+                        <Button Content="Help" HorizontalAlignment="Right" Click="HelpButton_OnClick" />
+                    </DockPanel>
+                </Grid>
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*">
                 <Button Content="New" Click="NewButton_OnClick" />
-                <Button Content="Open" Click="OpenButton_OnClick" />
-                <Button Content="Close" Click="CloseButton_OnClick" />
-                <TextBlock Name="AccountInfo" Text="Not logged in" Margin="15,0" VerticalAlignment="Center" />
-                <naiPromptReplace:AnlasDisplay Name="AccountAnlasDisplay" Height="20" />
-            </StackPanel>
+                <Button Grid.Column="1" Content="Open" Click="OpenButton_OnClick" />
+                <Button Grid.Column="2" Content="Close" Click="CloseButton_OnClick" />
+                <Button Grid.Column="3" Content="Save All" Click="SaveAllButton_OnClick" />
+                <DockPanel Grid.Column="4" Dock="Right" HorizontalAlignment="Right" LastChildFill="False">
+                    <TextBlock Name="AccountInfo" Text="Not logged in" Margin="15,0" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    <naiPromptReplace:AnlasDisplay Name="AccountAnlasDisplay" Height="20" />
+                </DockPanel>
+            </Grid>
             <ScrollViewer Height="300">
                 <TabControl Name="TabControl" SelectionChanged="TabControl_OnSelectionChanged" />
             </ScrollViewer>
