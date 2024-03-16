@@ -50,7 +50,7 @@ public partial class MainWindow : Window
 
     private async void onDrop(object? sender, DragEventArgs e)
     {
-        if (e.Data.Contains(DataFormats.Files))
+        if (!e.Handled && e.Data.Contains(DataFormats.Files))
         {
             var files = e.Data.GetFiles() ?? Array.Empty<IStorageItem>();
 
@@ -91,7 +91,7 @@ public partial class MainWindow : Window
                 WriteIndented = true
             }));
         }
-        catch (Exception e)
+        catch
         {
         }
     }
@@ -126,11 +126,6 @@ public partial class MainWindow : Window
             TabControl.Items.RemoveAt(TabControl.SelectedIndex);
             updateTotalAnlas(null, null);
         }
-    }
-
-    private void TabControl_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        TabControl?.InvalidateMeasure();
     }
 
     private void ReplacementDataGrid_OnAutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
@@ -262,6 +257,11 @@ public partial class MainWindow : Window
             g.GenerationParameter.Seed ??= random.Next();
             long seed = g.GenerationParameter.Seed.Value;
 
+            if (!string.IsNullOrEmpty(g.GenerationParameter.ReferenceImage))
+            {
+                g.GenerationParameter.ReferenceImage = Convert.ToBase64String(File.ReadAllBytes(g.GenerationParameter.ReferenceImage));
+            }
+
             // Trim spaces between words
             string[] tags = g.Prompt.Split(',', StringSplitOptions.TrimEntries);
             string prompt = g.Prompt = string.Join(',', tags);
@@ -304,7 +304,7 @@ public partial class MainWindow : Window
                         }
 
                         clone.Prompt = replaceText(clone.Prompt, replacements);
-                        clone.CurrentReplace = replaceText(string.Join(',', combo), replacements);
+                        clone.CurrentReplace = string.Join(',', combo);
                         tasks.Add(clone);
                     }
                 }
@@ -510,7 +510,15 @@ public partial class MainWindow : Window
             if (subscriptionInfo != null)
             {
                 AccountInfo.Text = subscriptionInfo.ToString();
-                AccountInfo.Foreground = new SolidColorBrush(subscriptionInfo.Active ? Colors.Black : Colors.Red);
+
+                if (subscriptionInfo.Active)
+                {
+                    AccountInfo.TryFindResource("TextControlForeground", ActualThemeVariant, out var defaultBrush);
+                    AccountInfo.Foreground = defaultBrush as IBrush ?? new SolidColorBrush(Colors.Black);
+                }
+                else
+                    AccountInfo.Foreground = new SolidColorBrush(Colors.Red);
+
                 AccountAnlasDisplay.Value = subscriptionInfo.TotalTrainingStepsLeft;
             }
         }

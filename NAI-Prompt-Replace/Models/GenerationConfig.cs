@@ -92,6 +92,18 @@ public class GenerationParameter : INotifyPropertyChanged
 
     public double Scale { get; set; } = 5;
 
+    [JsonPropertyName("ucPreset")]
+    public byte UcPreset { get; private init; } = 3;
+
+    public bool AddOriginalImage { get; private init; } = true;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ReferenceImage { get; set; }
+
+    public double ReferenceInformationExtracted { get; set; } = 1;
+
+    public double ReferenceStrength { get; set; } = 1;
+
     [JsonPropertyName("sm")]
     public bool Smea
     {

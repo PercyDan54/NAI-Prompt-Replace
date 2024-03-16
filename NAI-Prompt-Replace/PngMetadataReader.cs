@@ -22,6 +22,10 @@ public static class PngMetadataReader
             GenerationParameter = parameters
         };
 
+        // ReferenceStrength will be 0 if no reference image is set, set to default instead
+        if (generationConfig.GenerationParameter.ReferenceStrength < 0.01)
+            generationConfig.GenerationParameter.ReferenceStrength = 1;
+
         bool legacy = true;
         
         foreach (var property in jsonDocument.RootElement.EnumerateObject())

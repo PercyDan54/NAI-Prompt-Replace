@@ -4,7 +4,6 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:naiPromptReplace="clr-namespace:NAI_Prompt_Replace"
              mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="750"
-             Height="750"
              x:Class="NAI_Prompt_Replace.GenerationParameterControl"
              x:DataType="naiPromptReplace:GenerationConfig">
     <Grid Name="MainGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="10">
@@ -72,16 +71,36 @@
             <CheckBox Content="Save JPEG copy" IsChecked="{Binding SaveJpeg}" />
             <naiPromptReplace:AnlasDisplay Margin="30,0,0,0" Name="AnlasDisplay" Height="20" />
         </WrapPanel>
-        <Grid Grid.Row="4" RowDefinitions="*,*" ColumnDefinitions="Auto,*">
+        <Expander Grid.Row="4" Name="VibeTransferExpander" HorizontalAlignment="Stretch" DragDrop.AllowDrop="True">
+            <Grid RowDefinitions="*,Auto,Auto">
+                <DockPanel>
+                    <TextBlock Name="RefImagePathText" Text="Select reference image" TextTrimming="WordEllipsis" Margin="0,0,5,0" />
+                    <Button DockPanel.Dock="Right" HorizontalAlignment="Right" Name="BrowseRefImageButton" Content="Browse" Click="BrowseRefImageButton_OnClick" />
+                    <Button DockPanel.Dock="Right" HorizontalAlignment="Right" Name="RemoveRefImageButton" Content="Remove" Click="RemoveRefImageButton_OnClick" />
+                </DockPanel>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="5" Margin="0,0,0,5">
+                    <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
+                        <TextBlock Text="Information Extracted" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.ReferenceInformationExtracted}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="1" MinWidth="100" HorizontalContentAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
+                        <TextBlock Text="Reference Strength" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.ReferenceStrength}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="1" MinWidth="100" HorizontalContentAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+                <Image Grid.Row="2" Name="ReferenceImage" MaxHeight="480" Stretch="Uniform" />
+            </Grid>
+        </Expander>
+        <Grid Grid.Row="5" RowDefinitions="*,*" ColumnDefinitions="Auto,*">
             <TextBlock Margin="0,0,5,0" Text="Output Path" VerticalAlignment="Center" />
             <DockPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,5">
-                <Button DockPanel.Dock="Right" Name="BrowseButton" Content="Browse" Click="BrowseButton_OnClick" />
                 <Button DockPanel.Dock="Right" Name="OpenButton" Content="Open" Click="OpenButton_OnClick" />
+                <Button DockPanel.Dock="Right" Name="BrowseButton" Content="Browse" Click="BrowseButton_OnClick" />
                 <TextBox Name="OutputPathTextBox" Margin="0,0,5,0" Text="{Binding  OutputPath}" />
             </DockPanel>
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,5,0" Text="Output File Name" VerticalAlignment="Center" />
             <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding  OutputFilename}" />
         </Grid>
-        <Button Grid.Row="5" Grid.Column="0" HorizontalAlignment="Center" Content="Save Config" Click="Button_OnClick" />
+        <Button Grid.Row="6" Grid.Column="0" HorizontalAlignment="Center" Content="Save Config" Click="Button_OnClick" />
     </Grid>
 </UserControl>

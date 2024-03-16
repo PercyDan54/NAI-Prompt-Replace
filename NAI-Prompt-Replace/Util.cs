@@ -45,6 +45,19 @@ public static class Util
         return combos.ToList();
     }
 
+    public static string TruncateString(string input, int maxLength)
+    {
+        if (input.Length <= maxLength)
+        {
+            return input;
+        }
+
+        int startLength = (maxLength - 3) / 2;
+        int endLength = maxLength - 3 - startLength;
+
+        return input[..startLength] + "..." + input[^endLength..];
+    }
+
     public static string ReplaceInvalidFileNameChars(string original)
     {
         foreach (char invalid in Path.GetInvalidFileNameChars().Append(Path.AltDirectorySeparatorChar))
