@@ -12,9 +12,10 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using CsvHelper;
 using CsvHelper.Configuration;
+using NAIPromptReplace.Models;
 using SkiaSharp;
 
-namespace NAI_Prompt_Replace;
+namespace NAIPromptReplace;
 
 public partial class MainWindow : Window
 {
@@ -111,7 +112,7 @@ public partial class MainWindow : Window
 
     private void updateTotalAnlas(object? sender, EventArgs? e)
     {
-        Dispatcher.UIThread.Invoke(() => TotalAnlas.Value = getGenerationParameterControls().Sum(c => c.AnlasDisplay.Value));
+        Dispatcher.UIThread.Invoke<int>(() => TotalAnlas.Value = getGenerationParameterControls().Sum(c => c.AnlasDisplay.Value));
     }
 
     private void CloseButton_OnClick(object? sender, RoutedEventArgs e)
@@ -229,12 +230,12 @@ public partial class MainWindow : Window
 
     private void writeLog(object obj)
     {
-        Dispatcher.UIThread.Invoke(() => LogTextBox.Text += obj);
+        Dispatcher.UIThread.Invoke<string>(() => LogTextBox.Text += obj);
     }
 
     private void clearLog()
     {
-        Dispatcher.UIThread.Invoke(() => LogTextBox.Text = string.Empty);
+        Dispatcher.UIThread.Invoke<string>(() => LogTextBox.Text = string.Empty);
     }
 
     private async void OpenButton_OnClick(object? sender, RoutedEventArgs e)
@@ -424,7 +425,7 @@ public partial class MainWindow : Window
             }
 
             retry = 0;
-            Dispatcher.UIThread.Invoke(() => ProgressBar.Value = (i + 1.0) / tasks.Count * 100);
+            Dispatcher.UIThread.Invoke<double>(() => ProgressBar.Value = (i + 1.0) / tasks.Count * 100);
             i++;
         }
 
@@ -513,7 +514,7 @@ public partial class MainWindow : Window
 
                 if (subscriptionInfo.Active)
                 {
-                    AccountInfo.TryFindResource("TextControlForeground", ActualThemeVariant, out var defaultBrush);
+                    ResourceNodeExtensions.TryFindResource(AccountInfo, "TextControlForeground", ActualThemeVariant, out var defaultBrush);
                     AccountInfo.Foreground = defaultBrush as IBrush ?? new SolidColorBrush(Colors.Black);
                 }
                 else

@@ -1,7 +1,8 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using NAIPromptReplace.Models;
 
-namespace NAI_Prompt_Replace;
+namespace NAIPromptReplace;
 
 public class NovelAIApi
 {

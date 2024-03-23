@@ -1,6 +1,6 @@
 using Avalonia;
 
-namespace NAI_Prompt_Replace;
+namespace NAIPromptReplace;
 
 class Program
 {

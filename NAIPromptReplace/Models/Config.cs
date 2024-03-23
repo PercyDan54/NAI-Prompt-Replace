@@ -1,4 +1,4 @@
-namespace NAI_Prompt_Replace;
+namespace NAIPromptReplace.Models;
 
 public class Config
 {

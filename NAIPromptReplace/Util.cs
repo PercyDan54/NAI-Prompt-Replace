@@ -1,4 +1,6 @@
-namespace NAI_Prompt_Replace;
+using NAIPromptReplace.Models;
+
+namespace NAIPromptReplace;
 
 public static class Util
 {

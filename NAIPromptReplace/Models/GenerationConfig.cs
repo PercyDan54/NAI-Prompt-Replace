@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
-namespace NAI_Prompt_Replace;
+namespace NAIPromptReplace.Models;
 
 public class GenerationConfig : INotifyPropertyChanged
 {

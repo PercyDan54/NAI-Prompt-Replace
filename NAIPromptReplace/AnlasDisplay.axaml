@@ -2,9 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:naiPromptReplace="clr-namespace:NAI_Prompt_Replace"
+             xmlns:naiPromptReplace="clr-namespace:NAIPromptReplace"
              mc:Ignorable="d" d:DesignWidth="200" d:DesignHeight="100"
-             x:Class="NAI_Prompt_Replace.AnlasDisplay"
+             x:Class="NAIPromptReplace.AnlasDisplay"
              x:DataType="naiPromptReplace:AnlasDisplay">
     <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
         <TextBlock Text="{Binding Value, StringFormat=\{0\}}" />

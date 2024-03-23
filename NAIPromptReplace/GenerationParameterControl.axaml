@@ -2,10 +2,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:naiPromptReplace="clr-namespace:NAI_Prompt_Replace"
+             xmlns:naiPromptReplace="clr-namespace:NAIPromptReplace"
+             xmlns:models="clr-namespace:NAIPromptReplace.Models"
              mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="750"
-             x:Class="NAI_Prompt_Replace.GenerationParameterControl"
-             x:DataType="naiPromptReplace:GenerationConfig">
+             x:Class="NAIPromptReplace.GenerationParameterControl"
+             x:DataType="models:GenerationConfig">
     <Grid Name="MainGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="10">
         <Grid RowDefinitions="Auto,*,*" ColumnDefinitions="Auto,*">
             <TextBlock Text="Prompt" VerticalAlignment="Center" />
@@ -69,7 +70,7 @@
             <CheckBox Content="Legacy V3 Extend" IsChecked="{Binding GenerationParameter.LegacyV3Extend}" />
             <CheckBox Content="Retry non-free tasks" IsChecked="{Binding RetryAll}" />
             <CheckBox Content="Save JPEG copy" IsChecked="{Binding SaveJpeg}" />
-            <naiPromptReplace:AnlasDisplay Margin="30,0,0,0" Name="AnlasDisplay" Height="20" />
+            <naiPromptReplace:AnlasDisplay Name="AnlasDisplay" Height="20" />
         </WrapPanel>
         <Expander Grid.Row="4" Name="VibeTransferExpander" HorizontalAlignment="Stretch" DragDrop.AllowDrop="True">
             <Grid RowDefinitions="*,Auto,Auto">

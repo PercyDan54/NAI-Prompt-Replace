@@ -1,8 +1,9 @@
 using System.Buffers.Binary;
 using System.Text;
 using System.Text.Json;
+using NAIPromptReplace.Models;
 
-namespace NAI_Prompt_Replace;
+namespace NAIPromptReplace;
 
 public static class PngMetadataReader
 {

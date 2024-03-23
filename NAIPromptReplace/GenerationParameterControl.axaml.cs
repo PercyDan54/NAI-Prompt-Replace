@@ -7,9 +7,10 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using NAIPromptReplace.Models;
 using SkiaSharp;
 
-namespace NAI_Prompt_Replace;
+namespace NAIPromptReplace;
 
 public partial class GenerationParameterControl : UserControl
 {

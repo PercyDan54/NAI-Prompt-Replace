@@ -1,8 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 
-namespace NAI_Prompt_Replace;
+namespace NAIPromptReplace;
 
 public partial class AnlasDisplay : UserControl
 {
