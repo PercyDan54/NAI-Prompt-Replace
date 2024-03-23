@@ -1,6 +1,7 @@
+using System;
 using Avalonia;
 
-namespace NAIPromptReplace;
+namespace NAIPromptReplace.Desktop;
 
 class Program
 {

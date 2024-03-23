@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:naiPromptReplace="clr-namespace:NAIPromptReplace"
+        xmlns:models="clr-namespace:NAIPromptReplace.Models"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="700"
+        x:Class="NAIPromptReplace.MainView"
+        x:DataType="models:Config">
+    <Panel Margin="20, 10">
+        <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnDefinitions="*">
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,5">
+                <TextBlock Text="Token" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <TextBox Grid.Column="1" Name="TokenTextBox" PasswordChar="*" HorizontalAlignment="Stretch" MinWidth="500" Margin="0,0,5,0" Text="{Binding  AccessToken}" />
+                <DockPanel Grid.Column="2" Dock="Right" HorizontalAlignment="Right" LastChildFill="False">
+                    <Button Name="ShowPasswordButton" Content="Show" Margin="5,0,5,0" Click="ShowPasswordButton_OnClick" />
+                    <Button Name="LoginButton" Content="Login" Margin="0,0,5,0" Click="LoginButton_OnClick" />
+                    <Button Content="Help" Click="HelpButton_OnClick" />
+                </DockPanel>
+            </Grid>
+            <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto,*" Margin="0,0,0,5">
+                <Button Content="New" Margin="0,0,5,0" Click="NewButton_OnClick" />
+                <Button Grid.Column="1" Content="Open" Margin="0,0,5,0" Click="OpenButton_OnClick" />
+                <Button Grid.Column="2" Content="Close" Margin="0,0,5,0" Click="CloseButton_OnClick" />
+                <Button Grid.Column="3" Content="Save All" Margin="0,0,5,0" Click="SaveAllButton_OnClick" />
+                <DockPanel Grid.Column="4" Dock="Right" HorizontalAlignment="Right" LastChildFill="False">
+                    <TextBlock Name="AccountInfo" Text="Not logged in" Margin="15,0" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    <naiPromptReplace:AnlasDisplay Name="AccountAnlasDisplay" Height="20" />
+                </DockPanel>
+            </Grid>
+            <ScrollViewer Grid.Row="2" Margin="0,0,0,5">
+                <TabControl Name="TabControl" VerticalAlignment="Stretch" />
+            </ScrollViewer>
+            <DataGrid Grid.Row="3" Height="100" Name="ReplacementDataGrid" Margin="0,0,0,5" AutoGenerateColumns="True" AutoGeneratingColumn="ReplacementDataGrid_OnAutoGeneratingColumn" />
+            <Grid Grid.Row="4" Margin="0,20,0,20" RowDefinitions="Auto,*" ColumnDefinitions="Auto,*">
+                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="5" VerticalAlignment="Center" Orientation="Vertical">
+                    <Button Name="RunButton" Click="RunButton_OnClick" Content="Run" Width="70" HorizontalContentAlignment="Center" VerticalAlignment="Center" />
+                    <naiPromptReplace:AnlasDisplay Name="TotalAnlas" HorizontalAlignment="Center" Height="20" />
+                </StackPanel>
+                <TextBox Grid.Row="0" Grid.Column="1" Name="LogTextBox" IsReadOnly="True" VerticalAlignment="Center" Height="130" TextWrapping="Wrap" />
+                <ProgressBar Name="ProgressBar" Grid.Row="1" Grid.Column="1" ShowProgressText="True" />
+            </Grid>
+        </Grid>
+    </Panel>
+</UserControl>
