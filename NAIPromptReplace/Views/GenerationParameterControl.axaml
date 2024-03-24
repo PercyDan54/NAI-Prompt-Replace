@@ -29,7 +29,7 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
                 <TextBlock Text="Seed" VerticalAlignment="Center" />
-                <NumericUpDown FormatString="0" Value="{Binding GenerationParameter.Seed}" HorizontalContentAlignment="Center" MinWidth="200" />
+                <NumericUpDown FormatString="0" Value="{Binding GenerationParameter.Seed}" HorizontalContentAlignment="Center" MinWidth="150" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Sampler" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -95,9 +95,9 @@
         <Grid Grid.Row="5" RowDefinitions="*,*" ColumnDefinitions="Auto,*">
             <TextBlock Margin="0,0,5,0" Text="Output Path" VerticalAlignment="Center" />
             <DockPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,5">
-                <Button DockPanel.Dock="Right" Name="OpenButton" Content="Open" Click="OpenButton_OnClick" />
+                <Button DockPanel.Dock="Right" Name="OpenOutputButton" Content="Open" />
                 <Button DockPanel.Dock="Right" Name="BrowseButton" Content="Browse" Click="BrowseButton_OnClick" />
-                <TextBox Name="OutputPathTextBox" Margin="0,0,5,0" Text="{Binding  OutputPath}" />
+                <TextBox Name="OutputPathTextBox" x:FieldModifier="public" Margin="0,0,5,0" Text="{Binding  OutputPath}" />
             </DockPanel>
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,5,0" Text="Output File Name" VerticalAlignment="Center" />
             <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding  OutputFilename}" />

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using Avalonia.Platform.Storage;
 
 namespace NAIPromptReplace.Models;
 
@@ -25,6 +26,9 @@ public class GenerationConfig : INotifyPropertyChanged
     public string Model { get; set; } = "nai-diffusion-3";
 
     public string OutputPath { get; set; } = string.Empty;
+
+    [JsonIgnore]
+    public IStorageFolder? StorageFolder { get; set; }
 
     public string OutputFilename { get; set; } = DEFAULT_OUTPUT_FILE_NAME;
 
@@ -99,6 +103,9 @@ public class GenerationParameter : INotifyPropertyChanged
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ReferenceImage { get; set; }
+
+    [JsonIgnore]
+    public byte[]? ReferenceImageData { get; set; }
 
     public double ReferenceInformationExtracted { get; set; } = 1;
 

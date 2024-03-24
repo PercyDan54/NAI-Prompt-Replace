@@ -157,56 +157,39 @@ public partial class GenerationParameterControl : UserControl
         if (file == null)
             return;
 
-        SaveConfig(file.Path.LocalPath);
+        await SaveConfig(file);
     }
 
-    public void SaveConfig(string path)
+    public async Task SaveConfig(IStorageFile file)
     {
         try
         {
-            File.WriteAllText(path, JsonSerializer.Serialize(Config, new JsonSerializerOptions { WriteIndented = true }));
+            using var stream = await file.OpenWriteAsync();
+            using var writer = new StreamWriter(stream);
+            await writer.WriteAsync(JsonSerializer.Serialize(Config, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch
         {
         }
     }
 
-    private async void BrowseButton_OnClick(object? sender, RoutedEventArgs e)
+    public async void BrowseButton_OnClick(object? sender, RoutedEventArgs e)
     {
         var topLevel = TopLevel.GetTopLevel(this);
 
         if (topLevel == null)
             return;
 
-        var file = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
             AllowMultiple = false
         });
-        
-        if (file.Count < 1)
+
+        if (folders.Count < 1)
             return;
 
-        OutputPathTextBox.Text = file[0].Path.LocalPath;
-    }
-
-    private void OpenButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        try
-        {
-            Dispatcher.UIThread.Invoke(() =>
-            {
-                string path = string.IsNullOrEmpty(Config.OutputPath) ? Environment.CurrentDirectory : Config.OutputPath;
-
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = path,
-                    UseShellExecute = true
-                });
-            });
-        }
-        catch
-        {
-        }
+        Config.StorageFolder = folders[0];
+        OutputPathTextBox.Text = folders[0].TryGetLocalPath();
     }
 
     private async void BrowseRefImageButton_OnClick(object? sender, RoutedEventArgs e)
@@ -221,8 +204,23 @@ public partial class GenerationParameterControl : UserControl
         if (files.Count == 0)
             return;
 
-        Config.GenerationParameter.ReferenceImage = files[0].Path.LocalPath;
-        loadReferenceImage();
+        var file = files[0];
+        using var stream = await file.OpenReadAsync();
+        using var stream1 = new MemoryStream();
+        await stream.CopyToAsync(stream1);
+        Config.GenerationParameter.ReferenceImageData = stream1.ToArray();
+
+        if (!OperatingSystem.IsAndroid())
+        {
+            Config.GenerationParameter.ReferenceImage = file.TryGetLocalPath();
+            loadReferenceImage();
+        }
+        else
+        {
+            stream.Position = 0;
+            ReferenceImage.Source = new Bitmap(stream);
+            setVibeTransferText(file.Name);
+        }
     }
 
     private void onDrop(object? sender, DragEventArgs e)
@@ -266,9 +264,14 @@ public partial class GenerationParameterControl : UserControl
             fileStream.Position = 0;
             ReferenceImage.Source = new Bitmap(fileStream);
             Config.GenerationParameter.ReferenceImage = file;
-            RefImagePathText.Text = Util.TruncateString(file, 75);
-            VibeTransferExpander.Header = $"Vibe Transfer ({Util.TruncateString(Path.GetFileName(file), 75)})";
+            setVibeTransferText(file);
         }
+    }
+
+    private void setVibeTransferText(string file)
+    {
+        RefImagePathText.Text = Util.TruncateString(file, 75);
+        VibeTransferExpander.Header = $"Vibe Transfer ({Util.TruncateString(Path.GetFileName(file), 75)})";
     }
 
     private void removeReferenceImage()

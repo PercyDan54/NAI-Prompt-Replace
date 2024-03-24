@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 using System.Text.Json;
+using Avalonia.Platform.Storage;
 using NAIPromptReplace.Models;
 
 namespace NAIPromptReplace;
@@ -55,16 +56,16 @@ public static class PngMetadataReader
         return generationConfig;
     }
     
-    public static GenerationConfig FromFile(string path)
+    public static GenerationConfig FromFile(IStorageFile file)
     {
         const string comment_key = "Comment";
         const string source_key = "Source";
 
-        using var stream = File.OpenRead(path);
+        using var stream = file.OpenReadAsync().Result;
         var headers = ReadTextHeaders(stream);
 
         if (!headers.TryGetValue(comment_key, out string? comment))
-            throw new Exception($"Image {Path.GetFileName(path)} does not contain generation info");
+            throw new Exception($"Image {file.Name} does not contain generation info");
 
         var config = FromJson(comment);
 

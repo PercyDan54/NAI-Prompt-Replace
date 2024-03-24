@@ -2,8 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:naiPromptReplace="clr-namespace:NAIPromptReplace"
         xmlns:models="clr-namespace:NAIPromptReplace.Models"
+        xmlns:views="clr-namespace:NAIPromptReplace.Views"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="700"
         Width="800" Height="700"
         x:Class="NAIPromptReplace.MainWindow"
@@ -11,5 +11,5 @@
         Icon="avares://NAIPromptReplace/Assets/novelai-square.ico"
         Closing="Window_OnClosing"
         Title="NovelAI Prompt Replace V1.0.8">
-    <naiPromptReplace:MainView Name="MainView" />
+    <views:MainView Name="MainView" />
 </Window>

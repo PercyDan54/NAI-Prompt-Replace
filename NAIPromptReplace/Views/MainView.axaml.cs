@@ -5,7 +5,6 @@ using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
@@ -15,11 +14,13 @@ using CsvHelper.Configuration;
 using NAIPromptReplace.Models;
 using SkiaSharp;
 
-namespace NAIPromptReplace;
+namespace NAIPromptReplace.Views;
 
 public partial class MainView : UserControl
 {
-    private const string config_file = "config.json";
+    protected const string CONFIG_FILE = "config.json";
+    protected const string HELP_URL = "https://docs.qq.com/doc/DVkhyZk5tUmNhZVd1";
+
 #if DEBUG
     private readonly Random random = new Random(1337);
 #else
@@ -28,7 +29,7 @@ public partial class MainView : UserControl
     private Dictionary<string, string> replacements { get; set; } = new Dictionary<string, string>();
     private readonly NovelAIApi api = new NovelAIApi();
 
-    private Config config { get; set; } = new Config();
+    protected Config Config { get; set; } = new Config();
     private CancellationTokenSource? cancellationTokenSource;
     private static readonly CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false, TrimOptions = TrimOptions.Trim };
     private static readonly FilePickerOpenOptions filePickerOptions = new FilePickerOpenOptions
@@ -41,31 +42,35 @@ public partial class MainView : UserControl
         AllowMultiple = true
     };
 
+    protected IStorageProvider? StorageProvider => TopLevel.GetTopLevel(this)?.StorageProvider;
+
+    protected virtual string ConfigPath => CONFIG_FILE;
+
     public MainView()
     {
         InitializeComponent();
         loadConfig();
-        DataContext = config;
+        DataContext = Config;
     }
 
     private void loadConfig()
     {
-        if (File.Exists(config_file))
+        if (File.Exists(ConfigPath))
         {
-            config = JsonSerializer.Deserialize<Config>(File.ReadAllText(config_file)) ?? config;
+            Config = JsonSerializer.Deserialize<Config>(File.ReadAllText(ConfigPath)) ?? Config;
             updateAccountInfo(true).ConfigureAwait(false);
         }
     }
 
-    public void SaveConfig()
+    public virtual void SaveConfig()
     {
         if (Design.IsDesignMode)
             return;
 
         try
         {
-            config.AccessToken = api.AccessToken;
-            File.WriteAllText(config_file, JsonSerializer.Serialize(config, new JsonSerializerOptions
+            Config.AccessToken = api.AccessToken;
+            File.WriteAllText(ConfigPath, JsonSerializer.Serialize(Config, new JsonSerializerOptions
             {
                 WriteIndented = true
             }));
@@ -77,15 +82,37 @@ public partial class MainView : UserControl
 
     private void NewButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        addTab("New config", new GenerationConfig());
+        AddTab("New config", new GenerationConfig());
     }
 
-    private void addTab(string header, GenerationConfig config)
+    protected virtual GenerationParameterControl AddTab(string header, GenerationConfig config)
     {
         var control = new GenerationParameterControl(config, api) { Name = header };
+        control.OpenOutputButton.Click += (sender, args) =>
+        {
+            string path = string.IsNullOrEmpty(config.OutputPath) ? Environment.CurrentDirectory : config.OutputPath;
+            PresentUri(path);
+        };
         TabControl.Items.Add(new TabItem { Header = header, Content = control });
         control.AnlasChanged += updateTotalAnlas;
         updateTotalAnlas(null, null);
+
+        return control;
+    }
+
+    protected virtual void PresentUri(string uri)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = uri,
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
+        }
     }
 
     private void updateTotalAnlas(object? sender, EventArgs? e)
@@ -218,7 +245,7 @@ public partial class MainView : UserControl
 
     private async void OpenButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        var files = await TopLevel.GetTopLevel(this).StorageProvider.OpenFilePickerAsync(filePickerOptions);
+        var files = await StorageProvider.OpenFilePickerAsync(filePickerOptions);
 
         foreach (var file in files)
         {
@@ -236,9 +263,11 @@ public partial class MainView : UserControl
             g.GenerationParameter.Seed ??= random.Next();
             long seed = g.GenerationParameter.Seed.Value;
 
-            if (!string.IsNullOrEmpty(g.GenerationParameter.ReferenceImage))
+            var referenceImageData = g.GenerationParameter.ReferenceImageData;
+
+            if (referenceImageData != null)
             {
-                g.GenerationParameter.ReferenceImage = Convert.ToBase64String(File.ReadAllBytes(g.GenerationParameter.ReferenceImage));
+                g.GenerationParameter.ReferenceImage = Convert.ToBase64String(referenceImageData);
             }
 
             // Trim spaces between words
@@ -329,10 +358,7 @@ public partial class MainView : UserControl
             {
                 writeLogLine($"{(int)resp.StatusCode} {resp.ReasonPhrase}");
                 using var zip = new ZipArchive(await resp.Content.ReadAsStreamAsync());
-                string path = string.IsNullOrWhiteSpace(task.OutputPath) ? Environment.CurrentDirectory : task.OutputPath;
-
-                string[] split = path.Split(Path.DirectorySeparatorChar);
-                var placeholders = new Dictionary<string, string>(StringComparer.Ordinal) 
+                var placeholders = new Dictionary<string, string>(StringComparer.Ordinal)
                 {
                     { "date", date.ToShortDateString() },
                     { "time", date.ToShortTimeString() },
@@ -341,35 +367,8 @@ public partial class MainView : UserControl
                     { "replace", task.CurrentReplace },
                 };
 
-                string replacePlaceHolders(string text)
-                {
-                    return Regex.Replace(
-                        text,
-                        @"\{(?<name>.*?)\}",
-                        match => placeholders.TryGetValue(match.Groups["name"].Value, out string? value) ? value : match.Groups["name"].Value);
-                }
-
-                for (int index = 0; index < split.Length; index++)
-                {
-                    string dir = split[index];
-
-                    if (Path.IsPathRooted(dir))
-                        continue;
-
-                    split[index] = Util.GetValidDirectoryName(replacePlaceHolders(dir));
-                }
-
-                path = Path.GetFullPath(string.Join(Path.DirectorySeparatorChar, split));
-                Directory.CreateDirectory(path);
-
-                string fileName = Util.ReplaceInvalidFileNameChars(replacePlaceHolders(task.OutputFilename).TrimEnd());
-
-                if (string.IsNullOrWhiteSpace(fileName))
-                    fileName = replacePlaceHolders(GenerationConfig.DEFAULT_OUTPUT_FILE_NAME);
-
-                fileName = Util.GetValidFileName(Path.Combine(path, fileName[..Math.Min(fileName.Length, 128)] + ".png"));
-
-                await using var file = File.OpenWrite(fileName);
+                var storageFile = GetOutputFileForTask(task, placeholders);
+                using var file = await storageFile.OpenWriteAsync();
 
                 foreach (var entry in zip.Entries)
                 {
@@ -380,10 +379,16 @@ public partial class MainView : UserControl
 
                 if (task.SaveJpeg)
                 {
-                    using var image = SKImage.FromEncodedData(fileName);
+                    file.Position = 0;
+                    using var image = SKImage.FromEncodedData(file);
                     using var data = image.Encode(SKEncodedImageFormat.Jpeg, 100);
-                    using var outputStream = File.OpenWrite(Path.ChangeExtension(fileName, "jpg"));
-                    data.SaveTo(outputStream);
+                    var folder = await storageFile.GetParentAsync();
+                    if (folder != null)
+                    {
+                        var jpegFile = await folder.CreateFileAsync(Path.ChangeExtension(storageFile.Name, "jpg"));
+                        using var outputStream = await jpegFile.OpenWriteAsync();
+                        data.SaveTo(outputStream);
+                    }
                 }
             }
             if (resp?.Content.Headers.ContentType?.MediaType == "application/json")
@@ -414,25 +419,63 @@ public partial class MainView : UserControl
         });
     }
 
+    protected virtual IStorageFile GetOutputFileForTask(GenerationConfig task, Dictionary<string,string> placeholders)
+    {
+        string pathString = string.IsNullOrWhiteSpace(task.OutputPath) ? Environment.CurrentDirectory : task.OutputPath;
+
+        string[] split = pathString.Split(Path.DirectorySeparatorChar);
+
+        for (int index = 0; index < split.Length; index++)
+        {
+            string dir = split[index];
+
+            if (Path.IsPathRooted(dir))
+                continue;
+
+            split[index] = Util.GetValidDirectoryName(replacePlaceHolders(dir, placeholders));
+        }
+
+        pathString = Path.GetFullPath(string.Join(Path.DirectorySeparatorChar, split));
+        Directory.CreateDirectory(pathString);
+
+        string fileName = Util.ReplaceInvalidFileNameChars(replacePlaceHolders(task.OutputFilename, placeholders).TrimEnd());
+
+        if (string.IsNullOrWhiteSpace(fileName))
+            fileName = replacePlaceHolders(GenerationConfig.DEFAULT_OUTPUT_FILE_NAME, replacements);
+
+        fileName = Util.GetValidFileName(Path.Combine(pathString, fileName[..Math.Min(fileName.Length, 128)] + ".png"));
+        using var file1 = File.Create(fileName);
+
+        return StorageProvider?.TryGetFileFromPathAsync(fileName).Result;
+    }
+
+    protected string replacePlaceHolders(string text, Dictionary<string,string> placeholders)
+    {
+        return Regex.Replace(
+            text,
+            @"\{(?<name>.*?)\}",
+            match => placeholders.TryGetValue(match.Groups["name"].Value, out string? value) ? value : match.Groups["name"].Value);
+    }
+
     public async Task OpenFile(IStorageFile file)
     {
         try
         {
-            string path = file.Path.LocalPath;
+            await using var stream = await file.OpenReadAsync();
+            using var reader = new StreamReader(stream);
             GenerationConfig? generationConfig = null;
 
             switch (Path.GetExtension(file.Name))
             {
                 case ".json":
-                    generationConfig = JsonSerializer.Deserialize<GenerationConfig>(await File.ReadAllTextAsync(path));
+                    generationConfig = JsonSerializer.Deserialize<GenerationConfig>(await reader.ReadToEndAsync());
                     break;
 
                 case ".png":
-                    generationConfig = PngMetadataReader.FromFile(path);
+                    generationConfig = PngMetadataReader.FromFile(file);
                     break;
 
                 case ".csv":
-                    using (var reader = File.OpenText(path))
                     using (var csv = new CsvReader(reader, csvConfiguration))
                     {
                         var records = csv.GetRecords<TextReplacement>().ToList();
@@ -444,7 +487,7 @@ public partial class MainView : UserControl
 
             if (generationConfig != null)
             {
-                addTab(file.Name[..Math.Min(32, file.Name.Length)].Trim(), generationConfig);
+                AddTab(file.Name[..Math.Min(32, file.Name.Length)].Trim(), generationConfig);
             }
         }
         catch (Exception exception)
@@ -458,17 +501,19 @@ public partial class MainView : UserControl
         if (TabControl.Items.Count == 0)
             return;
 
-        var file = await TopLevel.GetTopLevel(this)?.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        var folder = await StorageProvider?.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
             AllowMultiple = false
         });
 
-        if (file.Count == 0)
+        if (folder.Count == 0)
             return;
 
         foreach (var control in getGenerationParameterControls())
         {
-            control.SaveConfig(Util.GetValidFileName(Path.Combine(file[0].Path.LocalPath, (Path.ChangeExtension(control.Name, string.Empty) ?? "Untitled") + ".json")));
+            var fileName = Util.GetValidFileName(Path.Combine(folder[0].TryGetLocalPath(), (Path.ChangeExtension(control.Name, string.Empty) ?? "Untitled") + ".json"));
+            folder[0].CreateFileAsync(Path.GetFileName(fileName));
+            control.SaveConfig(await StorageProvider?.TryGetFileFromPathAsync(fileName));
         }
     }
 
@@ -484,7 +529,7 @@ public partial class MainView : UserControl
 
         try
         {
-            var subscriptionInfo = tokenChanged ? await api.UpdateToken(config.AccessToken): await api.GetSubscription();
+            var subscriptionInfo = tokenChanged ? await api.UpdateToken(Config.AccessToken): await api.GetSubscription();
 
             if (subscriptionInfo != null)
             {
@@ -508,10 +553,6 @@ public partial class MainView : UserControl
 
     private void HelpButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "https://docs.qq.com/doc/DVkhyZk5tUmNhZVd1",
-            UseShellExecute = true
-        });
+        PresentUri(HELP_URL);
     }
 }
