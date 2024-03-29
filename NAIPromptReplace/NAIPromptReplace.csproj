@@ -5,8 +5,8 @@
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ImplicitUsings>true</ImplicitUsings>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <ApplicationIcon>Assets\novelai-square.ico</ApplicationIcon>
     </PropertyGroup>
+
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
       <DebugType>none</DebugType>
     </PropertyGroup>

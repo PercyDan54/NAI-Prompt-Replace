@@ -5,7 +5,7 @@
              xmlns:naiPromptReplace="clr-namespace:NAIPromptReplace"
              xmlns:models="clr-namespace:NAIPromptReplace.Models"
              mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="750"
-             x:Class="NAIPromptReplace.GenerationParameterControl"
+             x:Class="NAIPromptReplace.Views.GenerationParameterControl"
              x:DataType="models:GenerationConfig">
     <Grid Name="MainGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="10">
         <Grid RowDefinitions="Auto,*,*" ColumnDefinitions="Auto,*">

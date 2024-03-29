@@ -16,7 +16,7 @@ using SkiaSharp;
 
 namespace NAIPromptReplace.Views;
 
-public partial class MainView : UserControl
+public partial class MainView : LayoutTransformControl
 {
     protected const string CONFIG_FILE = "config.json";
     protected const string HELP_URL = "https://docs.qq.com/doc/DVkhyZk5tUmNhZVd1";
@@ -62,7 +62,7 @@ public partial class MainView : UserControl
         }
     }
 
-    public virtual void SaveConfig()
+    public void SaveConfig()
     {
         if (Design.IsDesignMode)
             return;
@@ -88,7 +88,7 @@ public partial class MainView : UserControl
     protected virtual GenerationParameterControl AddTab(string header, GenerationConfig config)
     {
         var control = new GenerationParameterControl(config, api) { Name = header };
-        control.OpenOutputButton.Click += (sender, args) =>
+        control.OpenOutputButton.Click += (_, _) =>
         {
             string path = string.IsNullOrEmpty(config.OutputPath) ? Environment.CurrentDirectory : config.OutputPath;
             PresentUri(path);
@@ -117,7 +117,7 @@ public partial class MainView : UserControl
 
     private void updateTotalAnlas(object? sender, EventArgs? e)
     {
-        Dispatcher.UIThread.Invoke<int>(() => TotalAnlas.Value = getGenerationParameterControls().Sum(c => c.AnlasDisplay.Value));
+        Dispatcher.UIThread.Invoke(() => TotalAnlas.Value = getGenerationParameterControls().Sum(c => c.AnlasDisplay.Value));
     }
 
     private void CloseButton_OnClick(object? sender, RoutedEventArgs e)
@@ -235,12 +235,12 @@ public partial class MainView : UserControl
 
     private void writeLog(object obj)
     {
-        Dispatcher.UIThread.Invoke<string>(() => LogTextBox.Text += obj);
+        Dispatcher.UIThread.Invoke(() => LogTextBox.Text += obj);
     }
 
     private void clearLog()
     {
-        Dispatcher.UIThread.Invoke<string>(() => LogTextBox.Text = string.Empty);
+        Dispatcher.UIThread.Invoke(() => LogTextBox.Text = string.Empty);
     }
 
     private async void OpenButton_OnClick(object? sender, RoutedEventArgs e)
@@ -408,7 +408,7 @@ public partial class MainView : UserControl
             }
 
             retry = 0;
-            Dispatcher.UIThread.Invoke<double>(() => ProgressBar.Value = (i + 1.0) / tasks.Count * 100);
+            Dispatcher.UIThread.Invoke(() => ProgressBar.Value = (i + 1.0) / tasks.Count * 100);
             i++;
         }
 

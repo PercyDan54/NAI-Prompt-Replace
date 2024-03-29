@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
@@ -10,7 +9,7 @@ using Avalonia.Threading;
 using NAIPromptReplace.Models;
 using SkiaSharp;
 
-namespace NAIPromptReplace;
+namespace NAIPromptReplace.Views;
 
 public partial class GenerationParameterControl : UserControl
 {
@@ -218,8 +217,13 @@ public partial class GenerationParameterControl : UserControl
         else
         {
             stream.Position = 0;
-            ReferenceImage.Source = new Bitmap(stream);
-            setVibeTransferText(file.Name);
+            using var im = SKImage.FromEncodedData(stream);
+            if (im != null)
+            {
+                stream.Position = 0;
+                ReferenceImage.Source = new Bitmap(stream);
+                setVibeTransferText(file.Name);
+            }
         }
     }
 
@@ -270,8 +274,8 @@ public partial class GenerationParameterControl : UserControl
 
     private void setVibeTransferText(string file)
     {
-        RefImagePathText.Text = Util.TruncateString(file, 75);
-        VibeTransferExpander.Header = $"Vibe Transfer ({Util.TruncateString(Path.GetFileName(file), 75)})";
+        RefImagePathText.Text = Util.TruncateString(file, 32);
+        VibeTransferExpander.Header = $"Vibe Transfer ({Util.TruncateString(Path.GetFileName(file), 32)})";
     }
 
     private void removeReferenceImage()

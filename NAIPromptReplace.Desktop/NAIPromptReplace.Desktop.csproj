@@ -4,6 +4,7 @@
         <TargetFramework>net8.0</TargetFramework>
         <Nullable>enable</Nullable>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <ApplicationIcon>..\NAIPromptReplace\Assets\novelai-square.ico</ApplicationIcon>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -18,5 +19,9 @@
 
     <ItemGroup>
         <ProjectReference Include="..\NAIPromptReplace\NAIPromptReplace.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="..\NAIPromptReplace\Assets\novelai-square.ico" />
     </ItemGroup>
 </Project>
