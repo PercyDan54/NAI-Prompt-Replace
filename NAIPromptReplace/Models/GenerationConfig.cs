@@ -9,15 +9,31 @@ public class GenerationConfig : INotifyPropertyChanged
 {
     private int batchSize = 1;
     private string replace = string.Empty;
+    private string prompt = "best quality, amazing quality, very aesthetic, absurdres";
+    private Dictionary<string, string> replacements = [];
     public const string DEFAULT_OUTPUT_FILE_NAME = "{seed}-{prompt}";
 
-    public string Prompt { get; set; } = "best quality, amazing quality, very aesthetic, absurdres";
+    public string Prompt
+    {
+        get => prompt;
+        set
+        {
+            if (value == prompt)
+                return;
+
+            prompt = value;
+            NotifyPropertyChanged();
+        }
+    }
 
     public string Replace
     {
         get => replace;
         set
         {
+            if (value == replace)
+                return;
+
             replace = value;
             NotifyPropertyChanged();
         }
@@ -35,11 +51,28 @@ public class GenerationConfig : INotifyPropertyChanged
     [JsonIgnore]
     public string CurrentReplace { get; set; } = string.Empty;
 
+    [JsonIgnore]
+    public Dictionary<string, string> Replacements
+    {
+        get => replacements;
+        set
+        {
+            if (value == replacements)
+                return;
+
+            replacements = value;
+            NotifyPropertyChanged();
+        }
+    }
+
     public int BatchSize
     {
         get => batchSize;
         set
         {
+            if (value == batchSize)
+                return;
+
             batchSize = value;
             NotifyPropertyChanged();
         }
@@ -59,6 +92,47 @@ public class GenerationConfig : INotifyPropertyChanged
         clone.PropertyChanged = null;
         clone.GenerationParameter = GenerationParameter.Clone();
         return clone;
+    }
+
+    public static string GetReplacedPrompt(string prompt, Dictionary<string, string> replacements)
+    {
+        string[] lines = prompt.Split(Environment.NewLine);
+        List<string> newLines = [];
+
+        foreach (string line in lines)
+        {
+            string[] words = line.Split(',', StringSplitOptions.TrimEntries);
+
+            for (int i = 0; i < words.Length; i++)
+            {
+                string word = words[i];
+                string bracketStart = string.Empty;
+                string bracketEnd = string.Empty;
+
+                foreach (char c in word)
+                {
+                    if (c is '{' or '[')
+                        bracketStart += c;
+                    else if (c is '}' or ']')
+                        bracketEnd += c;
+                }
+
+                string wordsNoBracket = words[i].TrimStart('{', '[').TrimEnd('}', ']');
+
+                if (replacements.TryGetValue(word, out string? replacement))
+                {
+                    words[i] = replacement;
+                }
+                else if (replacements.TryGetValue(wordsNoBracket, out replacement))
+                {
+                    words[i] = $"{bracketStart}{replacement}{bracketEnd}";
+                }
+            }
+
+            newLines.Add(string.Join(',', words));
+        }
+
+        return string.Join(Environment.NewLine, newLines);
     }
 
     public override string ToString()
@@ -83,14 +157,26 @@ public class GenerationParameter : INotifyPropertyChanged
     private double cfgRescale;
     private short width = 832;
     private short height = 1216;
+    private string negativePrompt = "lowres, jpeg artifacts, worst quality, watermark, blurry, very displeasing";
 
-    public string NegativePrompt { get; set; } = "lowres, jpeg artifacts, worst quality, watermark, blurry, very displeasing";
+    public string NegativePrompt
+    {
+        get => negativePrompt;
+        set
+        {
+            if (value == negativePrompt)
+                return;
+
+            negativePrompt = value;
+            NotifyPropertyChanged();
+        }
+    }
 
     public string Sampler { get; set; } = "k_euler";
 
-    public long? Seed { get; set; } = null;
+    public long? Seed { get; set; }
 
-    public bool LegacyV3Extend { get; set; } = false;
+    public bool LegacyV3Extend { get; set; }
 
     public string NoiseSchedule { get; set; } = "native";
 

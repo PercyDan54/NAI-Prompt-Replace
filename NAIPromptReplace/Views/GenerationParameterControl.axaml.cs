@@ -288,4 +288,9 @@ public partial class GenerationParameterControl : UserControl
     {
         removeReferenceImage();
     }
+
+    public void SetReplacements(Dictionary<string, string> replacements)
+    {
+        Dispatcher.UIThread.Invoke(() => Config.Replacements = replacements);
+    }
 }

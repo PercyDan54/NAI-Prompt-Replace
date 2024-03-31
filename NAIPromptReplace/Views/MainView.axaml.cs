@@ -26,7 +26,7 @@ public partial class MainView : LayoutTransformControl
 #else
     private readonly Random random = new Random();
 #endif
-    private Dictionary<string, string> replacements { get; set; } = new Dictionary<string, string>();
+    private Dictionary<string, string> replacements { get; set; } = [];
     private readonly NovelAIApi api = new NovelAIApi();
 
     protected Config Config { get; set; } = new Config();
@@ -88,6 +88,7 @@ public partial class MainView : LayoutTransformControl
     protected virtual GenerationParameterControl AddTab(string header, GenerationConfig config)
     {
         var control = new GenerationParameterControl(config, api) { Name = header };
+        control.SetReplacements(replacements);
         control.OpenOutputButton.Click += (_, _) =>
         {
             string path = string.IsNullOrEmpty(config.OutputPath) ? Environment.CurrentDirectory : config.OutputPath;
@@ -187,47 +188,6 @@ public partial class MainView : LayoutTransformControl
 
     private IEnumerable<GenerationConfig> getGenerationConfigs() => getGenerationParameterControls().Select(p => p.Config);
 
-    private string replaceText(string text, Dictionary<string, string> replaces)
-    {
-        string[] lines = text.Split(Environment.NewLine);
-        List<string> newLines = [];
-
-        foreach (string line in lines)
-        {
-            string[] words = line.Split(',', StringSplitOptions.TrimEntries);
-
-            for (int i = 0; i < words.Length; i++)
-            {
-                string word = words[i];
-                string bracketStart = string.Empty;
-                string bracketEnd = string.Empty;
-
-                foreach (char c in word)
-                {
-                    if (c is '{' or '[')
-                        bracketStart += c;
-                    else if (c is '}' or ']')
-                        bracketEnd += c;
-                }
-
-                string wordsNoBracket = words[i].TrimStart('{', '[').TrimEnd('}', ']');
-
-                if (replaces.TryGetValue(word, out string? replacement))
-                {
-                    words[i] = replacement;
-                }
-                else if (replaces.TryGetValue(wordsNoBracket, out replacement))
-                {
-                    words[i] = $"{bracketStart}{replacement}{bracketEnd}";
-                }
-            }
-
-            newLines.Add(string.Join(',', words));
-        }
-
-        return string.Join(Environment.NewLine, newLines);
-    }
-
     private void writeLogLine(object obj)
     {
         writeLog(obj + Environment.NewLine);
@@ -311,7 +271,7 @@ public partial class MainView : LayoutTransformControl
                             clone.Prompt = clone.Prompt.Replace(toReplaces[k], combo[k]);
                         }
 
-                        clone.Prompt = replaceText(clone.Prompt, replacements);
+                        clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements);
                         clone.CurrentReplace = string.Join(',', combo);
                         tasks.Add(clone);
                     }
@@ -323,7 +283,7 @@ public partial class MainView : LayoutTransformControl
                 {
                     var clone = g.Clone();
                     clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
-                    clone.Prompt = replaceText(prompt, replacements);
+                    clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements);
                     clone.CurrentReplace = clone.Prompt;
                     tasks.Add(clone);
                 }
@@ -334,6 +294,7 @@ public partial class MainView : LayoutTransformControl
         int retry = 0;
         const int maxRetries = 5;
         var date = DateTime.Now;
+        Dispatcher.UIThread.Invoke(() => ProgressBar.Maximum = tasks.Count);
 
         while (i < tasks.Count)
         {
@@ -373,21 +334,24 @@ public partial class MainView : LayoutTransformControl
                 foreach (var entry in zip.Entries)
                 {
                     await using var s = entry.Open();
-                    await s.CopyToAsync(file);
-                    file.Close();
-                }
+                    using var memoryStream = new MemoryStream();
+                    await s.CopyToAsync(memoryStream);
+                    memoryStream.Position = 0;
+                    await memoryStream.CopyToAsync(file);
 
-                if (task.SaveJpeg)
-                {
-                    file.Position = 0;
-                    using var image = SKImage.FromEncodedData(file);
-                    using var data = image.Encode(SKEncodedImageFormat.Jpeg, 100);
-                    var folder = await storageFile.GetParentAsync();
-                    if (folder != null)
+                    if (task.SaveJpeg)
                     {
-                        var jpegFile = await folder.CreateFileAsync(Path.ChangeExtension(storageFile.Name, "jpg"));
-                        using var outputStream = await jpegFile.OpenWriteAsync();
-                        data.SaveTo(outputStream);
+                        memoryStream.Position = 0;
+                        using var image = SKImage.FromEncodedData(memoryStream);
+                        using var data = image.Encode(SKEncodedImageFormat.Jpeg, 100);
+                        var folder = await storageFile.GetParentAsync();
+
+                        if (folder != null)
+                        {
+                            using var jpegFile = await folder.CreateFileAsync(Path.ChangeExtension(storageFile.Name, "jpg"));
+                            using var outputStream = await jpegFile.OpenWriteAsync();
+                            data.SaveTo(outputStream);
+                        }
                     }
                 }
             }
@@ -408,8 +372,8 @@ public partial class MainView : LayoutTransformControl
             }
 
             retry = 0;
-            Dispatcher.UIThread.Invoke(() => ProgressBar.Value = (i + 1.0) / tasks.Count * 100);
             i++;
+            Dispatcher.UIThread.Invoke(() => ProgressBar.Value = i);
         }
 
         Dispatcher.UIThread.Invoke(() =>
@@ -432,16 +396,16 @@ public partial class MainView : LayoutTransformControl
             if (Path.IsPathRooted(dir))
                 continue;
 
-            split[index] = Util.GetValidDirectoryName(replacePlaceHolders(dir, placeholders));
+            split[index] = Util.GetValidDirectoryName(ReplacePlaceHolders(dir, placeholders));
         }
 
         pathString = Path.GetFullPath(string.Join(Path.DirectorySeparatorChar, split));
         Directory.CreateDirectory(pathString);
 
-        string fileName = Util.ReplaceInvalidFileNameChars(replacePlaceHolders(task.OutputFilename, placeholders).TrimEnd());
+        string fileName = Util.ReplaceInvalidFileNameChars(ReplacePlaceHolders(task.OutputFilename, placeholders).TrimEnd());
 
         if (string.IsNullOrWhiteSpace(fileName))
-            fileName = replacePlaceHolders(GenerationConfig.DEFAULT_OUTPUT_FILE_NAME, replacements);
+            fileName = ReplacePlaceHolders(GenerationConfig.DEFAULT_OUTPUT_FILE_NAME, placeholders);
 
         fileName = Util.GetValidFileName(Path.Combine(pathString, fileName[..Math.Min(fileName.Length, 128)] + ".png"));
         using var file1 = File.Create(fileName);
@@ -449,7 +413,7 @@ public partial class MainView : LayoutTransformControl
         return StorageProvider?.TryGetFileFromPathAsync(fileName).Result;
     }
 
-    protected string replacePlaceHolders(string text, Dictionary<string,string> placeholders)
+    protected static string ReplacePlaceHolders(string text, Dictionary<string,string> placeholders)
     {
         return Regex.Replace(
             text,
@@ -481,6 +445,11 @@ public partial class MainView : LayoutTransformControl
                         var records = csv.GetRecords<TextReplacement>().ToList();
                         ReplacementDataGrid.ItemsSource = records;
                         replacements = records.ToDictionary(r => r.Text, r => r.Replace);
+
+                        foreach (var control in getGenerationParameterControls())
+                        {
+                            control.SetReplacements(replacements);
+                        }
                     }
                     break;
             }
@@ -537,7 +506,7 @@ public partial class MainView : LayoutTransformControl
 
                 if (subscriptionInfo.Active)
                 {
-                    ResourceNodeExtensions.TryFindResource(AccountInfo, "TextControlForeground", ActualThemeVariant, out var defaultBrush);
+                    AccountInfo.TryFindResource("TextControlForeground", ActualThemeVariant, out var defaultBrush);
                     AccountInfo.Foreground = defaultBrush as IBrush ?? new SolidColorBrush(Colors.Black);
                 }
                 else

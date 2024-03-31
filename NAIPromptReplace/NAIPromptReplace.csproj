@@ -24,5 +24,6 @@
 
     <ItemGroup>
         <AvaloniaResource Include="Assets\**" />
+        <EmbeddedResource Include="Assets\bpe_simple_vocab_16e6.txt.gz" />
     </ItemGroup>
 </Project>

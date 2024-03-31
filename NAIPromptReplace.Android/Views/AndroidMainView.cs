@@ -64,7 +64,11 @@ public class AndroidMainView : MainView
     protected override IStorageFile GetOutputFileForTask(GenerationConfig task, Dictionary<string, string> placeholders)
     {
         var folder = DocumentFile.FromTreeUri(MainActivity.Instance, Uri.Parse(task.StorageFolder.Path.AbsoluteUri));
-        string originalFileName = Util.ReplaceInvalidFileNameChars(replacePlaceHolders(task.OutputFilename, placeholders) + ".png");
+        string originalFileName = Util.ReplaceInvalidFileNameChars(ReplacePlaceHolders(task.OutputFilename, placeholders) + ".png");
+
+        if (string.IsNullOrWhiteSpace(originalFileName))
+            originalFileName = ReplacePlaceHolders(GenerationConfig.DEFAULT_OUTPUT_FILE_NAME, placeholders);
+
         string fileName = Path.GetFileNameWithoutExtension(originalFileName);
         string extension = Path.GetExtension(originalFileName);
         string current = Path.ChangeExtension(fileName, extension);
