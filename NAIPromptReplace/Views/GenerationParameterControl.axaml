@@ -2,15 +2,16 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:naiPromptReplace="clr-namespace:NAIPromptReplace"
              xmlns:models="clr-namespace:NAIPromptReplace.Models"
+             xmlns:controls="clr-namespace:NAIPromptReplace.Controls"
+             xmlns:converters="clr-namespace:NAIPromptReplace.Converters"
              mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="750"
              x:Class="NAIPromptReplace.Views.GenerationParameterControl"
              x:DataType="models:GenerationConfig">
     <UserControl.Resources>
-        <naiPromptReplace:TextToTokenCountConverter x:Key="TextToTokenCountConverter" />
+        <converters:TextToTokenCountConverter x:Key="TextToTokenCountConverter" />
     </UserControl.Resources>
-    <Grid Name="MainGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="10">
+    <Grid Name="MainGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto, Auto" Margin="10">
         <Grid RowDefinitions="Auto,*,*,*,*" ColumnDefinitions="Auto,*">
             <TextBlock Text="Prompt" VerticalAlignment="Center" />
             <TextBox Grid.Row="0" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding Prompt}" />
@@ -92,29 +93,35 @@
             <CheckBox Content="Legacy V3 Extend" IsChecked="{Binding GenerationParameter.LegacyV3Extend}" />
             <CheckBox Content="Retry non-free tasks" IsChecked="{Binding RetryAll}" />
             <CheckBox Content="Save JPEG copy" IsChecked="{Binding SaveJpeg}" />
-            <naiPromptReplace:AnlasDisplay Name="AnlasDisplay" Height="20" />
+            <controls:AnlasDisplay Name="AnlasDisplay" Height="20" />
         </WrapPanel>
-        <Expander Grid.Row="4" Name="VibeTransferExpander" HorizontalAlignment="Stretch" DragDrop.AllowDrop="True">
-            <Grid RowDefinitions="*,Auto,Auto">
-                <DockPanel>
-                    <TextBlock Name="RefImagePathText" Text="Select reference image" TextTrimming="WordEllipsis" Margin="0,0,5,0" />
-                    <Button DockPanel.Dock="Right" HorizontalAlignment="Right" Name="BrowseRefImageButton" Content="Browse" Click="BrowseRefImageButton_OnClick" />
-                    <Button DockPanel.Dock="Right" HorizontalAlignment="Right" Name="RemoveRefImageButton" Content="Remove" Click="RemoveRefImageButton_OnClick" />
-                </DockPanel>
-                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="5" Margin="0,0,0,5">
-                    <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
-                        <TextBlock Text="Information Extracted" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.ReferenceInformationExtracted}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="1" MinWidth="100" HorizontalContentAlignment="Center" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
-                        <TextBlock Text="Reference Strength" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.ReferenceStrength}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="1" MinWidth="100" HorizontalContentAlignment="Center" />
-                    </StackPanel>
+        <controls:ReferenceImageExpander Grid.Row="4" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ExpanderName="Img2Img"
+                                         ImagePath="{Binding GenerationParameter.Image, Mode=TwoWay}" ImageData="{Binding GenerationParameter.ImageData, Mode=TwoWay}">
+            <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,0,0,5">
+                <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
+                    <TextBlock Text="Strength" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.Strength}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
                 </StackPanel>
-                <Image Grid.Row="2" Name="ReferenceImage" MaxHeight="480" Stretch="Uniform" />
-            </Grid>
-        </Expander>
-        <Grid Grid.Row="5" RowDefinitions="*,*" ColumnDefinitions="Auto,*">
+                <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
+                    <TextBlock Text="Noise" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.Noise}" FormatString="0.##" Increment="0.01" Minimum="0" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
+                </StackPanel>
+            </StackPanel>
+        </controls:ReferenceImageExpander>
+        <controls:ReferenceImageExpander Grid.Row="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ExpanderName="Vibe Transfer"
+                                         ImagePath="{Binding GenerationParameter.ReferenceImage, Mode=TwoWay}" ImageData="{Binding GenerationParameter.ReferenceImageData, Mode=TwoWay}" >
+            <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,0,0,5">
+                <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
+                    <TextBlock Text="Information Extracted" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.ReferenceInformationExtracted}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="1" MinWidth="100" HorizontalContentAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
+                    <TextBlock Text="Reference Strength" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.ReferenceStrength}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="1" MinWidth="100" HorizontalContentAlignment="Center" />
+                </StackPanel>
+            </StackPanel>
+        </controls:ReferenceImageExpander>
+        <Grid Grid.Row="6" RowDefinitions="*,*" ColumnDefinitions="Auto,*">
             <TextBlock Margin="0,0,5,0" Text="Output Path" VerticalAlignment="Center" />
             <DockPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,5">
                 <Button DockPanel.Dock="Right" Name="OpenOutputButton" Content="Open" />
@@ -124,6 +131,6 @@
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,5,0" Text="Output File Name" VerticalAlignment="Center" />
             <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding  OutputFilename}" />
         </Grid>
-        <Button Grid.Row="6" Grid.Column="0" HorizontalAlignment="Center" Content="Save Config" Click="Button_OnClick" />
+        <Button Grid.Row="7" Grid.Column="0" HorizontalAlignment="Center" Content="Save Config" Click="Button_OnClick" />
     </Grid>
 </UserControl>

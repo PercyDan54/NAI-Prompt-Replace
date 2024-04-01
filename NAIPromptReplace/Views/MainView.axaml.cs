@@ -230,6 +230,21 @@ public partial class MainView : LayoutTransformControl
                 g.GenerationParameter.ReferenceImage = Convert.ToBase64String(referenceImageData);
             }
 
+            referenceImageData = g.GenerationParameter.ImageData;
+
+            if (referenceImageData != null)
+            {
+                using var im = SKBitmap.Decode(referenceImageData);
+                using var resized = im.Resize(new SKSizeI(g.GenerationParameter.Width, g.GenerationParameter.Height), SKFilterQuality.High);
+                using var data = resized.Encode(SKEncodedImageFormat.Png, 100);
+                g.GenerationParameter.Image = Convert.ToBase64String(data.ToArray());
+                g.GenerationParameter.ExtraNoiseSeed = seed;
+            }
+            else
+            {
+                g.GenerationParameter.Strength = g.GenerationParameter.Noise = null;
+            }
+
             // Trim spaces between words
             string[] tags = g.Prompt.Split(',', StringSplitOptions.TrimEntries);
             string prompt = g.Prompt = string.Join(',', tags);
@@ -305,7 +320,7 @@ public partial class MainView : LayoutTransformControl
 
             try
             {
-                resp = await api.Generate(task).WaitAsync(TimeSpan.FromMinutes(2));
+                resp = await api.Generate(task, task.GenerationParameter.ImageData == null ? "generate" : "img2img").WaitAsync(TimeSpan.FromMinutes(2));
             }
             catch (Exception e)
             {

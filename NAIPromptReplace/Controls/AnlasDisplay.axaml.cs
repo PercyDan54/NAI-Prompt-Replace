@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 
-namespace NAIPromptReplace;
+namespace NAIPromptReplace.Controls;
 
 public partial class AnlasDisplay : UserControl
 {

@@ -10,6 +10,6 @@
         x:DataType="models:Config"
         Icon="avares://NAIPromptReplace/Assets/novelai-square.ico"
         Closing="Window_OnClosing"
-        Title="NovelAI Prompt Replace V1.0.9">
+        Title="NovelAI Prompt Replace V1.0.10">
     <views:MainView Name="MainView" />
 </Window>

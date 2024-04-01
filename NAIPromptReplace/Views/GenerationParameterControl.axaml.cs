@@ -34,17 +34,6 @@ public partial class GenerationParameterControl : UserControl
 
     private readonly NovelAIApi? api;
 
-    private static readonly FilePickerOpenOptions anyFilePickerOptions = new FilePickerOpenOptions
-    {
-        FileTypeFilter =
-        [
-            new FilePickerFileType("Any")
-            {
-                Patterns = ["*.*"]
-            }
-        ]
-    };
-
     public static readonly FilePickerSaveOptions SaveConfigFilePickerOptions = new FilePickerSaveOptions
     {
         FileTypeChoices =
@@ -68,8 +57,6 @@ public partial class GenerationParameterControl : UserControl
         InitializeComponent();
         DataContext = config;
         SetValue(ConfigProperty, config);
-        loadReferenceImage();
-        VibeTransferExpander.AddHandler(DragDrop.DropEvent, onDrop);
         this.api = api;
 
         foreach (var control in WrapPanel.Children)
@@ -189,104 +176,6 @@ public partial class GenerationParameterControl : UserControl
 
         Config.StorageFolder = folders[0];
         OutputPathTextBox.Text = folders[0].TryGetLocalPath();
-    }
-
-    private async void BrowseRefImageButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        var topLevel = TopLevel.GetTopLevel(this);
-
-        if (topLevel == null)
-            return;
-
-        var files = await topLevel.StorageProvider.OpenFilePickerAsync(anyFilePickerOptions);
-
-        if (files.Count == 0)
-            return;
-
-        var file = files[0];
-        using var stream = await file.OpenReadAsync();
-        using var stream1 = new MemoryStream();
-        await stream.CopyToAsync(stream1);
-        Config.GenerationParameter.ReferenceImageData = stream1.ToArray();
-
-        if (!OperatingSystem.IsAndroid())
-        {
-            Config.GenerationParameter.ReferenceImage = file.TryGetLocalPath();
-            loadReferenceImage();
-        }
-        else
-        {
-            stream.Position = 0;
-            using var im = SKImage.FromEncodedData(stream);
-            if (im != null)
-            {
-                stream.Position = 0;
-                ReferenceImage.Source = new Bitmap(stream);
-                setVibeTransferText(file.Name);
-            }
-        }
-    }
-
-    private void onDrop(object? sender, DragEventArgs e)
-    {
-        if (e.Data.Contains(DataFormats.Files))
-        {
-            var files = e.Data.GetFiles() ?? Array.Empty<IStorageItem>();
-
-            foreach (var item in files)
-            {
-                if (item is IStorageFile file)
-                {
-                    Config.GenerationParameter.ReferenceImage = file.Path.LocalPath;
-                }
-            }
-
-            loadReferenceImage();
-            e.Handled = true;
-        }
-    }
-
-    private void loadReferenceImage()
-    {
-        string? file = Config.GenerationParameter.ReferenceImage;
-
-        if (!File.Exists(file))
-        {
-            Config.GenerationParameter.ReferenceImage = null;
-            ReferenceImage.Source = null;
-            RefImagePathText.Text = "Select reference image";
-            VibeTransferExpander.Header = "Vibe Transfer (None)";
-            return;
-        }
-
-        using var fileStream = File.OpenRead(file);
-        using var im = SKImage.FromEncodedData(fileStream);
-        fileStream.Position = 0;
-
-        if (im != null)
-        {
-            fileStream.Position = 0;
-            ReferenceImage.Source = new Bitmap(fileStream);
-            Config.GenerationParameter.ReferenceImage = file;
-            setVibeTransferText(file);
-        }
-    }
-
-    private void setVibeTransferText(string file)
-    {
-        RefImagePathText.Text = Util.TruncateString(file, 32);
-        VibeTransferExpander.Header = $"Vibe Transfer ({Util.TruncateString(Path.GetFileName(file), 32)})";
-    }
-
-    private void removeReferenceImage()
-    {
-        Config.GenerationParameter.ReferenceImage = null;
-        loadReferenceImage();
-    }
-
-    private void RemoveRefImageButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        removeReferenceImage();
     }
 
     public void SetReplacements(Dictionary<string, string> replacements)

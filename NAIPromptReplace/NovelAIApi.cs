@@ -77,7 +77,7 @@ public class NovelAIApi
         return null;
     }
 
-    public async Task<HttpResponseMessage> Generate(GenerationConfig generationConfig)
+    public async Task<HttpResponseMessage> Generate(GenerationConfig generationConfig, string action)
     {
         var req = new HttpRequestMessage(HttpMethod.Post, novelai_api + "ai/generate-image");
         req.Headers.Add("Authorization", "Bearer " + accessToken);
@@ -86,7 +86,7 @@ public class NovelAIApi
         {
             { "input", generationConfig.Prompt },
             { "model", generationConfig.Model },
-            { "action", "generate" },
+            { "action", action },
             { "parameters", generationConfig.GenerationParameter }
         };
 

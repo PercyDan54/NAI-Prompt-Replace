@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using Avalonia.Data.Converters;
 using NAIPromptReplace.Models;
 
-namespace NAIPromptReplace;
+namespace NAIPromptReplace.Converters;
 
 public class TextToTokenCountConverter : IMultiValueConverter
 {

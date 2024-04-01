@@ -193,6 +193,21 @@ public class GenerationParameter : INotifyPropertyChanged
     [JsonIgnore]
     public byte[]? ReferenceImageData { get; set; }
 
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Image { get; set; }
+
+    [JsonIgnore]
+    public byte[]? ImageData { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public double? Strength { get; set; } = 0.7;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public double? Noise { get; set; } = 0;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? ExtraNoiseSeed { get; set; }
+
     public double ReferenceInformationExtracted { get; set; } = 1;
 
     public double ReferenceStrength { get; set; } = 1;
