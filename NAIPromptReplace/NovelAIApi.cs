@@ -7,6 +7,7 @@ namespace NAIPromptReplace;
 public class NovelAIApi
 {
     private const string novelai_api = "https://api.novelai.net/";
+    private const string novelai_image_api = "https://image.novelai.net/";
 
     private string accessToken = string.Empty;
     private readonly HttpClient httpClient = new HttpClient();
@@ -79,7 +80,7 @@ public class NovelAIApi
 
     public async Task<HttpResponseMessage> Generate(GenerationConfig generationConfig, string action)
     {
-        var req = new HttpRequestMessage(HttpMethod.Post, novelai_api + "ai/generate-image");
+        var req = new HttpRequestMessage(HttpMethod.Post, novelai_image_api + "ai/generate-image");
         req.Headers.Add("Authorization", "Bearer " + accessToken);
 
         var data = new Dictionary<string, object>
