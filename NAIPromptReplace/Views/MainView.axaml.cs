@@ -451,7 +451,7 @@ public partial class MainView : LayoutTransformControl
                     break;
 
                 case ".png":
-                    generationConfig = PngMetadataReader.FromFile(file);
+                    generationConfig = PngMetadataReader.ReadFile(file);
                     break;
 
                 case ".csv":
