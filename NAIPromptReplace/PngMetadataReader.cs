@@ -92,7 +92,7 @@ public static class PngMetadataReader
                     if (property.Name == comment_key)
                         comment = value;
 
-                    if (property.Name == source_key)
+                    else if (property.Name == source_key)
                         source = value;
                 }
             }
@@ -230,8 +230,8 @@ public static class PngMetadataReader
 
         if (!string.IsNullOrEmpty(binaryData))
         {
-            byte[] byteData = Enumerable.Range(0, binaryData.Length / 8)
-                .Select(b => Convert.ToByte(binaryData.Substring(b * 8, 8), 2))
+            byte[] byteData = binaryData.Chunk(8)
+                .Select(chars => Convert.ToByte(new string(chars), 2))
                 .ToArray();
 
             if (compressed)
@@ -252,8 +252,8 @@ public static class PngMetadataReader
 
     private static string binaryStringToString(string binaryString)
     {
-        byte[] byteArray = Enumerable.Range(0, binaryString.Length / 8)
-            .Select(b => Convert.ToByte(binaryString.Substring(b * 8, 8), 2))
+        byte[] byteArray = binaryString.Chunk(8)
+            .Select(chars => Convert.ToByte(new string(chars), 2))
             .ToArray();
 
         return Encoding.UTF8.GetString(byteArray);

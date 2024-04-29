@@ -15,8 +15,7 @@ public partial class GenerationParameterControl : UserControl
 {
     private static readonly List<string> models =
     [
-        "nai-diffusion-3", "safe-diffusion", "nai-diffusion-furry", "nai-diffusion-inpainting",
-        "nai-diffusion-3-inpainting", "safe-diffusion-inpainting", "furry-diffusion-inpainting", "kandinsky-vanilla",
+        "nai-diffusion-3", "safe-diffusion", "nai-diffusion-furry", "kandinsky-vanilla",
         "nai-diffusion-2", "nai-diffusion"
     ];
 
