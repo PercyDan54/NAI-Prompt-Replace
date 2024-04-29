@@ -1,5 +1,6 @@
 using System;
 using Avalonia;
+using Avalonia.ReactiveUI;
 
 namespace NAIPromptReplace.Desktop;
 
@@ -17,5 +18,6 @@ class Program
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
+            .UseReactiveUI()
             .LogToTrace();
 }

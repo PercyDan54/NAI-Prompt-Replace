@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Avalonia.Data;
 using Avalonia.Data.Converters;
 using NAIPromptReplace.Models;
 
@@ -13,7 +14,7 @@ public class TextToTokenCountConverter : IMultiValueConverter
     public object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
     {
         if (values.Count < 1 || values[0] is not string prompt)
-            return 0;
+            return BindingOperations.DoNothing;
 
         if (values.Count >= 2 && values[1] is Dictionary<string, string> replacements)
         {

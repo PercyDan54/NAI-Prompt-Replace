@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
+using NAIPromptReplace.ViewModels;
 
 namespace NAIPromptReplace;
 
@@ -30,6 +31,6 @@ public partial class MainWindow : Window
     
     private void Window_OnClosing(object? sender, WindowClosingEventArgs e)
     {
-        MainView.SaveConfig();
+        //MainView.SaveConfig();
     }
 }

@@ -4,6 +4,7 @@ using Android.Content.PM;
 using Android.Content.Res;
 using Avalonia;
 using Avalonia.Android;
+using Avalonia.ReactiveUI;
 
 namespace NAIPromptReplace.Android;
 
@@ -27,6 +28,7 @@ public class MainActivity : AvaloniaMainActivity<AndroidApp>
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
         return base.CustomizeAppBuilder(builder)
+            .UseReactiveUI()
             .LogToTrace()
             .WithInterFont();
     }

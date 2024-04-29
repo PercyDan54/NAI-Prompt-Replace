@@ -20,8 +20,8 @@ public class AndroidMainView : MainView
 
     public AndroidMainView()
     {
-        SaveAllButton.IsEnabled = false;
-        MainActivity.Instance.Stopped += delegate { SaveConfig(); };
+        //SaveAllButton.IsEnabled = false;
+        //MainActivity.Instance.Stopped += delegate { SaveConfig(); };
         MainActivity.Instance.OrientationChanged += updateScale;
         updateScale(this, Orientation.Undefined);
         new AlertDialog.Builder(MainActivity.Instance).SetMessage(@"由于安卓存储权限的限制每个任务必须选择一个输出目录

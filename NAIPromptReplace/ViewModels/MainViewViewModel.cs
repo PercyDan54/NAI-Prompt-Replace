@@ -1,26 +1,33 @@
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
 using System.Net;
+using System.Reactive.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Windows.Input;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using CsvHelper;
 using CsvHelper.Configuration;
 using NAIPromptReplace.Models;
-using NAIPromptReplace.ViewModels;
+using NAIPromptReplace.Views;
+using ReactiveUI;
 using SkiaSharp;
 
-namespace NAIPromptReplace.Views;
+namespace NAIPromptReplace.ViewModels;
 
-public partial class MainView : LayoutTransformControl
+public class MainViewViewModel : ReactiveObject
 {
-    protected const string CONFIG_FILE = "config.json";
     protected const string HELP_URL = "https://docs.qq.com/doc/DVkhyZk5tUmNhZVd1";
+
+    private string showTokenButtonText = "Show";
+    private string logText = string.Empty;
+    private bool showToken;
+    private string runButtonText = "Run";
 
 #if DEBUG
     private readonly Random random = new Random(1337);
@@ -30,8 +37,9 @@ public partial class MainView : LayoutTransformControl
     private Dictionary<string, string> replacements { get; set; } = [];
     private readonly NovelAIApi api = new NovelAIApi();
 
-    protected Config Config { get; set; } = new Config();
     private CancellationTokenSource? cancellationTokenSource;
+    private readonly IStorageProvider? storageProvider;
+    private SubscriptionInfo? subscriptionInfo;
     private static readonly CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false, TrimOptions = TrimOptions.Trim };
     private static readonly FilePickerOpenOptions filePickerOptions = new FilePickerOpenOptions
     {
@@ -42,14 +50,150 @@ public partial class MainView : LayoutTransformControl
         ],
         AllowMultiple = true
     };
+    public Config Config { get; set; } = new Config();
 
-    protected IStorageProvider? StorageProvider => TopLevel.GetTopLevel(this)?.StorageProvider;
+    public ObservableCollection<TabItem> TabItems { get; set; } = new ObservableCollection<TabItem>();
+    public int SelectedTabIndex { get; set; }
 
-    protected virtual string ConfigPath => CONFIG_FILE;
-
-    public MainView()
+    public bool ShowToken
     {
-        InitializeComponent();
+        get => showToken;
+        set => this.RaiseAndSetIfChanged(ref showToken, value);
+    }
+
+    public string ShowTokenButtonText
+    {
+        get => showTokenButtonText;
+        set => this.RaiseAndSetIfChanged(ref showTokenButtonText, value);
+    }
+
+    public string RunButtonText
+    {
+        get => runButtonText;
+        set => this.RaiseAndSetIfChanged(ref runButtonText, value);
+    }
+
+    public SubscriptionInfo? SubscriptionInfo
+    {
+        get => subscriptionInfo;
+        set => this.RaiseAndSetIfChanged(ref subscriptionInfo, value);
+    }
+
+    public string LogText
+    {
+        get => logText;
+        set => this.RaiseAndSetIfChanged(ref logText, value);
+    }
+
+    public ICommand ToggleShowTokenCommand { get; set; }
+    public ICommand UpdateTokenCommand { get; set; }
+    public ICommand OpenHelpCommand { get; set; }
+    public ICommand NewTabCommand { get; set; }
+    public ICommand CloseTabCommand { get; set; }
+    public ICommand SaveAllCommand { get; set; }
+    public ICommand OpenFileCommand { get; set; }
+    public ICommand RunTasksCommand { get; set; }
+
+    public MainViewViewModel() : this(null)
+    {
+    }
+
+    public MainViewViewModel(IStorageProvider? storageProvider)
+    {
+        this.storageProvider = storageProvider;
+
+        ToggleShowTokenCommand = ReactiveCommand.Create(() =>
+        {
+            ShowToken = !ShowToken;
+            ShowTokenButtonText = ShowToken ? "Hide" : "Show";
+        });
+
+        OpenHelpCommand = ReactiveCommand.Create(OpenHelp);
+        UpdateTokenCommand = ReactiveCommand.Create(async () => await updateAccountInfo(true));
+        UpdateTokenCommand.Execute(null);
+        NewTabCommand = ReactiveCommand.Create(() => AddTab("New config", new GenerationConfig()));
+        CloseTabCommand = ReactiveCommand.Create(closeTab);
+        OpenFileCommand = ReactiveCommand.Create(OpenFile);
+    }
+
+    protected virtual void OpenHelp() => PresentUri(HELP_URL);
+
+    private async void OpenFile()
+    {
+        if (storageProvider == null)
+            return;
+
+        var files = await storageProvider.OpenFilePickerAsync(filePickerOptions);
+
+        foreach (var file in files)
+        {
+            await OpenFile(file);
+        }
+    }
+
+    public async Task OpenFile(IStorageFile file)
+    {
+        try
+        {
+            await using var stream = await file.OpenReadAsync();
+            using var reader = new StreamReader(stream);
+            GenerationConfig? generationConfig = null;
+
+            switch (Path.GetExtension(file.Name))
+            {
+                case ".json":
+                    generationConfig = JsonSerializer.Deserialize<GenerationConfig>(await reader.ReadToEndAsync());
+                    break;
+
+                case ".png":
+                    generationConfig = PngMetadataReader.ReadFile(file);
+                    break;
+
+                case ".csv":
+                    using (var csv = new CsvReader(reader, csvConfiguration))
+                    {
+                        var records = csv.GetRecords<TextReplacement>().ToList();
+                        //ReplacementDataGrid.ItemsSource = records;
+                        replacements = records.ToDictionary(r => r.Text, r => r.Replace);
+
+                        foreach (var control in getGenerationParameterControls())
+                        {
+                            control.SetReplacements(replacements);
+                        }
+                    }
+                    break;
+            }
+
+            if (generationConfig != null)
+            {
+                AddTab(file.Name[..Math.Min(32, file.Name.Length)].Trim(), generationConfig);
+            }
+        }
+        catch (Exception exception)
+        {
+            writeLogLine(exception.Message);
+        }
+    }
+
+    private void writeLogLine(object content)
+    {
+        writeLog(content + Environment.NewLine);
+    }
+
+    private void writeLog(object content)
+    {
+        logText += content.ToString();
+    }
+
+    private IEnumerable<GenerationParameterControl> getGenerationParameterControls()
+    {
+        foreach (var item in TabItems)
+        {
+            if (item.Content is GenerationParameterControl parameterControl)
+            {
+                yield return parameterControl;
+            }
+        }
     }
 
     protected virtual GenerationParameterControl AddTab(string header, GenerationConfig config)
@@ -61,88 +205,24 @@ public partial class MainView : LayoutTransformControl
             string path = string.IsNullOrEmpty(config.OutputPath) ? Environment.CurrentDirectory : config.OutputPath;
             PresentUri(path);
         };
-        TabControl.Items.Add(new TabItem { Header = header, Content = control });
-
+        TabItems.Add(new TabItem { Header = header, Content = control });
         return control;
     }
 
-    protected virtual void PresentUri(string uri)
+    private void closeTab()
     {
-        try
-        {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = uri,
-                UseShellExecute = true
-            });
-        }
-        catch
-        {
-        }
-    }
-
-    private void ReplacementDataGrid_OnAutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
-    {
-        e.Column.Width = DataGridLength.Auto;
-    }
-
-    private void RunButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (Design.IsDesignMode)
+        if (TabItems.Count <= 0)
             return;
 
-        if (cancellationTokenSource != null)
-        {
-            RunButton.Content = "Run";
-            cancellationTokenSource.Cancel();
-            ProgressBar.Value = 0;
-            cancellationTokenSource = null;
-        }
-        else
-        {
-            RunButton.Content = "Cancel";
-            cancellationTokenSource = new CancellationTokenSource();
-            var configs = getGenerationConfigs().ToList();
-            ProgressBar.Value = 0;
-            //clearLog();
-            Task.Factory.StartNew(_ => createAndRunTasks(configs, cancellationTokenSource.Token).ContinueWith(task =>
+        /*if (TabControl.Items[TabControl.SelectedIndex] is GenerationParameterControl control)
             {
-                if (task.Exception?.InnerException != null)
-                {
-                    writeLogLine($"Tasks Failed with an exception, please report this: {task.Exception.InnerException}");
-                }
-            }), null, TaskCreationOptions.LongRunning);
-        }
+                control.AnlasChanged -= updateTotalAnlas;
+            }*/
+
+        TabItems.RemoveAt(SelectedTabIndex);
     }
 
-    private IEnumerable<GenerationParameterControl> getGenerationParameterControls()
-    {
-        foreach (object? item in TabControl.Items)
-        {
-            if (((TabItem)item).Content is GenerationParameterControl parameterControl)
-            {
-                yield return parameterControl;
-            }
-        }
-    }
-
-    private IEnumerable<GenerationConfig> getGenerationConfigs() => getGenerationParameterControls().Select(p => p.Config);
-
-    private void writeLogLine(object obj)
-    {
-        //writeLog(obj + Environment.NewLine);
-    }
-
-    private async void OpenButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        var files = await StorageProvider.OpenFilePickerAsync(filePickerOptions);
-
-        foreach (var file in files)
-        {
-            await OpenFile(file);
-        }
-    }
-
+    
     private async Task createAndRunTasks(IEnumerable<GenerationConfig> configs, CancellationToken token)
     {
         var tasks = new List<GenerationConfig>();
@@ -239,7 +319,7 @@ public partial class MainView : LayoutTransformControl
         int retry = 0;
         const int maxRetries = 5;
         var date = DateTime.Now;
-        Dispatcher.UIThread.Invoke(() => ProgressBar.Maximum = tasks.Count);
+        //Dispatcher.UIThread.Invoke(() => ProgressBar.Maximum = tasks.Count);
 
         while (i < tasks.Count)
         {
@@ -318,14 +398,11 @@ public partial class MainView : LayoutTransformControl
 
             retry = 0;
             i++;
-            Dispatcher.UIThread.Invoke(() => ProgressBar.Value = i);
+            //Dispatcher.UIThread.Invoke(() => ProgressBar.Value = i);
         }
 
-        Dispatcher.UIThread.Invoke(() =>
-        {
-            RunButton.Content = "Run";
-            cancellationTokenSource = null;
-        });
+        runButtonText = "Run";
+        cancellationTokenSource = null;
     }
 
     protected virtual IStorageFile GetOutputFileForTask(GenerationConfig task, Dictionary<string,string> placeholders)
@@ -355,7 +432,7 @@ public partial class MainView : LayoutTransformControl
         fileName = Util.GetValidFileName(Path.Combine(pathString, fileName[..Math.Min(fileName.Length, 128)] + ".png"));
         using var file1 = File.Create(fileName);
 
-        return StorageProvider?.TryGetFileFromPathAsync(fileName).Result;
+        return storageProvider?.TryGetFileFromPathAsync(fileName).Result;
     }
 
     protected static string ReplacePlaceHolders(string text, Dictionary<string,string> placeholders)
@@ -366,73 +443,32 @@ public partial class MainView : LayoutTransformControl
             match => placeholders.TryGetValue(match.Groups["name"].Value, out string? value) ? value : match.Groups["name"].Value);
     }
 
-    public async Task OpenFile(IStorageFile file)
+    private async Task updateAccountInfo(bool tokenChanged = false)
+    {
+        if (Design.IsDesignMode)
+            return;
+
+        try
+        {
+            SubscriptionInfo = tokenChanged ? await api.UpdateToken(Config.AccessToken): await api.GetSubscription();
+        }
+        catch
+        {
+        }
+    }
+    
+    protected virtual void PresentUri(string uri)
     {
         try
         {
-            await using var stream = await file.OpenReadAsync();
-            using var reader = new StreamReader(stream);
-            GenerationConfig? generationConfig = null;
-
-            switch (Path.GetExtension(file.Name))
+            Process.Start(new ProcessStartInfo
             {
-                case ".json":
-                    generationConfig = JsonSerializer.Deserialize<GenerationConfig>(await reader.ReadToEndAsync());
-                    break;
-
-                case ".png":
-                    generationConfig = PngMetadataReader.ReadFile(file);
-                    break;
-
-                case ".csv":
-                    using (var csv = new CsvReader(reader, csvConfiguration))
-                    {
-                        var records = csv.GetRecords<TextReplacement>().ToList();
-                        ReplacementDataGrid.ItemsSource = records;
-                        replacements = records.ToDictionary(r => r.Text, r => r.Replace);
-
-                        foreach (var control in getGenerationParameterControls())
-                        {
-                            control.SetReplacements(replacements);
-                        }
-                    }
-                    break;
-            }
-
-            if (generationConfig != null)
-            {
-                AddTab(file.Name[..Math.Min(32, file.Name.Length)].Trim(), generationConfig);
-            }
+                FileName = uri,
+                UseShellExecute = true
+            });
         }
-        catch (Exception exception)
+        catch
         {
-            writeLogLine(exception.Message);
         }
-    }
-
-    private async void SaveAllButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (TabControl.Items.Count == 0)
-            return;
-
-        var folder = await StorageProvider?.OpenFolderPickerAsync(new FolderPickerOpenOptions
-        {
-            AllowMultiple = false
-        });
-
-        if (folder.Count == 0)
-            return;
-
-        foreach (var control in getGenerationParameterControls())
-        {
-            var fileName = Util.GetValidFileName(Path.Combine(folder[0].TryGetLocalPath(), (Path.ChangeExtension(control.Name, string.Empty) ?? "Untitled") + ".json"));
-            folder[0].CreateFileAsync(Path.GetFileName(fileName));
-            control.SaveConfig(await StorageProvider?.TryGetFileFromPathAsync(fileName));
-        }
-    }
-
-    private void HelpButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        PresentUri(HELP_URL);
     }
 }
