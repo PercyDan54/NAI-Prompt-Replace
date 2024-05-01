@@ -7,23 +7,25 @@
         xmlns:converters="clr-namespace:NAIPromptReplace.Converters"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="700"
         x:Class="NAIPromptReplace.Views.MainView"
-        x:DataType="vm:MainViewViewModel"
+        x:DataType="vm:MainViewModel"
         DragDrop.AllowDrop="True">
-    <d:DesignData>
-        <vm:MainViewViewModel></vm:MainViewViewModel>
-    </d:DesignData>
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
     <LayoutTransformControl.Resources>
         <converters:SubscriptionInfoToColorConverter x:Key="SubscriptionInfoToColorConverter" />
         <converters:SubscriptionInfoToTextConverter x:Key="SubscriptionInfoToTextConverter" />
+        <converters:AnlasCountConverter x:Key="AnlasCountConverter" />
     </LayoutTransformControl.Resources>
+
     <Panel Margin="20, 10">
         <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnDefinitions="*">
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,5">
                 <TextBlock Text="Token" VerticalAlignment="Center" Margin="0,0,5,0" />
-                <TextBox Grid.Column="1" Name="TokenTextBox" PasswordChar="*" HorizontalAlignment="Stretch" Margin="0,0,5,0" Text="{Binding  Config.AccessToken}" RevealPassword="{Binding ShowToken}" />
+                <TextBox Grid.Column="1" PasswordChar="*" HorizontalAlignment="Stretch" Margin="0,0,5,0" Text="{Binding  Config.AccessToken}" RevealPassword="{Binding ShowToken}" />
                 <DockPanel Grid.Column="2" Dock="Right" HorizontalAlignment="Right" LastChildFill="False">
-                    <Button Name="ShowPasswordButton" Content="{Binding ShowTokenButtonText}" Command="{Binding ToggleShowTokenCommand}" Margin="5,0,5,0" />
-                    <Button Name="LoginButton" Content="Login" Command="{Binding UpdateTokenCommand}" Margin="0,0,5,0" />
+                    <Button Content="{Binding ShowTokenButtonText}" Command="{Binding ToggleShowTokenCommand}" Margin="5,0,5,0" />
+                    <Button Content="Login" Command="{Binding UpdateTokenCommand}" Margin="0,0,5,0" />
                     <Button Content="Help" Command="{Binding OpenHelpCommand}" />
                 </DockPanel>
             </Grid>
@@ -31,9 +33,9 @@
                 <Button Content="New" Command="{Binding NewTabCommand}" Margin="0,0,5,0" />
                 <Button Grid.Column="1" Content="Open" Command="{Binding OpenFileCommand}" Margin="0,0,5,0" />
                 <Button Grid.Column="2" Content="Close" Command="{Binding CloseTabCommand}" Margin="0,0,5,0" />
-                <Button Grid.Column="3" Name="SaveAllButton" Content="Save All" Margin="0,0,5,0" />
+                <Button Grid.Column="3" Content="Save All" Margin="0,0,5,0" />
                 <DockPanel Grid.Column="4" Dock="Right" HorizontalAlignment="Right" LastChildFill="False">
-                    <TextBlock Name="AccountInfo" Text="{Binding SubscriptionInfo, Converter={StaticResource SubscriptionInfoToTextConverter}}" Margin="15,0" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding SubscriptionInfo, Converter={StaticResource SubscriptionInfoToTextConverter}}" Margin="15,0" HorizontalAlignment="Right" VerticalAlignment="Center">
                         <TextBlock.Foreground>
                             <MultiBinding Converter="{StaticResource SubscriptionInfoToColorConverter}">
                                 <MultiBinding.Bindings>
@@ -43,20 +45,20 @@
                             </MultiBinding>
                         </TextBlock.Foreground>
                     </TextBlock>
-                    <controls:AnlasDisplay Name="AccountAnlasDisplay" Height="20" />
+                    <controls:AnlasDisplay Value="{Binding SubscriptionInfo, Converter={StaticResource AnlasCountConverter}}" Height="20" />
                 </DockPanel>
             </Grid>
             <ScrollViewer Grid.Row="2" Margin="0,0,0,5">
-                <TabControl Name="TabControl" SelectedIndex="{Binding SelectedTabIndex}" ItemsSource="{Binding TabItems}" VerticalAlignment="Stretch" />
+                <TabControl SelectedIndex="{Binding SelectedTabIndex}" ItemsSource="{Binding TabItems}" VerticalAlignment="Stretch" />
             </ScrollViewer>
-            <DataGrid Grid.Row="3" Height="100" Name="ReplacementDataGrid" Margin="0,0,0,5" AutoGenerateColumns="True" AutoGeneratingColumn="ReplacementDataGrid_OnAutoGeneratingColumn" />
+            <DataGrid Grid.Row="3" Height="100" ItemsSource="{Binding Replacements}" Margin="0,0,0,5" AutoGenerateColumns="True" AutoGeneratingColumn="ReplacementDataGrid_OnAutoGeneratingColumn" />
             <Grid Grid.Row="4" Margin="0,20,0,20" RowDefinitions="Auto,*" ColumnDefinitions="Auto,*">
                 <StackPanel Grid.Row="0" Grid.Column="0" Spacing="5" VerticalAlignment="Center" Orientation="Vertical">
-                    <Button Name="RunButton" Content="{Binding RunButtonText}" Command="{Binding RunTasksCommand}" Width="70" HorizontalContentAlignment="Center" VerticalAlignment="Center" />
-                    <controls:AnlasDisplay Name="TotalAnlas" HorizontalAlignment="Center" Height="20" />
+                    <Button Content="{Binding RunButtonText}" Command="{Binding RunTasksCommand}" Width="70" HorizontalContentAlignment="Center" VerticalAlignment="Center" />
+                    <controls:AnlasDisplay Value="{Binding SubscriptionInfo, Converter={StaticResource AnlasCountConverter}, Mode=OneWay}" HorizontalAlignment="Center" Height="20" />
                 </StackPanel>
                 <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding LogText}" IsReadOnly="True" VerticalAlignment="Center" Height="130" TextWrapping="Wrap" />
-                <ProgressBar Name="ProgressBar" Grid.Row="1" Grid.Column="1" ShowProgressText="True" />
+                <ProgressBar Grid.Row="1" Grid.Column="1" Maximum="{Binding TotalTasks}" Value="{Binding CurrentTask}" ShowProgressText="True" />
             </Grid>
         </Grid>
     </Panel>

@@ -1,18 +1,16 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
 using System.Net;
-using System.Reactive.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
 using Avalonia.Controls;
-using Avalonia.Media;
 using Avalonia.Platform.Storage;
-using Avalonia.Threading;
 using CsvHelper;
 using CsvHelper.Configuration;
+using DynamicData;
 using NAIPromptReplace.Models;
 using NAIPromptReplace.Views;
 using ReactiveUI;
@@ -20,7 +18,7 @@ using SkiaSharp;
 
 namespace NAIPromptReplace.ViewModels;
 
-public class MainViewViewModel : ReactiveObject
+public class MainViewModel : ReactiveObject
 {
     protected const string HELP_URL = "https://docs.qq.com/doc/DVkhyZk5tUmNhZVd1";
 
@@ -40,6 +38,9 @@ public class MainViewViewModel : ReactiveObject
     private CancellationTokenSource? cancellationTokenSource;
     private readonly IStorageProvider? storageProvider;
     private SubscriptionInfo? subscriptionInfo;
+    private int currentTask;
+    private int totalTasks = 1;
+    private Config config = new Config();
     private static readonly CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false, TrimOptions = TrimOptions.Trim };
     private static readonly FilePickerOpenOptions filePickerOptions = new FilePickerOpenOptions
     {
@@ -50,10 +51,34 @@ public class MainViewViewModel : ReactiveObject
         ],
         AllowMultiple = true
     };
-    public Config Config { get; set; } = new Config();
 
-    public ObservableCollection<TabItem> TabItems { get; set; } = new ObservableCollection<TabItem>();
+    public Config Config
+    {
+        get => config;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref config, value);
+            updateAccountInfo(true);
+        }
+    }
+
+    public ObservableCollection<TabItem> TabItems { get; set; } = [];
+
     public int SelectedTabIndex { get; set; }
+
+    public int CurrentTask
+    {
+        get => currentTask;
+        set => this.RaiseAndSetIfChanged(ref currentTask, value);
+    }
+
+    public int TotalTasks
+    {
+        get => totalTasks;
+        set => this.RaiseAndSetIfChanged(ref totalTasks, value);
+    }
+
+    public ObservableCollection<TextReplacement> Replacements { get; set; } = [];
 
     public bool ShowToken
     {
@@ -94,11 +119,11 @@ public class MainViewViewModel : ReactiveObject
     public ICommand OpenFileCommand { get; set; }
     public ICommand RunTasksCommand { get; set; }
 
-    public MainViewViewModel() : this(null)
+    public MainViewModel() : this(null)
     {
     }
 
-    public MainViewViewModel(IStorageProvider? storageProvider)
+    public MainViewModel(IStorageProvider? storageProvider)
     {
         this.storageProvider = storageProvider;
 
@@ -110,13 +135,13 @@ public class MainViewViewModel : ReactiveObject
 
         OpenHelpCommand = ReactiveCommand.Create(OpenHelp);
         UpdateTokenCommand = ReactiveCommand.Create(async () => await updateAccountInfo(true));
-        UpdateTokenCommand.Execute(null);
         NewTabCommand = ReactiveCommand.Create(() => AddTab("New config", new GenerationConfig()));
         CloseTabCommand = ReactiveCommand.Create(closeTab);
         OpenFileCommand = ReactiveCommand.Create(OpenFile);
+        RunTasksCommand = ReactiveCommand.Create(RunTasks);
     }
 
-    protected virtual void OpenHelp() => PresentUri(HELP_URL);
+    protected void OpenHelp() => PresentUri(HELP_URL);
 
     private async void OpenFile()
     {
@@ -130,7 +155,7 @@ public class MainViewViewModel : ReactiveObject
             await OpenFile(file);
         }
     }
-
+    
     public async Task OpenFile(IStorageFile file)
     {
         try
@@ -153,7 +178,8 @@ public class MainViewViewModel : ReactiveObject
                     using (var csv = new CsvReader(reader, csvConfiguration))
                     {
                         var records = csv.GetRecords<TextReplacement>().ToList();
-                        //ReplacementDataGrid.ItemsSource = records;
+                        Replacements.Clear();
+                        Replacements.AddRange(records);
                         replacements = records.ToDictionary(r => r.Text, r => r.Replace);
 
                         foreach (var control in getGenerationParameterControls())
@@ -175,6 +201,8 @@ public class MainViewViewModel : ReactiveObject
         }
     }
 
+    private void clearLog() => LogText = string.Empty;
+    
     private void writeLogLine(object content)
     {
         writeLog(content + Environment.NewLine);
@@ -182,7 +210,7 @@ public class MainViewViewModel : ReactiveObject
 
     private void writeLog(object content)
     {
-        logText += content.ToString();
+        LogText += content.ToString();
     }
 
     private IEnumerable<GenerationParameterControl> getGenerationParameterControls()
@@ -214,15 +242,37 @@ public class MainViewViewModel : ReactiveObject
         if (TabItems.Count <= 0)
             return;
 
-        /*if (TabControl.Items[TabControl.SelectedIndex] is GenerationParameterControl control)
-            {
-                control.AnlasChanged -= updateTotalAnlas;
-            }*/
-
         TabItems.RemoveAt(SelectedTabIndex);
     }
 
-    
+    private void RunTasks()
+    {
+        if (cancellationTokenSource != null)
+        {
+            RunButtonText = "Run";
+            cancellationTokenSource.Cancel();
+            CurrentTask = 0;
+            cancellationTokenSource = null;
+        }
+        else
+        {
+            RunButtonText = "Cancel";
+            cancellationTokenSource = new CancellationTokenSource();
+            var configs = getGenerationConfigs().ToList();
+            CurrentTask = 0;
+            clearLog();
+            Task.Factory.StartNew(_ => createAndRunTasks(configs, cancellationTokenSource.Token).ContinueWith(task =>
+            {
+                if (task.Exception?.InnerException != null)
+                {
+                    writeLogLine($"Tasks Failed with an exception, please report this: {task.Exception.InnerException}");
+                }
+            }), null, TaskCreationOptions.LongRunning);
+        }
+    }
+
+    private IEnumerable<GenerationConfig> getGenerationConfigs() => getGenerationParameterControls().Select(p => p.Config);
+
     private async Task createAndRunTasks(IEnumerable<GenerationConfig> configs, CancellationToken token)
     {
         var tasks = new List<GenerationConfig>();
@@ -319,13 +369,13 @@ public class MainViewViewModel : ReactiveObject
         int retry = 0;
         const int maxRetries = 5;
         var date = DateTime.Now;
-        //Dispatcher.UIThread.Invoke(() => ProgressBar.Maximum = tasks.Count);
+        TotalTasks = tasks.Count;
 
         while (i < tasks.Count)
         {
             var task = tasks[i];
             token.ThrowIfCancellationRequested();
-            //writeLog($"Running task {i + 1} / {tasks.Count}: ");
+            writeLog($"Running task {i + 1} / {tasks.Count}: ");
             HttpResponseMessage? resp = null;
 
             try
@@ -337,7 +387,7 @@ public class MainViewViewModel : ReactiveObject
                 writeLogLine(e.Message);
             }
 
-            //Dispatcher.UIThread.Invoke(() => updateAccountInfo());
+            updateAccountInfo();
             bool success = resp?.IsSuccessStatusCode ?? false;
 
             if (success)
@@ -398,7 +448,7 @@ public class MainViewViewModel : ReactiveObject
 
             retry = 0;
             i++;
-            //Dispatcher.UIThread.Invoke(() => ProgressBar.Value = i);
+            CurrentTask = i;
         }
 
         runButtonText = "Run";
@@ -434,7 +484,7 @@ public class MainViewViewModel : ReactiveObject
 
         return storageProvider?.TryGetFileFromPathAsync(fileName).Result;
     }
-
+    
     protected static string ReplacePlaceHolders(string text, Dictionary<string,string> placeholders)
     {
         return Regex.Replace(

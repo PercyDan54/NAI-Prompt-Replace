@@ -4,14 +4,18 @@ using NAIPromptReplace.Models;
 
 namespace NAIPromptReplace.Converters;
 
-public class SubscriptionInfoToTextConverter : IValueConverter
+public class AnlasCountConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is SubscriptionInfo subscriptionInfo)
-            return subscriptionInfo.ToString();
-
-        return "Not logged in";
+        switch (value)
+        {
+            case SubscriptionInfo subscriptionInfo:
+                return subscriptionInfo.TotalTrainingStepsLeft.ToString();
+            
+            default:
+                return value == null ? 0 : value.ToString();
+        }
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

@@ -1,21 +1,15 @@
 using Avalonia;
-using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 
 namespace NAIPromptReplace.Controls;
 
-public partial class AnlasDisplay : UserControl
+public class AnlasDisplay : TemplatedControl
 {
-    public static readonly StyledProperty<int> ValueProperty = AvaloniaProperty.Register<AnlasDisplay, int>(nameof(Value));
+    public static readonly StyledProperty<string> ValueProperty = AvaloniaProperty.Register<AnlasDisplay, string>(nameof(Value));
 
-    public int Value
+    public string Value
     {
         get => GetValue(ValueProperty);
         set => SetValue(ValueProperty, value);
-    }
-
-    public AnlasDisplay()
-    {
-        DataContext = this;
-        InitializeComponent();
     }
 }

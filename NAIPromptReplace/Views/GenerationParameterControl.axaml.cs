@@ -1,13 +1,10 @@
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using NAIPromptReplace.Models;
-using SkiaSharp;
 
 namespace NAIPromptReplace.Views;
 
@@ -92,7 +89,7 @@ public partial class GenerationParameterControl : UserControl
 
         Dispatcher.UIThread.Invoke(() =>
         {
-            AnlasDisplay.Value = cost;
+            AnlasDisplay.Value = cost.ToString();
             AnlasChanged?.Invoke(this, null);
         });
     }

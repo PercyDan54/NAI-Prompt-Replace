@@ -8,5 +8,6 @@
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
         <StyleInclude Source="avares://NAIPromptReplace/Controls/ReferenceImageExpander.axaml" />
+        <StyleInclude Source="avares://NAIPromptReplace/Controls/AnlasDisplay.axaml" />
     </Application.Styles>
 </Application>
