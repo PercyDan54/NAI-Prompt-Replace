@@ -10,6 +10,7 @@
              x:DataType="vm:GenerationParameterControlViewModel">
     <UserControl.Resources>
         <converters:TextToTokenCountConverter x:Key="TextToTokenCountConverter" />
+        <converters:AnlasCountConverter x:Key="AnlasCountConverter" />
     </UserControl.Resources>
     <Grid Name="MainGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto, Auto" Margin="10">
         <Grid RowDefinitions="Auto,*,*,*,*" ColumnDefinitions="Auto,*">
@@ -76,7 +77,7 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <TextBlock Text="Noise Schedule" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <ComboBox Name="ScheduleComboBox" MinWidth="100" HorizontalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <ComboBox Name="ScheduleComboBox" SelectedItem="{Binding GenerationConfig.GenerationParameter.NoiseSchedule}" MinWidth="100" HorizontalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <TextBlock Text="Batch Size" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -86,7 +87,8 @@
             <CheckBox Content="Legacy V3 Extend" IsChecked="{Binding GenerationConfig.GenerationParameter.LegacyV3Extend}" />
             <CheckBox Content="Retry non-free tasks" IsChecked="{Binding GenerationConfig.RetryAll}" />
             <CheckBox Content="Save JPEG copy" IsChecked="{Binding GenerationConfig.SaveJpeg}" />
-            <controls:AnlasDisplay Height="20" />
+            <controls:AnlasDisplay Value="{Binding AnlasCost, Converter={StaticResource AnlasCountConverter}}" Height="20">
+            </controls:AnlasDisplay>
         </WrapPanel>
         <controls:ReferenceImageExpander Grid.Row="4" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ExpanderName="Img2Img"
                                          ImagePath="{Binding GenerationConfig.GenerationParameter.Image, Mode=TwoWay}" ImageData="{Binding GenerationConfig.GenerationParameter.ImageData, Mode=TwoWay}">

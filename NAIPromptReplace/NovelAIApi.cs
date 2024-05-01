@@ -25,32 +25,6 @@ public class NovelAIApi
     public SubscriptionInfo? SubscriptionInfo { get; private set; }
     public string AccessToken => accessToken;
 
-    public static GenerationModelInfo ModelFromHash(string des)
-    {
-        switch (des)
-        {
-            case "Stable Diffusion 1D44365E":
-            case "Stable Diffusion F4D50568":
-                return GenerationModelInfo.SafeDiffusion;
-            case "Stable Diffusion 81274D13":
-            case "Stable Diffusion 3B3287AF":
-                return GenerationModelInfo.NaiDiffusion;
-            case "Stable Diffusion 4CC42576":
-            case "Stable Diffusion 1D09C008":
-            case "Stable Diffusion 1D09D794":
-            case "Stable Diffusion F64BA557":
-                return GenerationModelInfo.NaiDiffusionFurry;
-            case "Stable Diffusion 49BFAF6A":
-            case "Stable Diffusion F1022D28":
-                return GenerationModelInfo.NaiDiffusion2;
-            case "Stable Diffusion XL B0BDF6C1":
-            case "Stable Diffusion XL C1E1DE52":
-            case "Stable Diffusion XL 8BA2AF87":
-            default:
-                return GenerationModelInfo.NaiDiffusion3;
-        }
-    }
-
     public async Task<SubscriptionInfo?> UpdateToken(string token) => await getSubscription(token);
 
     public async Task<SubscriptionInfo?> GetSubscription() => await getSubscription(accessToken);

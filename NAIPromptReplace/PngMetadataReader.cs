@@ -112,7 +112,7 @@ public static class PngMetadataReader
         var config = ReadJson(comment);
 
         if (!string.IsNullOrEmpty(source))
-            config.Model = NovelAIApi.ModelFromHash(source);
+            config.Model = GenerationModelInfo.FromHash(source);
         
         return config;
     }

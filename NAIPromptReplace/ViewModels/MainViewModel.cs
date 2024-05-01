@@ -63,6 +63,8 @@ public class MainViewModel : ReactiveObject
 
     public ObservableCollection<TabItem> TabItems { get; set; } = [];
     private List<GenerationParameterControlViewModel> generationControlViewModels = [];
+    private List<IDisposable> subscriptions = [];
+    private int totalCost;
 
     public int SelectedTabIndex { get; set; }
 
@@ -76,6 +78,12 @@ public class MainViewModel : ReactiveObject
     {
         get => totalTasks;
         set => this.RaiseAndSetIfChanged(ref totalTasks, value);
+    }
+
+    public int TotalCost
+    {
+        get => totalCost;
+        set => this.RaiseAndSetIfChanged(ref totalCost, value);
     }
 
     public ObservableCollection<TextReplacement> Replacements { get; set; } = [];
@@ -236,6 +244,7 @@ public class MainViewModel : ReactiveObject
         {
             Name = header,
             GenerationConfig = generationConfig,
+            Api = api,
             OpenOutputFolderCommand = ReactiveCommand.Create(() =>
             {
                 string path = string.IsNullOrEmpty(generationConfig.OutputPath) ? Environment.CurrentDirectory : generationConfig.OutputPath;
@@ -250,6 +259,14 @@ public class MainViewModel : ReactiveObject
 
         TabItems.Add(new TabItem { Header = header, Content = control });
         generationControlViewModels.Add(vm);
+        var subscribe = vm.WhenAny(v => v.AnlasCost, (i) => i).Subscribe(i => updateTotalCost());
+        if (subscribe != null)
+            subscriptions.Add(subscribe);
+    }
+
+    private void updateTotalCost()
+    {
+        TotalCost = generationControlViewModels.Sum(vm => vm.AnlasCost);
     }
 
     private void closeTab()
@@ -260,6 +277,9 @@ public class MainViewModel : ReactiveObject
         int index = SelectedTabIndex;
         TabItems.RemoveAt(index);
         generationControlViewModels.RemoveAt(index);
+        subscriptions[index].Dispose();
+        subscriptions.RemoveAt(index);
+        updateTotalCost();
     }
 
     private void RunTasks()
