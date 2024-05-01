@@ -23,7 +23,7 @@ public partial class MainWindow : Window
             {
                 if (item is IStorageFile file)
                 {
-                    await ((MainViewModel)DataContext).OpenFile(file);
+                    await ((MainViewModel)(MainView.DataContext)).OpenFile(file);
                 }
             }
         }

@@ -70,6 +70,14 @@ public static class PngMetadataReader
         stream.CopyTo(memoryStream);
         memoryStream.Position = 0;
 
+        byte[] headerBytes = new byte[8];
+        memoryStream.Read(headerBytes, 0, 8);
+
+        if (!headerBytes.SequenceEqual(png_header))
+        {
+            throw new Exception($"File {file.Name} is am invalid PNG file");
+        }
+
         var headers = ReadTextHeaders(memoryStream);
         headers.TryGetValue(source_key, out string? source);
 
@@ -104,7 +112,7 @@ public static class PngMetadataReader
         var config = ReadJson(comment);
 
         if (!string.IsNullOrEmpty(source))
-            config.Model = NovelAIApi.ModelNameFromDescription(source);
+            config.Model = NovelAIApi.ModelFromHash(source);
         
         return config;
     }
@@ -263,13 +271,6 @@ public static class PngMetadataReader
     {
         using (BinaryReader binaryReader = new BinaryReader(stream, Encoding.UTF8, true))
         {
-            byte[] headerBytes = binaryReader.ReadBytes(8);
-
-            if (!headerBytes.SequenceEqual(png_header))
-            {
-                throw new Exception("Invalid PNG file");
-            }
-
             var dict = new Dictionary<string, string>();
 
             while (stream.Position < stream.Length)

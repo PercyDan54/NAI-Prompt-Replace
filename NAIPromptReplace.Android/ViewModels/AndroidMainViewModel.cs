@@ -6,23 +6,20 @@ using AndroidX.DocumentFile.Provider;
 using Avalonia.Platform.Storage;
 using NAIPromptReplace.Models;
 using NAIPromptReplace.ViewModels;
-using NAIPromptReplace.Views;
 
 namespace NAIPromptReplace.Android.ViewModels;
 
 public class AndroidMainViewModel : MainViewModel
 {
-    public AndroidMainViewModel(IStorageProvider? storageProvider) : base(storageProvider) { }
-
-    protected override GenerationParameterControl AddTab(string header, GenerationConfig config)
+    /*protected override GenerationParameterControl AddTab(string header, GenerationConfig config)
     {
         var control = base.AddTab(header, config);
         control.BrowseButton_OnClick(this, null);
         control.OutputPathTextBox.IsReadOnly = true;
         return control;
-    }
+    }*/
 
-    protected override IStorageFile GetOutputFileForTask(GenerationConfig task, Dictionary<string, string> placeholders)
+    protected override IStorageFile? GetOutputFileForTask(GenerationConfig task, Dictionary<string, string> placeholders)
     {
         var folder = DocumentFile.FromTreeUri(MainActivity.Instance, Uri.Parse(task.StorageFolder.Path.AbsoluteUri));
         string originalFileName = Util.ReplaceInvalidFileNameChars(ReplacePlaceHolders(task.OutputFilename, placeholders) + ".png");

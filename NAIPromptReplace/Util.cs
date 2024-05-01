@@ -75,7 +75,7 @@ public static class Util
         int width = config.GenerationParameter.Width;
         int height = config.GenerationParameter.Height;
         int imageSize = Math.Max(width * height, 65536);
-        string model = config.Model;
+        string model = config.Model.Id;
         int steps = config.GenerationParameter.Steps;
         int batchSize = config.BatchSize;
         float v = 0;

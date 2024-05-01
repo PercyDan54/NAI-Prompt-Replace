@@ -1,7 +1,9 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Avalonia.Platform.Storage;
+using NAIPromptReplace.Converters;
 
 namespace NAIPromptReplace.Models;
 
@@ -11,7 +13,14 @@ public class GenerationConfig : INotifyPropertyChanged
     private string replace = string.Empty;
     private string prompt = "best quality, amazing quality, very aesthetic, absurdres";
     private Dictionary<string, string> replacements = [];
+    private GenerationModelInfo model = GenerationModelInfo.NaiDiffusion3;
     public const string DEFAULT_OUTPUT_FILE_NAME = "{seed}-{prompt}";
+    
+    public static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
+    {
+        Converters = { new JsonModelInfoConverter(), new JsonSamplerInfoConverter() },
+        WriteIndented = true
+    };
 
     public string Prompt
     {
@@ -39,7 +48,18 @@ public class GenerationConfig : INotifyPropertyChanged
         }
     }
 
-    public string Model { get; set; } = "nai-diffusion-3";
+    public GenerationModelInfo Model
+    {
+        get => model;
+        set
+        {
+            if (value == model)
+                return;
+
+            model = value;
+            NotifyPropertyChanged();
+        }
+    }
 
     public string OutputPath { get; set; } = string.Empty;
 
@@ -92,6 +112,19 @@ public class GenerationConfig : INotifyPropertyChanged
         clone.PropertyChanged = null;
         clone.GenerationParameter = GenerationParameter.Clone();
         return clone;
+    }
+
+    public async Task SaveAsync(IStorageFile file)
+    {
+        try
+        {
+            using var stream = await file.OpenWriteAsync();
+            using var writer = new StreamWriter(stream);
+            await writer.WriteAsync(JsonSerializer.Serialize(this, SerializerOptions));
+        }
+        catch
+        {
+        }
     }
 
     public static string GetReplacedPrompt(string prompt, Dictionary<string, string> replacements)
@@ -172,7 +205,7 @@ public class GenerationParameter : INotifyPropertyChanged
         }
     }
 
-    public string Sampler { get; set; } = "k_euler";
+    public SamplerInfo Sampler { get; set; } = SamplerInfo.Euler;
 
     public long? Seed { get; set; }
 

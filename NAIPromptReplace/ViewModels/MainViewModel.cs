@@ -36,7 +36,6 @@ public class MainViewModel : ReactiveObject
     private readonly NovelAIApi api = new NovelAIApi();
 
     private CancellationTokenSource? cancellationTokenSource;
-    private readonly IStorageProvider? storageProvider;
     private SubscriptionInfo? subscriptionInfo;
     private int currentTask;
     private int totalTasks = 1;
@@ -63,6 +62,7 @@ public class MainViewModel : ReactiveObject
     }
 
     public ObservableCollection<TabItem> TabItems { get; set; } = [];
+    private List<GenerationParameterControlViewModel> generationControlViewModels = [];
 
     public int SelectedTabIndex { get; set; }
 
@@ -110,23 +110,17 @@ public class MainViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref logText, value);
     }
 
-    public ICommand ToggleShowTokenCommand { get; set; }
-    public ICommand UpdateTokenCommand { get; set; }
-    public ICommand OpenHelpCommand { get; set; }
-    public ICommand NewTabCommand { get; set; }
-    public ICommand CloseTabCommand { get; set; }
-    public ICommand SaveAllCommand { get; set; }
-    public ICommand OpenFileCommand { get; set; }
-    public ICommand RunTasksCommand { get; set; }
+    public ICommand ToggleShowTokenCommand { get; }
+    public ICommand UpdateTokenCommand { get; }
+    public ICommand OpenHelpCommand { get; }
+    public ICommand NewTabCommand { get; }
+    public ICommand CloseTabCommand { get; }
+    public ICommand SaveAllCommand { get; }
+    public ICommand OpenFileCommand { get; }
+    public ICommand RunTasksCommand { get; }
 
-    public MainViewModel() : this(null)
+    public MainViewModel()
     {
-    }
-
-    public MainViewModel(IStorageProvider? storageProvider)
-    {
-        this.storageProvider = storageProvider;
-
         ToggleShowTokenCommand = ReactiveCommand.Create(() =>
         {
             ShowToken = !ShowToken;
@@ -137,18 +131,40 @@ public class MainViewModel : ReactiveObject
         UpdateTokenCommand = ReactiveCommand.Create(async () => await updateAccountInfo(true));
         NewTabCommand = ReactiveCommand.Create(() => AddTab("New config", new GenerationConfig()));
         CloseTabCommand = ReactiveCommand.Create(closeTab);
-        OpenFileCommand = ReactiveCommand.Create(OpenFile);
+        OpenFileCommand = ReactiveCommand.Create(openFile);
+        SaveAllCommand = ReactiveCommand.CreateFromTask(saveAll);
         RunTasksCommand = ReactiveCommand.Create(RunTasks);
+    }
+
+    private async Task saveAll()
+    {
+        if (App.StorageProvider == null)
+            return;
+
+        var folder = await App.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            AllowMultiple = false
+        });
+
+        if (folder.Count == 0)
+            return;
+
+        foreach (var vm in generationControlViewModels)
+        {
+            var fileName = Util.GetValidFileName(Path.Combine(folder[0].TryGetLocalPath(), (Path.ChangeExtension(vm.Name, string.Empty) ?? "Untitled") + ".json"));
+            using var file = await folder[0].CreateFileAsync(Path.GetFileName(fileName));
+            await vm.GenerationConfig.SaveAsync(file);
+        }
     }
 
     protected void OpenHelp() => PresentUri(HELP_URL);
 
-    private async void OpenFile()
+    private async void openFile()
     {
-        if (storageProvider == null)
+        if (App.StorageProvider == null)
             return;
 
-        var files = await storageProvider.OpenFilePickerAsync(filePickerOptions);
+        var files = await App.StorageProvider.OpenFilePickerAsync(filePickerOptions);
 
         foreach (var file in files)
         {
@@ -167,7 +183,7 @@ public class MainViewModel : ReactiveObject
             switch (Path.GetExtension(file.Name))
             {
                 case ".json":
-                    generationConfig = JsonSerializer.Deserialize<GenerationConfig>(await reader.ReadToEndAsync());
+                    generationConfig = JsonSerializer.Deserialize<GenerationConfig>(await reader.ReadToEndAsync(), GenerationConfig.SerializerOptions);
                     break;
 
                 case ".png":
@@ -182,9 +198,9 @@ public class MainViewModel : ReactiveObject
                         Replacements.AddRange(records);
                         replacements = records.ToDictionary(r => r.Text, r => r.Replace);
 
-                        foreach (var control in getGenerationParameterControls())
+                        foreach (var g in generationControlViewModels)
                         {
-                            control.SetReplacements(replacements);
+                            g.GenerationConfig.Replacements = replacements;
                         }
                     }
                     break;
@@ -213,36 +229,37 @@ public class MainViewModel : ReactiveObject
         LogText += content.ToString();
     }
 
-    private IEnumerable<GenerationParameterControl> getGenerationParameterControls()
+    protected void AddTab(string header, GenerationConfig generationConfig)
     {
-        foreach (var item in TabItems)
+        generationConfig.Replacements = replacements;
+        var vm = new GenerationParameterControlViewModel
         {
-            if (item.Content is GenerationParameterControl parameterControl)
+            Name = header,
+            GenerationConfig = generationConfig,
+            OpenOutputFolderCommand = ReactiveCommand.Create(() =>
             {
-                yield return parameterControl;
-            }
-        }
-    }
-
-    protected virtual GenerationParameterControl AddTab(string header, GenerationConfig config)
-    {
-        var control = new GenerationParameterControl(config, api) { Name = header };
-        control.SetReplacements(replacements);
-        control.OpenOutputButton.Click += (_, _) =>
-        {
-            string path = string.IsNullOrEmpty(config.OutputPath) ? Environment.CurrentDirectory : config.OutputPath;
-            PresentUri(path);
+                string path = string.IsNullOrEmpty(generationConfig.OutputPath) ? Environment.CurrentDirectory : generationConfig.OutputPath;
+                PresentUri(path);
+            })
         };
+        var control = new GenerationParameterControl 
+        { 
+            Name = header, 
+            DataContext = vm,
+        };
+
         TabItems.Add(new TabItem { Header = header, Content = control });
-        return control;
+        generationControlViewModels.Add(vm);
     }
 
     private void closeTab()
     {
-        if (TabItems.Count <= 0)
+        if (TabItems.Count == 0)
             return;
 
-        TabItems.RemoveAt(SelectedTabIndex);
+        int index = SelectedTabIndex;
+        TabItems.RemoveAt(index);
+        generationControlViewModels.RemoveAt(index);
     }
 
     private void RunTasks()
@@ -258,7 +275,7 @@ public class MainViewModel : ReactiveObject
         {
             RunButtonText = "Cancel";
             cancellationTokenSource = new CancellationTokenSource();
-            var configs = getGenerationConfigs().ToList();
+            var configs = generationControlViewModels.Select(vm => vm.GenerationConfig).ToList();
             CurrentTask = 0;
             clearLog();
             Task.Factory.StartNew(_ => createAndRunTasks(configs, cancellationTokenSource.Token).ContinueWith(task =>
@@ -270,9 +287,6 @@ public class MainViewModel : ReactiveObject
             }), null, TaskCreationOptions.LongRunning);
         }
     }
-
-    private IEnumerable<GenerationConfig> getGenerationConfigs() => getGenerationParameterControls().Select(p => p.Config);
-
     private async Task createAndRunTasks(IEnumerable<GenerationConfig> configs, CancellationToken token)
     {
         var tasks = new List<GenerationConfig>();
@@ -455,7 +469,7 @@ public class MainViewModel : ReactiveObject
         cancellationTokenSource = null;
     }
 
-    protected virtual IStorageFile GetOutputFileForTask(GenerationConfig task, Dictionary<string,string> placeholders)
+    protected virtual IStorageFile? GetOutputFileForTask(GenerationConfig task, Dictionary<string,string> placeholders)
     {
         string pathString = string.IsNullOrWhiteSpace(task.OutputPath) ? Environment.CurrentDirectory : task.OutputPath;
 
@@ -482,7 +496,7 @@ public class MainViewModel : ReactiveObject
         fileName = Util.GetValidFileName(Path.Combine(pathString, fileName[..Math.Min(fileName.Length, 128)] + ".png"));
         using var file1 = File.Create(fileName);
 
-        return storageProvider?.TryGetFileFromPathAsync(fileName).Result;
+        return App.StorageProvider?.TryGetFileFromPathAsync(fileName).Result;
     }
     
     protected static string ReplacePlaceHolders(string text, Dictionary<string,string> placeholders)

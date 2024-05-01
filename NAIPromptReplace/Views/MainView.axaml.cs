@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
 using NAIPromptReplace.Models;
 using NAIPromptReplace.ViewModels;
 
@@ -9,8 +8,6 @@ namespace NAIPromptReplace.Views;
 
 public partial class MainView : LayoutTransformControl
 {
-    protected IStorageProvider? StorageProvider => TopLevel.GetTopLevel(this)?.StorageProvider;
-
     protected const string CONFIG_FILE = "config.json";
     protected virtual string ConfigPath => CONFIG_FILE;
 
@@ -22,7 +19,13 @@ public partial class MainView : LayoutTransformControl
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        DataContext = new MainViewModel(StorageProvider)
+        App.StorageProvider = TopLevel.GetTopLevel(this)?.StorageProvider;
+        InitializeDataContext();
+    }
+
+    protected virtual void InitializeDataContext()
+    {
+        DataContext = new MainViewModel
         {
             Config = LoadConfig()
         };

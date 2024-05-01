@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using NAIPromptReplace.Converters;
 using NAIPromptReplace.Models;
 
 namespace NAIPromptReplace;
@@ -13,6 +14,7 @@ public class NovelAIApi
     private readonly HttpClient httpClient = new HttpClient();
     public static readonly JsonSerializerOptions ApiSerializerOptions = new JsonSerializerOptions
     {
+        Converters = { new JsonModelInfoConverter(), new JsonSamplerInfoConverter() },
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
     };
     public static readonly JsonSerializerOptions CamelCaseJsonSerializerOptions = new JsonSerializerOptions
@@ -23,31 +25,29 @@ public class NovelAIApi
     public SubscriptionInfo? SubscriptionInfo { get; private set; }
     public string AccessToken => accessToken;
 
-    public event EventHandler? SubscriptionChanged;
-
-    public static string ModelNameFromDescription(string des)
+    public static GenerationModelInfo ModelFromHash(string des)
     {
         switch (des)
         {
             case "Stable Diffusion 1D44365E":
             case "Stable Diffusion F4D50568":
-                return "safe-diffusion";
+                return GenerationModelInfo.SafeDiffusion;
             case "Stable Diffusion 81274D13":
             case "Stable Diffusion 3B3287AF":
-                return "nai-diffusion";
+                return GenerationModelInfo.NaiDiffusion;
             case "Stable Diffusion 4CC42576":
             case "Stable Diffusion 1D09C008":
             case "Stable Diffusion 1D09D794":
             case "Stable Diffusion F64BA557":
-                return "nai-diffusion-furry";
+                return GenerationModelInfo.NaiDiffusionFurry;
             case "Stable Diffusion 49BFAF6A":
             case "Stable Diffusion F1022D28":
-                return "nai-diffusion-2";
+                return GenerationModelInfo.NaiDiffusion2;
             case "Stable Diffusion XL B0BDF6C1":
             case "Stable Diffusion XL C1E1DE52":
             case "Stable Diffusion XL 8BA2AF87":
             default:
-                return "nai-diffusion-3";
+                return GenerationModelInfo.NaiDiffusion3;
         }
     }
 
@@ -70,7 +70,6 @@ public class NovelAIApi
             {
                 accessToken = token;
                 SubscriptionInfo = subscriptionInfo;
-                SubscriptionChanged?.Invoke(this, null);
                 return subscriptionInfo;
             }
         }

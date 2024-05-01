@@ -2,135 +2,128 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:models="clr-namespace:NAIPromptReplace.Models"
+             xmlns:vm="clr-namespace:NAIPromptReplace.ViewModels"
              xmlns:controls="clr-namespace:NAIPromptReplace.Controls"
              xmlns:converters="clr-namespace:NAIPromptReplace.Converters"
              mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="750"
              x:Class="NAIPromptReplace.Views.GenerationParameterControl"
-             x:DataType="models:GenerationConfig">
+             x:DataType="vm:GenerationParameterControlViewModel">
     <UserControl.Resources>
         <converters:TextToTokenCountConverter x:Key="TextToTokenCountConverter" />
     </UserControl.Resources>
     <Grid Name="MainGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto, Auto" Margin="10">
         <Grid RowDefinitions="Auto,*,*,*,*" ColumnDefinitions="Auto,*">
             <TextBlock Text="Prompt" VerticalAlignment="Center" />
-            <TextBox Grid.Row="0" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding Prompt}" />
+            <TextBox Grid.Row="0" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Prompt}" />
             <ProgressBar Grid.Row="1" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
                 <ProgressBar.Value>
                     <MultiBinding Converter="{StaticResource TextToTokenCountConverter}">
                         <MultiBinding.Bindings>
-                            <Binding Path="Prompt" />
-                            <Binding Path="Replacements" />
+                            <Binding Path="GenerationConfig.Prompt" />
+                            <Binding Path="GenerationConfig.Replacements" />
                         </MultiBinding.Bindings>
                     </MultiBinding>
                 </ProgressBar.Value>
             </ProgressBar>
             <TextBlock Grid.Row="2" Grid.Column="0" Text="Negative" Margin="0,0,5,0" VerticalAlignment="Center" />
-            <TextBox Grid.Row="2" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" Text="{Binding GenerationParameter.NegativePrompt}" />
+            <TextBox Grid.Row="2" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" Text="{Binding GenerationConfig.GenerationParameter.NegativePrompt}" />
             <ProgressBar Grid.Row="3" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
                 <ProgressBar.Value>
                     <MultiBinding Converter="{StaticResource TextToTokenCountConverter}">
                         <MultiBinding.Bindings>
-                            <Binding Path="GenerationParameter.NegativePrompt" />
+                            <Binding Path="GenerationConfig.GenerationParameter.NegativePrompt" />
                         </MultiBinding.Bindings>
                     </MultiBinding>
                 </ProgressBar.Value>
             </ProgressBar>
             <TextBlock Grid.Row="4" Grid.Column="0" Text="Replace" VerticalAlignment="Center" />
-            <TextBox Grid.Row="4" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding Replace}" />
+            <TextBox Grid.Row="4" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Replace}" />
         </Grid>
         <WrapPanel Name="WrapPanel" Grid.Row="3" Grid.Column="0" Orientation="Horizontal">
-            <CheckBox Name="SmeaCheckBox" Content="SMEA" IsChecked="{Binding GenerationParameter.Smea}" />
-            <CheckBox Name="DynCheckBox" Content="DYN" IsChecked="{Binding GenerationParameter.Dyn}" />
+            <CheckBox Name="SmeaCheckBox" Content="SMEA" IsChecked="{Binding GenerationConfig.GenerationParameter.Smea}" />
+            <CheckBox Name="DynCheckBox" Content="DYN" IsChecked="{Binding GenerationConfig.GenerationParameter.Dyn}" />
             <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
                 <TextBlock Text="Width" VerticalAlignment="Center" />
-                <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationParameter.Width}" Minimum="1" />
+                <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Width}" Minimum="1" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Height" VerticalAlignment="Center" />
-                <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationParameter.Height}" Minimum="1" />
+                <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Height}" Minimum="1" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
                 <TextBlock Text="Seed" VerticalAlignment="Center" />
-                <NumericUpDown FormatString="0" Value="{Binding GenerationParameter.Seed}" HorizontalContentAlignment="Center" MinWidth="150" />
+                <NumericUpDown FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Seed}" HorizontalContentAlignment="Center" MinWidth="150" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Sampler" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <ComboBox Name="SamplerComboBox" SelectionChanged="SamplerComboBox_OnSelectionChanged" MinWidth="150" HorizontalContentAlignment="Center">
-                    <ComboBoxItem Content="Euler" />
-                    <ComboBoxItem Content="Euler Ancestral" />
-                    <ComboBoxItem Content="DPM++ 2S Ancestral" />
-                    <ComboBoxItem Content="DPM++ 2M" />
-                    <ComboBoxItem Content="DPM++ SDE" />
-                    <ComboBoxItem Content="DDIM" />
-                </ComboBox>
+                <ComboBox ItemsSource="{Binding GenerationConfig.Model.Samplers}" SelectedItem="{Binding GenerationConfig.GenerationParameter.Sampler}" DisplayMemberBinding="{ReflectionBinding Name}" MinWidth="150" HorizontalContentAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Model" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <ComboBox Name="ModelComboBox" SelectionChanged="ModelComboBox_OnSelectionChanged" MinWidth="120" />
+                <ComboBox Name="ModelComboBox" DisplayMemberBinding="{ReflectionBinding Name}" SelectedItem="{Binding GenerationConfig.Model}" MinWidth="120" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Scale" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.Scale}" Increment="0.1" Minimum="0" Maximum="10" />
+                <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.Scale}" Increment="0.1" Minimum="0" Maximum="10" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <TextBlock Text="Undesired Content Strength" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <NumericUpDown ValueChanged="preventNullValue" FormatString="P0" Value="{Binding GenerationParameter.UncondScale}" Minimum="0" Maximum="1.5" Increment="0.05" MinWidth="130" HorizontalContentAlignment="Center" />
+                <NumericUpDown ValueChanged="preventNullValue" FormatString="P0" Value="{Binding GenerationConfig.GenerationParameter.UncondScale}" Minimum="0" Maximum="1.5" Increment="0.05" MinWidth="130" HorizontalContentAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <TextBlock Text="Prompt Guidance Rescale" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <NumericUpDown ValueChanged="preventNullValue" Minimum="0" Maximum="1" FormatString="0.##" Increment="0.01" Value="{Binding GenerationParameter.CfgRescale}" MinWidth="130" HorizontalContentAlignment="Center" />
+                <NumericUpDown ValueChanged="preventNullValue" Minimum="0" Maximum="1" FormatString="0.##" Increment="0.01" Value="{Binding GenerationConfig.GenerationParameter.CfgRescale}" MinWidth="130" HorizontalContentAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <TextBlock Text="Noise Schedule" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <ComboBox Name="ScheduleComboBox" SelectionChanged="ScheduleComboBox_OnSelectionChanged" MinWidth="100" HorizontalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <ComboBox Name="ScheduleComboBox" MinWidth="100" HorizontalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <TextBlock Text="Batch Size" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding BatchSize}" Minimum="1" MinWidth="130" HorizontalContentAlignment="Center" />
+                <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.BatchSize}" Minimum="1" MinWidth="130" HorizontalContentAlignment="Center" />
             </StackPanel>
-            <CheckBox Content="Random All Image Seeds" IsChecked="{Binding AllRandom}" />
-            <CheckBox Content="Legacy V3 Extend" IsChecked="{Binding GenerationParameter.LegacyV3Extend}" />
-            <CheckBox Content="Retry non-free tasks" IsChecked="{Binding RetryAll}" />
-            <CheckBox Content="Save JPEG copy" IsChecked="{Binding SaveJpeg}" />
-            <controls:AnlasDisplay Name="AnlasDisplay" Height="20" />
+            <CheckBox Content="Random All Image Seeds" IsChecked="{Binding GenerationConfig.AllRandom}" />
+            <CheckBox Content="Legacy V3 Extend" IsChecked="{Binding GenerationConfig.GenerationParameter.LegacyV3Extend}" />
+            <CheckBox Content="Retry non-free tasks" IsChecked="{Binding GenerationConfig.RetryAll}" />
+            <CheckBox Content="Save JPEG copy" IsChecked="{Binding GenerationConfig.SaveJpeg}" />
+            <controls:AnlasDisplay Height="20" />
         </WrapPanel>
         <controls:ReferenceImageExpander Grid.Row="4" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ExpanderName="Img2Img"
-                                         ImagePath="{Binding GenerationParameter.Image, Mode=TwoWay}" ImageData="{Binding GenerationParameter.ImageData, Mode=TwoWay}">
+                                         ImagePath="{Binding GenerationConfig.GenerationParameter.Image, Mode=TwoWay}" ImageData="{Binding GenerationConfig.GenerationParameter.ImageData, Mode=TwoWay}">
             <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,0,0,5">
                 <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                     <TextBlock Text="Strength" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.Strength}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
+                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.Strength}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                     <TextBlock Text="Noise" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.Noise}" FormatString="0.##" Increment="0.01" Minimum="0" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
+                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.Noise}" FormatString="0.##" Increment="0.01" Minimum="0" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
                 </StackPanel>
             </StackPanel>
         </controls:ReferenceImageExpander>
         <controls:ReferenceImageExpander Grid.Row="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ExpanderName="Vibe Transfer"
-                                         ImagePath="{Binding GenerationParameter.ReferenceImage, Mode=TwoWay}" ImageData="{Binding GenerationParameter.ReferenceImageData, Mode=TwoWay}" >
+                                         ImagePath="{Binding GenerationConfig.GenerationParameter.ReferenceImage, Mode=TwoWay}" ImageData="{Binding GenerationConfig.GenerationParameter.ReferenceImageData, Mode=TwoWay}" >
             <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,0,0,5">
                 <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                     <TextBlock Text="Information Extracted" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.ReferenceInformationExtracted}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="1" MinWidth="100" HorizontalContentAlignment="Center" />
+                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.ReferenceInformationExtracted}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="1" MinWidth="100" HorizontalContentAlignment="Center" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                     <TextBlock Text="Reference Strength" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationParameter.ReferenceStrength}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="1" MinWidth="100" HorizontalContentAlignment="Center" />
+                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.ReferenceStrength}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="1" MinWidth="100" HorizontalContentAlignment="Center" />
                 </StackPanel>
             </StackPanel>
         </controls:ReferenceImageExpander>
         <Grid Grid.Row="6" RowDefinitions="*,*" ColumnDefinitions="Auto,*">
             <TextBlock Margin="0,0,5,0" Text="Output Path" VerticalAlignment="Center" />
             <DockPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,5">
-                <Button DockPanel.Dock="Right" Name="OpenOutputButton" Content="Open" />
-                <Button DockPanel.Dock="Right" Name="BrowseButton" Content="Browse" Click="BrowseButton_OnClick" />
-                <TextBox Name="OutputPathTextBox" x:FieldModifier="public" Margin="0,0,5,0" Text="{Binding  OutputPath}" />
+                <Button DockPanel.Dock="Right" Content="Open" Command="{Binding OpenOutputFolderCommand}" />
+                <Button DockPanel.Dock="Right" Content="Browse" Command="{Binding BrowseOutputFolderCommand}" />
+                <TextBox Margin="0,0,5,0" Text="{Binding  GenerationConfig.OutputPath}" />
             </DockPanel>
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,5,0" Text="Output File Name" VerticalAlignment="Center" />
-            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding  OutputFilename}" />
+            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding  GenerationConfig.OutputFilename}" />
         </Grid>
-        <Button Grid.Row="7" Grid.Column="0" HorizontalAlignment="Center" Content="Save Config" Click="Button_OnClick" />
+        <Button Grid.Row="7" Grid.Column="0" HorizontalAlignment="Center" Content="Save Config" Command="{Binding SaveCommand}" />
     </Grid>
 </UserControl>

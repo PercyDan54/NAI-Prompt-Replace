@@ -3,7 +3,6 @@ using System.IO;
 using Android.App;
 using Android.Content.Res;
 using Android.Util;
-using Avalonia.Interactivity;
 using Avalonia.Media;
 using NAIPromptReplace.Android.ViewModels;
 using NAIPromptReplace.Views;
@@ -23,10 +22,9 @@ public class AndroidMainView : MainView
 第一次写安卓程序，所以你可能会遇到包括但不限于：排版错乱，莫名报错/闪退，配置不保存，请谅解").SetNeutralButton("OK", (_, _) => {}).Show();
     }
 
-    protected override void OnLoaded(RoutedEventArgs e)
+    protected override void InitializeDataContext()
     {
-        base.OnLoaded(e);
-        DataContext = new AndroidMainViewModel(StorageProvider)
+        DataContext = new AndroidMainViewModel
         {
             Config = LoadConfig()
         };
