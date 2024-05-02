@@ -260,8 +260,7 @@ public class MainViewModel : ReactiveObject
         TabItems.Add(new TabItem { Header = header, Content = control });
         generationControlViewModels.Add(vm);
         var subscribe = vm.WhenAny(v => v.AnlasCost, (i) => i).Subscribe(i => updateTotalCost());
-        if (subscribe != null)
-            subscriptions.Add(subscribe);
+        subscriptions.Add(subscribe);
     }
 
     private void updateTotalCost()
@@ -316,6 +315,12 @@ public class MainViewModel : ReactiveObject
             var g = generationConfig.Clone();
             g.GenerationParameter.Seed ??= random.Next();
             long seed = g.GenerationParameter.Seed.Value;
+
+            bool smea = g.GenerationParameter.Smea;
+            g.GenerationParameter.Sampler ??= g.Model.Samplers[0];
+            smea &= g.GenerationParameter.Sampler.AllowSmea;
+            g.GenerationParameter.Smea = smea;
+            g.GenerationParameter.Dyn &= smea;
 
             var referenceImageData = g.GenerationParameter.ReferenceImageData;
 
@@ -464,11 +469,18 @@ public class MainViewModel : ReactiveObject
                     }
                 }
             }
-            if (resp?.Content.Headers.ContentType?.MediaType == "application/json")
+            else if (resp != null)
             {
-                string content = await resp.Content.ReadAsStringAsync();
-                var response = JsonSerializer.Deserialize<NovelAIGenerationResponse>(content, NovelAIApi.CamelCaseJsonSerializerOptions);
-                writeLogLine($"Error: {response?.StatusCode} {response?.Message}");
+                if (resp.Content.Headers.ContentType?.MediaType is "application/json" or "text/plain")
+                {
+                    string content = await resp.Content.ReadAsStringAsync();
+                    var response = JsonSerializer.Deserialize<NovelAIGenerationResponse>(content, NovelAIApi.CamelCaseJsonSerializerOptions);
+                    writeLogLine($"Error: {response?.StatusCode} {response?.Message}");
+                }
+                else
+                {
+                    writeLogLine($"Error: {(int)resp.StatusCode} {resp.StatusCode}");
+                }
             }
 
             token.ThrowIfCancellationRequested();
@@ -485,7 +497,7 @@ public class MainViewModel : ReactiveObject
             CurrentTask = i;
         }
 
-        runButtonText = "Run";
+        RunButtonText = "Run";
         cancellationTokenSource = null;
     }
 
@@ -535,6 +547,7 @@ public class MainViewModel : ReactiveObject
         try
         {
             SubscriptionInfo = tokenChanged ? await api.UpdateToken(Config.AccessToken): await api.GetSubscription();
+            Config.AccessToken = api.AccessToken;
         }
         catch
         {

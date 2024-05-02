@@ -183,7 +183,7 @@ public class GenerationConfig : INotifyPropertyChanged
 
 public class GenerationParameter : INotifyPropertyChanged
 {
-    private bool smea = true;
+    private bool smea;
     private bool dyn;
     private byte steps = 28;
     private double uncondScale = 1;
@@ -191,6 +191,7 @@ public class GenerationParameter : INotifyPropertyChanged
     private short width = 832;
     private short height = 1216;
     private string negativePrompt = "lowres, jpeg artifacts, worst quality, watermark, blurry, very displeasing";
+    private SamplerInfo sampler = SamplerInfo.Euler;
 
     public string NegativePrompt
     {
@@ -205,7 +206,18 @@ public class GenerationParameter : INotifyPropertyChanged
         }
     }
 
-    public SamplerInfo Sampler { get; set; } = SamplerInfo.Euler;
+    public SamplerInfo Sampler
+    {
+        get => sampler;
+        set
+        {
+            if (value == sampler)
+                return;
+
+            sampler = value;
+            NotifyPropertyChanged();
+        }
+    }
 
     public long? Seed { get; set; }
 

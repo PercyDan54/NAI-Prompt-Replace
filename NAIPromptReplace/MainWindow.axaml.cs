@@ -23,9 +23,14 @@ public partial class MainWindow : Window
             {
                 if (item is IStorageFile file)
                 {
-                    await ((MainViewModel)(MainView.DataContext)).OpenFile(file);
+                    await ((MainViewModel)MainView.DataContext).OpenFile(file);
                 }
             }
         }
+    }
+
+    private void TopLevel_OnClosed(object? sender, EventArgs e)
+    {
+        MainView.SaveConfig();
     }
 }

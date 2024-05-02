@@ -33,7 +33,7 @@ public class GenerationModelInfo
     };
     public static readonly GenerationModelInfo NaiDiffusion2 = new GenerationModelInfo
     {
-        Name = "NovelAI Diffusion V2",
+        Name = "NAI Diffusion V2",
         Id = "nai-diffusion-2",
         Samplers =
         [
@@ -49,7 +49,7 @@ public class GenerationModelInfo
     };
     public static readonly GenerationModelInfo NaiDiffusion = new GenerationModelInfo
     {
-        Name = "NovelAI Diffusion Anime V1 (Full)",
+        Name = "NAI Diffusion Anime V1 (Full)",
         Id = "nai-diffusion",
         Samplers =
         [
@@ -65,7 +65,7 @@ public class GenerationModelInfo
     };
     public static readonly GenerationModelInfo NaiDiffusionFurry = new GenerationModelInfo
     {
-        Name = "NovelAI Diffusion Furry",
+        Name = "NAI Diffusion Furry",
         Id = "nai-diffusion-furry",
         Samplers =
         [
@@ -81,7 +81,7 @@ public class GenerationModelInfo
     };
     public static readonly GenerationModelInfo SafeDiffusion = new GenerationModelInfo
     {
-        Name = "NovelAI Diffusion Anime V1 (Curated)",
+        Name = "NAI Diffusion Anime V1 (Curated)",
         Id = "safe-diffusion",
         Samplers =
         [

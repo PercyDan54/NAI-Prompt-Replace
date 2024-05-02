@@ -45,4 +45,21 @@ public partial class MainView : LayoutTransformControl
 
         return new Config();
     }
+
+    public void SaveConfig()
+    {
+        if (Design.IsDesignMode)
+            return;
+
+        try
+        {
+            File.WriteAllText(ConfigPath, JsonSerializer.Serialize(((MainViewModel)DataContext).Config, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            }));
+        }
+        catch
+        {
+        }
+    }
 }

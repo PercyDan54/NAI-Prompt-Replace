@@ -41,15 +41,15 @@
             <TextBox Grid.Row="4" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Replace}" />
         </Grid>
         <WrapPanel Name="WrapPanel" Grid.Row="3" Grid.Column="0" Orientation="Horizontal">
-            <CheckBox Name="SmeaCheckBox" Content="SMEA" IsChecked="{Binding GenerationConfig.GenerationParameter.Smea}" />
-            <CheckBox Name="DynCheckBox" Content="DYN" IsChecked="{Binding GenerationConfig.GenerationParameter.Dyn}" />
+            <CheckBox Content="SMEA" IsChecked="{Binding GenerationConfig.GenerationParameter.Smea}" IsEnabled="{Binding GenerationConfig.GenerationParameter.Sampler.AllowSmea}" />
+            <CheckBox Content="DYN" IsChecked="{Binding GenerationConfig.GenerationParameter.Dyn}" IsEnabled="{Binding GenerationConfig.GenerationParameter.Sampler.AllowSmea}" />
             <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
                 <TextBlock Text="Width" VerticalAlignment="Center" />
-                <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Width}" Minimum="1" />
+                <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Width}" Increment="2" Minimum="1" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Height" VerticalAlignment="Center" />
-                <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Height}" Minimum="1" />
+                <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Height}" Increment="2" Minimum="1" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
                 <TextBlock Text="Seed" VerticalAlignment="Center" />
@@ -87,8 +87,7 @@
             <CheckBox Content="Legacy V3 Extend" IsChecked="{Binding GenerationConfig.GenerationParameter.LegacyV3Extend}" />
             <CheckBox Content="Retry non-free tasks" IsChecked="{Binding GenerationConfig.RetryAll}" />
             <CheckBox Content="Save JPEG copy" IsChecked="{Binding GenerationConfig.SaveJpeg}" />
-            <controls:AnlasDisplay Value="{Binding AnlasCost, Converter={StaticResource AnlasCountConverter}}" Height="20">
-            </controls:AnlasDisplay>
+            <controls:AnlasDisplay Value="{Binding AnlasCost, Converter={StaticResource AnlasCountConverter}}" Height="20" />
         </WrapPanel>
         <controls:ReferenceImageExpander Grid.Row="4" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ExpanderName="Img2Img"
                                          ImagePath="{Binding GenerationConfig.GenerationParameter.Image, Mode=TwoWay}" ImageData="{Binding GenerationConfig.GenerationParameter.ImageData, Mode=TwoWay}">

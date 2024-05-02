@@ -8,7 +8,8 @@
         Width="800" Height="700"
         x:Class="NAIPromptReplace.MainWindow"
         Icon="avares://NAIPromptReplace/Assets/novelai-square.ico"
-        Title="NovelAI Prompt Replace V1.1.0">
+        Title="NovelAI Prompt Replace V1.1.0"
+        Closed="TopLevel_OnClosed">
     <Design.DataContext>
         <vm:MainViewModel />
     </Design.DataContext>
