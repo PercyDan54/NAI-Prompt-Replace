@@ -7,6 +7,7 @@ public class GenerationModelInfo
     {
         Name = "NAI Diffusion Anime V3",
         Id = "nai-diffusion-3",
+        Group = ModelGroup.StableDiffusionXL,
         Samplers =
         [
             SamplerInfo.Euler,
@@ -21,6 +22,7 @@ public class GenerationModelInfo
     {
         Name = "NAI Diffusion Furry V3",
         Id = "nai-diffusion-furry-3",
+        Group = ModelGroup.StableDiffusionXLFurry,
         Samplers =
         [
             SamplerInfo.Euler,
@@ -33,8 +35,9 @@ public class GenerationModelInfo
     };
     public static readonly GenerationModelInfo NaiDiffusion2 = new GenerationModelInfo
     {
-        Name = "NAI Diffusion V2",
+        Name = "NAI Diffusion Anime V2",
         Id = "nai-diffusion-2",
+        Group = ModelGroup.StableDiffusionGroup2,
         Samplers =
         [
             SamplerInfo.EulerAncestral,
@@ -101,6 +104,7 @@ public class GenerationModelInfo
 
     public string Name { get; init; } = string.Empty;
     public string Id { get; init; } = string.Empty;
+    public ModelGroup Group { get; init; } = ModelGroup.StableDiffusion;
     public SamplerInfo[] Samplers { get; init; } = [];
 
     public static GenerationModelInfo FromHash(string hash)
@@ -132,4 +136,12 @@ public class GenerationModelInfo
                 return NaiDiffusion3;
         }
     }
+}
+
+public enum ModelGroup
+{
+    StableDiffusion,
+    StableDiffusionGroup2,
+    StableDiffusionXL,
+    StableDiffusionXLFurry,
 }

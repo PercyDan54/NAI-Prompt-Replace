@@ -64,7 +64,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
 
     private void GenerationConfigOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        int cost = Util.CalculateCost(GenerationConfig, Api?.SubscriptionInfo);
+        int cost = AnlasCostCalculator.Calculate(GenerationConfig, Api?.SubscriptionInfo);
         var replaceLines = GenerationConfig.Replace.Split(Environment.NewLine).Select(l => Math.Max(l.Split(',').Length, 1));
 
         foreach (int line in replaceLines)

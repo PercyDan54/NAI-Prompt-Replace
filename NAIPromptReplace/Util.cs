@@ -69,32 +69,4 @@ public static class Util
 
         return original;
     }
-
-    public static int CalculateCost(GenerationConfig config, SubscriptionInfo? subscription)
-    {
-        int width = config.GenerationParameter.Width;
-        int height = config.GenerationParameter.Height;
-        int imageSize = Math.Max(width * height, 65536);
-        string model = config.Model.Id;
-        int steps = config.GenerationParameter.Steps;
-        int batchSize = config.BatchSize;
-        float v = 0;
-
-        if (subscription?.Tier >= 3 && subscription.Active && steps <= 28 && imageSize <= 1048576)
-            batchSize = 0;
-
-        if (model == "nai-diffusion-3")
-        {
-            bool sm = config.GenerationParameter.Smea;
-            bool dyn = sm && config.GenerationParameter.Dyn;
-            v = MathF.Ceiling(2951823174884865e-21f * imageSize + 5.753298233447344e-7f * imageSize * steps) * (dyn ? 1.4f : sm ? 1.2f : 1f);
-        }
-
-        int a = Math.Max((int)MathF.Ceiling(v), 2);
-
-        if (config.GenerationParameter.UncondScale != 1)
-            a = (int)MathF.Ceiling(1.3f * a);
-
-        return a * batchSize;
-    }
 }

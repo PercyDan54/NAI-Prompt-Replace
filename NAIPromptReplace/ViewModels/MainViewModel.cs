@@ -487,7 +487,7 @@ public class MainViewModel : ReactiveObject
 
             token.ThrowIfCancellationRequested();
 
-            if (!success && retry < maxRetries && (Util.CalculateCost(task, api.SubscriptionInfo) == 0 || task.RetryAll))
+            if (!success && retry < maxRetries && (AnlasCostCalculator.Calculate(task, api.SubscriptionInfo) == 0 || task.RetryAll))
             {
                 writeLogLine($"Failed, Retrying {++retry} / {maxRetries}");
                 Thread.Sleep(retry >= 3 || resp?.StatusCode == HttpStatusCode.TooManyRequests ? 5000 : 3000);

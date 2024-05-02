@@ -1,6 +1,6 @@
 namespace NAIPromptReplace.Models;
 
-public class SamplerInfo
+public class SamplerInfo : IEquatable<SamplerInfo>
 {
     #region Samplers
     public static readonly SamplerInfo Euler = new SamplerInfo
@@ -57,4 +57,34 @@ public class SamplerInfo
     public string Name { get; init; } = string.Empty;
     public string Id { get; init; } = string.Empty;
     public bool AllowSmea { get; init; } = true;
+
+    public static bool operator ==(SamplerInfo? sampler, SamplerInfo? other) => sampler != null && sampler.Equals(other);
+    public static bool operator !=(SamplerInfo? sampler, SamplerInfo? other) => !ReferenceEquals(sampler, null) && !sampler.Equals(other);
+
+    public bool Equals(SamplerInfo? other)
+    {
+        if (ReferenceEquals(null, other))
+            return false;
+        if (ReferenceEquals(this, other))
+            return true;
+
+        return Id == other.Id;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj))
+            return false;
+        if (ReferenceEquals(this, obj))
+            return true;
+        if (obj.GetType() != GetType())
+            return false;
+
+        return Equals((SamplerInfo)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return Id.GetHashCode();
+    }
 }

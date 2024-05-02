@@ -203,7 +203,7 @@ public class GenerationParameter : INotifyPropertyChanged
     private short width = 832;
     private short height = 1216;
     private string negativePrompt = "lowres, jpeg artifacts, worst quality, watermark, blurry, very displeasing";
-    private SamplerInfo sampler = SamplerInfo.Euler;
+    private SamplerInfo? sampler = SamplerInfo.Euler;
 
     public string NegativePrompt
     {
@@ -218,7 +218,7 @@ public class GenerationParameter : INotifyPropertyChanged
         }
     }
 
-    public SamplerInfo Sampler
+    public SamplerInfo? Sampler
     {
         get => sampler;
         set
