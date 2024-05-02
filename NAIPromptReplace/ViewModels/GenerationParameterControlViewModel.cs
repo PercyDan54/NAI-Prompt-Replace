@@ -25,6 +25,13 @@ public class GenerationParameterControlViewModel : ReactiveObject
     public ICommand BrowseOutputFolderCommand { get; }
     public ICommand? OpenOutputFolderCommand { get; set; }
     public ICommand SaveCommand { get; }
+
+    public bool DisableInputFolder
+    {
+        get => disableInputFolder;
+        set => this.RaiseAndSetIfChanged(ref disableInputFolder, value);
+    }
+
     public int AnlasCost
     {
         get => anlasCost;
@@ -47,6 +54,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
     };
     private GenerationConfig generationConfig = new GenerationConfig();
     private int anlasCost;
+    private bool disableInputFolder;
 
     public GenerationParameterControlViewModel()
     {
@@ -88,6 +96,8 @@ public class GenerationParameterControlViewModel : ReactiveObject
         if (folders.Count < 1)
             return;
 
-        GenerationConfig.StorageFolder = folders[0];
+        var folder = folders[0];
+        GenerationConfig.OutputPath = folder.Path.LocalPath;
+        GenerationConfig.StorageFolder = folder;
     }
 }

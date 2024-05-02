@@ -123,7 +123,7 @@ public class MainViewModel : ReactiveObject
     public ICommand OpenHelpCommand { get; }
     public ICommand NewTabCommand { get; }
     public ICommand CloseTabCommand { get; }
-    public ICommand SaveAllCommand { get; }
+    public ICommand? SaveAllCommand { get; protected set; }
     public ICommand OpenFileCommand { get; }
     public ICommand RunTasksCommand { get; }
 
@@ -237,7 +237,7 @@ public class MainViewModel : ReactiveObject
         LogText += content.ToString();
     }
 
-    protected void AddTab(string header, GenerationConfig generationConfig)
+    protected virtual GenerationParameterControlViewModel AddTab(string header, GenerationConfig generationConfig)
     {
         generationConfig.Replacements = replacements;
         var vm = new GenerationParameterControlViewModel
@@ -261,6 +261,8 @@ public class MainViewModel : ReactiveObject
         generationControlViewModels.Add(vm);
         var subscribe = vm.WhenAny(v => v.AnlasCost, (i) => i).Subscribe(i => updateTotalCost());
         subscriptions.Add(subscribe);
+
+        return vm;
     }
 
     private void updateTotalCost()

@@ -14,6 +14,7 @@ public class GenerationConfig : INotifyPropertyChanged
     private string prompt = "best quality, amazing quality, very aesthetic, absurdres";
     private Dictionary<string, string> replacements = [];
     private GenerationModelInfo model = GenerationModelInfo.NaiDiffusion3;
+    private string outputPath = string.Empty;
     public const string DEFAULT_OUTPUT_FILE_NAME = "{seed}-{prompt}";
     
     public static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
@@ -61,7 +62,18 @@ public class GenerationConfig : INotifyPropertyChanged
         }
     }
 
-    public string OutputPath { get; set; } = string.Empty;
+    public string OutputPath
+    {
+        get => outputPath;
+        set
+        {
+            if (value == outputPath)
+                return;
+
+            outputPath = value;
+            NotifyPropertyChanged();
+        }
+    }
 
     [JsonIgnore]
     public IStorageFolder? StorageFolder { get; set; }

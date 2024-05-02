@@ -11,13 +11,18 @@ namespace NAIPromptReplace.Android.ViewModels;
 
 public class AndroidMainViewModel : MainViewModel
 {
-    /*protected override GenerationParameterControl AddTab(string header, GenerationConfig config)
+    public AndroidMainViewModel()
     {
-        var control = base.AddTab(header, config);
-        control.BrowseButton_OnClick(this, null);
-        control.OutputPathTextBox.IsReadOnly = true;
-        return control;
-    }*/
+        SaveAllCommand = null;
+    }
+
+    protected override GenerationParameterControlViewModel AddTab(string header, GenerationConfig config)
+    {
+        var vm = base.AddTab(header, config);
+        vm.DisableInputFolder = true;
+        vm.BrowseOutputFolderCommand.Execute(null);
+        return vm;
+    }
 
     protected override IStorageFile? GetOutputFileForTask(GenerationConfig task, Dictionary<string, string> placeholders)
     {
