@@ -9,9 +9,6 @@
         x:Class="NAIPromptReplace.Views.MainView"
         x:DataType="vm:MainViewModel"
         DragDrop.AllowDrop="True">
-    <Design.DataContext>
-        <vm:MainViewModel />
-    </Design.DataContext>
     <LayoutTransformControl.Resources>
         <converters:SubscriptionInfoToColorConverter x:Key="SubscriptionInfoToColorConverter" />
         <converters:SubscriptionInfoToTextConverter x:Key="SubscriptionInfoToTextConverter" />

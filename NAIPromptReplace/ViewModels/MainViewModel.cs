@@ -460,7 +460,7 @@ public class MainViewModel : ReactiveObject
                         memoryStream.Position = 0;
                         using var image = SKImage.FromEncodedData(memoryStream);
                         using var data = image.Encode(SKEncodedImageFormat.Jpeg, 100);
-                        var folder = await storageFile.GetParentAsync();
+                        var folder = task.StorageFolder ?? await storageFile.GetParentAsync();
 
                         if (folder != null)
                         {

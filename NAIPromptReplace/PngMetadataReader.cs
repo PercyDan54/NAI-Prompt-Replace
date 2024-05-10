@@ -75,7 +75,7 @@ public static class PngMetadataReader
 
         if (!headerBytes.SequenceEqual(png_header))
         {
-            throw new Exception($"File {file.Name} is am invalid PNG file");
+            throw new Exception($"File {file.Name} is an invalid PNG file");
         }
 
         var headers = ReadTextHeaders(memoryStream);

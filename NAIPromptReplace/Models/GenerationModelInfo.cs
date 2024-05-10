@@ -100,6 +100,8 @@ public class GenerationModelInfo
     };
 
     public static readonly GenerationModelInfo[] Models = [NaiDiffusion3, NaiDiffusionFurry3, NaiDiffusion2, NaiDiffusion, NaiDiffusionFurry, SafeDiffusion];
+    public static readonly string[] Schedulers = ["native", "karras", "exponential", "polyexponential"];
+
     #endregion
 
     public string Name { get; init; } = string.Empty;

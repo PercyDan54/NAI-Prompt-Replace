@@ -25,15 +25,17 @@ class Program
 
     private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        errorMessageBox($"An unhandled exception occured\n{e.ExceptionObject}");
+        string file = Util.ReplaceInvalidFileNameChars($"error-{DateTime.Now}.txt");
+
+        errorMessageBox($"An unhandled exception occured. Error will be saved to {file}\n{e.ExceptionObject}");
 
         try
         {
-            File.WriteAllText(Util.ReplaceInvalidFileNameChars($"error-{DateTime.Now}.txt"), e.ExceptionObject.ToString());
+            File.WriteAllText(file, e.ExceptionObject.ToString());
         }
         catch (Exception ex)
         {
-            errorMessageBox($"Error writing crash log:\n{ex}");
+            errorMessageBox($"Error writing crash log to {file}:\n{ex}");
         }
         
         Environment.Exit(-1);

@@ -5,6 +5,7 @@
              xmlns:vm="clr-namespace:NAIPromptReplace.ViewModels"
              xmlns:controls="clr-namespace:NAIPromptReplace.Controls"
              xmlns:converters="clr-namespace:NAIPromptReplace.Converters"
+             xmlns:models="clr-namespace:NAIPromptReplace.Models"
              mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="750"
              x:Class="NAIPromptReplace.Views.GenerationParameterControl"
              x:DataType="vm:GenerationParameterControlViewModel">
@@ -61,7 +62,7 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Model" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <ComboBox Name="ModelComboBox" DisplayMemberBinding="{ReflectionBinding Name}" SelectedItem="{Binding GenerationConfig.Model}" MinWidth="120" />
+                <ComboBox ItemsSource="{x:Static models:GenerationModelInfo.Models}" DisplayMemberBinding="{ReflectionBinding Name}" SelectedItem="{Binding GenerationConfig.Model}" MinWidth="120" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Scale" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -77,7 +78,7 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <TextBlock Text="Noise Schedule" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <ComboBox Name="ScheduleComboBox" SelectedItem="{Binding GenerationConfig.GenerationParameter.NoiseSchedule}" MinWidth="100" HorizontalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{x:Static models:GenerationModelInfo.Schedulers}" SelectedItem="{Binding GenerationConfig.GenerationParameter.NoiseSchedule}" MinWidth="100" HorizontalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                 <TextBlock Text="Batch Size" HorizontalAlignment="Center" VerticalAlignment="Center" />

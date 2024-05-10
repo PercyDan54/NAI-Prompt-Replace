@@ -6,13 +6,9 @@ namespace NAIPromptReplace.Views;
 
 public partial class GenerationParameterControl : UserControl
 {
-    private static readonly List<string> schedulers = ["native", "karras", "exponential", "polyexponential"];
-
     public GenerationParameterControl()
     {
         InitializeComponent();
-        ModelComboBox.ItemsSource = GenerationModelInfo.Models;
-        ScheduleComboBox.ItemsSource = schedulers;
 
         foreach (var control in WrapPanel.Children)
         {
