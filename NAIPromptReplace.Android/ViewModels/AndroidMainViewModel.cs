@@ -16,9 +16,9 @@ public class AndroidMainViewModel : MainViewModel
         SaveAllCommand = null;
     }
 
-    protected override GenerationParameterControlViewModel AddTab(string header, GenerationConfig config)
+    protected override GenerationParameterControlViewModel CreateGenerationParameterControlViewModel(string header, GenerationConfig config)
     {
-        var vm = base.AddTab(header, config);
+        var vm = base.CreateGenerationParameterControlViewModel(header, config);
         vm.DisableInputFolder = true;
         vm.BrowseOutputFolderCommand.Execute(null);
         return vm;
@@ -53,9 +53,7 @@ public class AndroidMainViewModel : MainViewModel
 
     protected override void PresentUri(string uri)
     {
-        using (var intent = new Intent(Intent.ActionView, Uri.Parse(uri)))
-        {
-            MainActivity.Instance.StartActivity(intent);
-        }
+        using var intent = new Intent(Intent.ActionView, Uri.Parse(uri));
+        MainActivity.Instance.StartActivity(intent);
     }
 }

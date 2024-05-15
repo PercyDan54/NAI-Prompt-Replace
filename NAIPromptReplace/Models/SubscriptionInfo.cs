@@ -3,7 +3,7 @@ namespace NAIPromptReplace.Models;
 public class SubscriptionInfo
 {
     private DateTimeOffset expiresAt;
-    public int Tier { get; set; }
+    public SubscriptionTier Tier { get; set; }
     public bool Active { get; set; }
 
     public long ExpiresAt
@@ -23,4 +23,12 @@ public class TrainingSteps
 {
     public int FixedTrainingStepsLeft { get; set; }
     public int PurchasedTrainingSteps { get; set; }
+}
+
+public enum SubscriptionTier
+{
+    Paper,
+    Tablet,
+    Scroll,
+    Opus
 }

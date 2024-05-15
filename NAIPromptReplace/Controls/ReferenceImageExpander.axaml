@@ -1,35 +1,22 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:controls="using:NAIPromptReplace.Controls"
-        xmlns:converters="clr-namespace:NAIPromptReplace.Converters">
+        xmlns:controls="using:NAIPromptReplace.Controls">
     <Design.PreviewWith>
         <controls:ReferenceImageExpander ExpanderName="Test" />
     </Design.PreviewWith>
 
     <Style Selector="controls|ReferenceImageExpander">
-        <Style.Resources>
-            <converters:PathToTitleConverter x:Key="PathToTitleConverter" />
-            <converters:PathToTextConverter x:Key="PathToTextConverter" />
-        </Style.Resources>
         <Setter Property="Template">
             <ControlTemplate>
-                <Expander HorizontalAlignment="{TemplateBinding HorizontalAlignment}" VerticalAlignment="{TemplateBinding VerticalAlignment}" DragDrop.AllowDrop="True" >
-                    <Expander.Header>
-                        <MultiBinding Converter="{StaticResource PathToTitleConverter}" ConverterParameter="32">
-                            <MultiBinding.Bindings>
-                                <TemplateBinding Property="ExpanderName" />
-                                <TemplateBinding Property="ImagePath" />
-                            </MultiBinding.Bindings>
-                        </MultiBinding>
-                    </Expander.Header>
-                    <Grid RowDefinitions="*,Auto,Auto">
+                <Expander HorizontalAlignment="{TemplateBinding HorizontalAlignment}" VerticalAlignment="{TemplateBinding VerticalAlignment}" Header="{TemplateBinding ExpanderName}" >
+                    <Grid RowDefinitions="*,Auto,Auto" Margin="0,5,0,0">
                         <DockPanel>
-                            <TextBlock Name="RefImagePathText" Text="{TemplateBinding ImagePath, Converter={StaticResource PathToTextConverter}, ConverterParameter=40}" />
-                            <Button DockPanel.Dock="Right" HorizontalAlignment="Right" Name="BrowseRefImageButton" Content="Browse" />
-                            <Button DockPanel.Dock="Right" HorizontalAlignment="Right" Name="RemoveRefImageButton" Content="Remove" />
+                            <TextBlock Text="{TemplateBinding ImagePath}" />
+                            <Button DockPanel.Dock="Right" HorizontalAlignment="Right" Command="{TemplateBinding BrowseCommand}" Content="Browse" />
+                            <Button DockPanel.Dock="Right" HorizontalAlignment="Right" Command="{TemplateBinding RemoveCommand}" Content="Remove" />
                         </DockPanel>
                         <ContentPresenter Grid.Row="1" Margin="0,5" Content="{TemplateBinding Content}" />
-                        <Image Grid.Row="2" Name="ReferenceImage" MaxHeight="480" Stretch="Uniform" />
+                        <Image Grid.Row="2" Source="{TemplateBinding Image}" MaxHeight="480" Stretch="Uniform" />
                     </Grid>
                 </Expander>
             </ControlTemplate>

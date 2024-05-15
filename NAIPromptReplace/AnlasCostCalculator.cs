@@ -306,7 +306,7 @@ public static class AnlasCostCalculator
         bool sm = parameter.Smea && sampler.AllowSmea;
         bool dyn = sm && parameter.Dyn;
 
-        if (subscription?.Tier >= 3 && subscription.Active && steps <= 28 && imageSize <= 1048576)
+        if (subscription?.Tier >= SubscriptionTier.Opus && subscription.Active && steps <= 28 && imageSize <= 1048576)
             batchSize = 0;
 
         if (model.Group == ModelGroup.StableDiffusionXL || model.Group == ModelGroup.StableDiffusionXLFurry)
@@ -320,6 +320,7 @@ public static class AnlasCostCalculator
         else
         {
             float[] curve = h;
+
             if (sm)
             {
                 curve = d;

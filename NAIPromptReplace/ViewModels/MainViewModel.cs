@@ -137,11 +137,11 @@ public class MainViewModel : ReactiveObject
 
         OpenHelpCommand = ReactiveCommand.Create(OpenHelp);
         UpdateTokenCommand = ReactiveCommand.Create(async () => await updateAccountInfo(true));
-        NewTabCommand = ReactiveCommand.Create(() => AddTab("New config", new GenerationConfig()));
+        NewTabCommand = ReactiveCommand.Create(() => addTab("New config", new GenerationConfig()));
         CloseTabCommand = ReactiveCommand.Create(closeTab);
         OpenFileCommand = ReactiveCommand.Create(openFile);
         SaveAllCommand = ReactiveCommand.CreateFromTask(saveAll);
-        RunTasksCommand = ReactiveCommand.Create(RunTasks);
+        RunTasksCommand = ReactiveCommand.Create(runTasks);
     }
 
     private async Task saveAll()
@@ -216,7 +216,7 @@ public class MainViewModel : ReactiveObject
 
             if (generationConfig != null)
             {
-                AddTab(file.Name[..Math.Min(32, file.Name.Length)].Trim(), generationConfig);
+                addTab(file.Name[..Math.Min(32, file.Name.Length)].Trim(), generationConfig);
             }
         }
         catch (Exception exception)
@@ -237,7 +237,23 @@ public class MainViewModel : ReactiveObject
         LogText += content.ToString();
     }
 
-    protected virtual GenerationParameterControlViewModel AddTab(string header, GenerationConfig generationConfig)
+    private void addTab(string header, GenerationConfig generationConfig)
+    {
+        var vm = CreateGenerationParameterControlViewModel(header, generationConfig);
+
+        var control = new GenerationParameterControl
+        {
+            Name = header,
+            DataContext = vm,
+        };
+
+        TabItems.Add(new TabItem { Header = header, Content = control });
+        generationControlViewModels.Add(vm);
+        var subscription = vm.WhenAny(v => v.AnlasCost, (i) => i).Subscribe(i => updateTotalCost());
+        subscriptions.Add(subscription);
+    }
+
+    protected virtual GenerationParameterControlViewModel CreateGenerationParameterControlViewModel(string header, GenerationConfig generationConfig)
     {
         generationConfig.Replacements = replacements;
         var vm = new GenerationParameterControlViewModel
@@ -251,16 +267,6 @@ public class MainViewModel : ReactiveObject
                 PresentUri(path);
             })
         };
-        var control = new GenerationParameterControl 
-        { 
-            Name = header, 
-            DataContext = vm,
-        };
-
-        TabItems.Add(new TabItem { Header = header, Content = control });
-        generationControlViewModels.Add(vm);
-        var subscribe = vm.WhenAny(v => v.AnlasCost, (i) => i).Subscribe(i => updateTotalCost());
-        subscriptions.Add(subscribe);
 
         return vm;
     }
@@ -276,14 +282,14 @@ public class MainViewModel : ReactiveObject
             return;
 
         int index = SelectedTabIndex;
-        TabItems.RemoveAt(index);
         generationControlViewModels.RemoveAt(index);
         subscriptions[index].Dispose();
         subscriptions.RemoveAt(index);
+        TabItems.RemoveAt(index);
         updateTotalCost();
     }
 
-    private void RunTasks()
+    private void runTasks()
     {
         if (cancellationTokenSource != null)
         {
@@ -308,7 +314,8 @@ public class MainViewModel : ReactiveObject
             }), null, TaskCreationOptions.LongRunning);
         }
     }
-    private async Task createAndRunTasks(IEnumerable<GenerationConfig> configs, CancellationToken token)
+
+    private async Task createAndRunTasks(List<GenerationConfig> configs, CancellationToken token)
     {
         var tasks = new List<GenerationConfig>();
 
@@ -324,18 +331,18 @@ public class MainViewModel : ReactiveObject
             g.GenerationParameter.Smea = smea;
             g.GenerationParameter.Dyn &= smea;
 
-            var referenceImageData = g.GenerationParameter.ReferenceImageData;
-
-            if (referenceImageData != null)
+            for (int j = 0; j < g.GenerationParameter.ReferenceImageData.Length; j++)
             {
-                g.GenerationParameter.ReferenceImage = Convert.ToBase64String(referenceImageData);
+                var referenceImageData = g.GenerationParameter.ReferenceImageData[j];
+
+                g.GenerationParameter.ReferenceImageMultiple[j] = Convert.ToBase64String(referenceImageData);
             }
 
-            referenceImageData = g.GenerationParameter.ImageData;
+            var imageData = g.GenerationParameter.ImageData;
 
-            if (referenceImageData != null)
+            if (imageData != null)
             {
-                using var im = SKBitmap.Decode(referenceImageData);
+                using var im = SKBitmap.Decode(imageData);
                 using var resized = im.Resize(new SKSizeI(g.GenerationParameter.Width, g.GenerationParameter.Height), SKFilterQuality.High);
                 using var data = resized.Encode(SKEncodedImageFormat.Png, 100);
                 g.GenerationParameter.Image = Convert.ToBase64String(data.ToArray());
@@ -422,13 +429,13 @@ public class MainViewModel : ReactiveObject
             try
             {
                 resp = await api.Generate(task, task.GenerationParameter.ImageData == null ? "generate" : "img2img").WaitAsync(TimeSpan.FromMinutes(2));
+                updateAccountInfo();
             }
             catch (Exception e)
             {
-                writeLogLine(e.Message);
+                writeLogLine($"Error: {e.Message}");
             }
 
-            updateAccountInfo();
             bool success = resp?.IsSuccessStatusCode ?? false;
 
             if (success)
@@ -475,9 +482,23 @@ public class MainViewModel : ReactiveObject
             {
                 if (resp.Content.Headers.ContentType?.MediaType is "application/json" or "text/plain")
                 {
-                    string content = await resp.Content.ReadAsStringAsync();
-                    var response = JsonSerializer.Deserialize<NovelAIGenerationResponse>(content, NovelAIApi.CamelCaseJsonSerializerOptions);
-                    writeLogLine($"Error: {response?.StatusCode} {response?.Message}");
+                    string message = await resp.Content.ReadAsStringAsync();
+                    int statusCode = (int)resp.StatusCode;
+
+                    try
+                    {
+                        var response = JsonSerializer.Deserialize<NovelAIGenerationResponse>(message, NovelAIApi.CamelCaseJsonSerializerOptions);
+
+                        if (response != null)
+                        {
+                            message = response.Message;
+                            statusCode = response.StatusCode;
+                        }
+                    }
+                    catch
+                    {
+                    }
+                    writeLogLine($"Error: {statusCode} {message}");
                 }
                 else
                 {

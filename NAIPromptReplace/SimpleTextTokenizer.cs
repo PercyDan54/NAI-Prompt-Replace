@@ -5,14 +5,16 @@ using System.Text.RegularExpressions;
 namespace NAIPromptReplace;
 
 // https://github.com/dansav/clip-sharp/blob/main/ClipSharp/SimpleTextTokenizer.cs
-public class SimpleTextTokenizer
+public partial class SimpleTextTokenizer
 {
     public const string StartOfText = "<|startoftext|>";
     public const string EndOfText = "<|endoftext|>";
 
-    private static readonly Regex BpePattern = new Regex("""<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+""", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    [GeneratedRegex("""<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+""", RegexOptions.IgnoreCase | RegexOptions.Compiled)]
+    private static partial Regex bpePattern();
 
-    private static readonly Regex Whitespace = new Regex("\\s+", RegexOptions.Compiled);
+    [GeneratedRegex("""\s+""", RegexOptions.Compiled)]
+    private static partial Regex whitespace();
 
     private readonly Dictionary<byte, char> _byteEncoder = null!;
     private readonly Dictionary<char, byte> _byteDecoder = null!;
@@ -172,13 +174,13 @@ public class SimpleTextTokenizer
 
     public IReadOnlyCollection<int> Encode(string input)
     {
-        var text = Whitespace
+        var text = whitespace()
             .Replace(input, " ")
             .Trim()
             .ToLowerInvariant();
 
         var bpeTokens = new List<int>();
-        var matches = BpePattern.Matches(text);
+        var matches = bpePattern().Matches(text);
 
         foreach (Match match in matches)
         {

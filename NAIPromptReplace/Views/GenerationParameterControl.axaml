@@ -13,7 +13,7 @@
         <converters:TextToTokenCountConverter x:Key="TextToTokenCountConverter" />
         <converters:AnlasCountConverter x:Key="AnlasCountConverter" />
     </UserControl.Resources>
-    <Grid Name="MainGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto, Auto" Margin="10">
+    <Grid Name="MainGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="10">
         <Grid RowDefinitions="Auto,*,*,*,*" ColumnDefinitions="Auto,*">
             <TextBlock Text="Prompt" VerticalAlignment="Center" />
             <TextBox Grid.Row="0" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Prompt}" />
@@ -90,41 +90,44 @@
             <CheckBox Content="Save JPEG copy" IsChecked="{Binding GenerationConfig.SaveJpeg}" />
             <controls:AnlasDisplay Value="{Binding AnlasCost, Converter={StaticResource AnlasCountConverter}}" Height="20" />
         </WrapPanel>
-        <controls:ReferenceImageExpander Grid.Row="4" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ExpanderName="Img2Img"
-                                         ImagePath="{Binding GenerationConfig.GenerationParameter.Image, Mode=TwoWay}" ImageData="{Binding GenerationConfig.GenerationParameter.ImageData, Mode=TwoWay}">
-            <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,0,0,5">
-                <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
-                    <TextBlock Text="Strength" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.Strength}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
-                    <TextBlock Text="Noise" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.Noise}" FormatString="0.##" Increment="0.01" Minimum="0" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
-                </StackPanel>
-            </StackPanel>
-        </controls:ReferenceImageExpander>
-        <controls:ReferenceImageExpander Grid.Row="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ExpanderName="Vibe Transfer"
-                                         ImagePath="{Binding GenerationConfig.GenerationParameter.ReferenceImage, Mode=TwoWay}" ImageData="{Binding GenerationConfig.GenerationParameter.ReferenceImageData, Mode=TwoWay}" >
-            <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,0,0,5">
-                <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
-                    <TextBlock Text="Information Extracted" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.ReferenceInformationExtracted}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="1" MinWidth="100" HorizontalContentAlignment="Center" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
-                    <TextBlock Text="Reference Strength" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.ReferenceStrength}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="1" MinWidth="100" HorizontalContentAlignment="Center" />
-                </StackPanel>
-            </StackPanel>
-        </controls:ReferenceImageExpander>
-        <Grid Grid.Row="6" RowDefinitions="*,*" ColumnDefinitions="Auto,*">
-            <TextBlock Margin="0,0,5,0" Text="Output Path" VerticalAlignment="Center" />
-            <DockPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,5">
+        <ItemsControl Grid.Row="4" ItemsSource="{Binding Img2ImgViewModels}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Vertical" Spacing="5" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.DataTemplates>
+                <DataTemplate x:DataType="vm:ReferenceImageViewModel">
+                    <controls:ReferenceImageExpander DragDrop.AllowDrop="True" ExpanderName="{Binding ExpanderText}" Content="{Binding Content}" 
+                                                     Image="{Binding Image}" ImagePath="{Binding ImagePathText}"
+                                                     BrowseCommand="{Binding BrowseCommand}" RemoveCommand="{Binding RemoveCommand}" />
+                </DataTemplate>
+            </ItemsControl.DataTemplates>
+        </ItemsControl>
+        <ItemsControl Grid.Row="5" ItemsSource="{Binding VibeTransferViewModels}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Vertical" Spacing="5" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.DataTemplates>
+                <DataTemplate x:DataType="vm:ReferenceImageViewModel">
+                    <controls:ReferenceImageExpander DragDrop.AllowDrop="True" ExpanderName="{Binding ExpanderText}" Content="{Binding Content}" 
+                                                     Image="{Binding Image}" ImagePath="{Binding ImagePathText}"
+                                                     BrowseCommand="{Binding BrowseCommand}" RemoveCommand="{Binding RemoveCommand}" />
+                </DataTemplate>
+            </ItemsControl.DataTemplates>
+        </ItemsControl>
+        <Grid Grid.Row="6" RowDefinitions="*,*,*" ColumnDefinitions="Auto,*">
+            <Button Grid.ColumnSpan="2" Margin="0,0,5,5" Content="Add Vibe Transfer" Command="{Binding AddVibeTransferCommand}" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,5,0" Text="Output Path" VerticalAlignment="Center" />
+            <DockPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,5">
                 <Button DockPanel.Dock="Right" Content="Open" Command="{Binding OpenOutputFolderCommand}" />
                 <Button DockPanel.Dock="Right" Content="Browse" Command="{Binding BrowseOutputFolderCommand}" />
                 <TextBox Margin="0,0,5,0" Text="{Binding  GenerationConfig.OutputPath}" IsReadOnly="{Binding DisableInputFolder}" />
             </DockPanel>
-            <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,5,0" Text="Output File Name" VerticalAlignment="Center" />
-            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding  GenerationConfig.OutputFilename}" />
+            <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,5,0" Text="Output File Name" VerticalAlignment="Center" />
+            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding  GenerationConfig.OutputFilename}" />
         </Grid>
         <Button Grid.Row="7" Grid.Column="0" HorizontalAlignment="Center" Content="Save Config" Command="{Binding SaveCommand}" />
     </Grid>

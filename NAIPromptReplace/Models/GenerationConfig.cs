@@ -248,7 +248,7 @@ public class GenerationParameter : INotifyPropertyChanged
     public string? ReferenceImage { get; set; }
 
     [JsonIgnore]
-    public byte[]? ReferenceImageData { get; set; }
+    public byte[][] ReferenceImageData { get; set; } = [];
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Image { get; set; }
@@ -265,9 +265,17 @@ public class GenerationParameter : INotifyPropertyChanged
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public long? ExtraNoiseSeed { get; set; }
 
-    public double ReferenceInformationExtracted { get; set; } = 1;
+    public string[] ReferenceImageMultiple { get; set; } = [];
 
-    public double ReferenceStrength { get; set; } = 1;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public double? ReferenceInformationExtracted { get; set; }
+
+    public double[] ReferenceInformationExtractedMultiple { get; set; } = [];
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public double? ReferenceStrength { get; set; }
+
+    public double[] ReferenceStrengthMultiple { get; set; } = [];
 
     [JsonPropertyName("sm")]
     public bool Smea

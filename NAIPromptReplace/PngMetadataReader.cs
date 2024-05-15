@@ -18,19 +18,19 @@ public static class PngMetadataReader
     {
         var jsonDocument = JsonDocument.Parse(json);
 
-        var parameters = jsonDocument.Deserialize<GenerationParameter>(NovelAIApi.ApiSerializerOptions);
+        var parameter = jsonDocument.Deserialize<GenerationParameter>(NovelAIApi.ApiSerializerOptions);
 
-        if (parameters == null)
-            throw new JsonException("Failed to parse json");
+        if (parameter == null)
+            throw new JsonException("Failed to parse GenerationParameter json");
+
+        // ReferenceStrength will be 0 if no reference image is set, set to null instead
+        if (parameter.ReferenceStrength < 0.01)
+            parameter.ReferenceStrength = null;
         
         var generationConfig = new GenerationConfig
         {
-            GenerationParameter = parameters
+            GenerationParameter = parameter
         };
-
-        // ReferenceStrength will be 0 if no reference image is set, set to default instead
-        if (generationConfig.GenerationParameter.ReferenceStrength < 0.01)
-            generationConfig.GenerationParameter.ReferenceStrength = 1;
 
         bool legacy = true;
         

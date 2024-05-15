@@ -19,8 +19,7 @@ class Program
     {
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 
-        BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
     private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
@@ -29,6 +28,7 @@ class Program
 
         errorMessageBox($"An unhandled exception occured. Error will be saved to {file}\n{e.ExceptionObject}");
 
+#if !DEBUG
         try
         {
             File.WriteAllText(file, e.ExceptionObject.ToString());
@@ -37,7 +37,8 @@ class Program
         {
             errorMessageBox($"Error writing crash log to {file}:\n{ex}");
         }
-        
+#endif
+
         Environment.Exit(-1);
     }
 

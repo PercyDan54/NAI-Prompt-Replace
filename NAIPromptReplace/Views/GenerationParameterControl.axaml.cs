@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using NAIPromptReplace.Models;
 
 namespace NAIPromptReplace.Views;
 

@@ -6,10 +6,12 @@ using NAIPromptReplace.Models;
 
 namespace NAIPromptReplace.Converters;
 
-public class TextToTokenCountConverter : IMultiValueConverter
+public partial class TextToTokenCountConverter : IMultiValueConverter
 {
     private static readonly SimpleTextTokenizer tokenizer = SimpleTextTokenizer.Load();
-    private static readonly Regex bracketsRegex = new Regex("[{}\\[\\]]+", RegexOptions.Compiled);
+
+    [GeneratedRegex("[{}\\[\\]]+", RegexOptions.Compiled)]
+    private static partial Regex bracketsRegex();
 
     public object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
     {
@@ -21,7 +23,7 @@ public class TextToTokenCountConverter : IMultiValueConverter
             prompt = GenerationConfig.GetReplacedPrompt(prompt, replacements);
         }
 
-        prompt = bracketsRegex.Replace(prompt, string.Empty);
+        prompt = bracketsRegex().Replace(prompt, string.Empty);
 
         return tokenizer.Encode(prompt).Count;
     }
