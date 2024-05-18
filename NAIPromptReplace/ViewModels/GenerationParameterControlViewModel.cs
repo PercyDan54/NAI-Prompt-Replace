@@ -1,7 +1,11 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Windows.Input;
 using Avalonia.Platform.Storage;
+using CsvHelper;
+using CsvHelper.Configuration;
 using NAIPromptReplace.Controls;
 using NAIPromptReplace.Models;
 using ReactiveUI;
@@ -24,7 +28,15 @@ public class GenerationParameterControlViewModel : ReactiveObject
             loadVibeTransfer();
         }
     }
-    public NovelAIApi? Api { get; set; }
+    public NovelAIApi? Api
+    {
+        get => api;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref api, value);
+            GenerationConfigOnPropertyChanged(null, null);
+        }
+    }
     public ICommand BrowseOutputFolderCommand { get; }
     public ICommand? OpenOutputFolderCommand { get; set; }
     public ICommand SaveCommand { get; }
@@ -43,7 +55,14 @@ public class GenerationParameterControlViewModel : ReactiveObject
     }
 
     public ObservableCollection<ReferenceImageViewModel> Img2ImgViewModels { get; }
-    public ObservableCollection<VibeTransferViewModel> VibeTransferViewModels { get; private set; } = [];
+    public ObservableCollection<VibeTransferViewModel> VibeTransferViewModels { get; } = [];
+
+    private static readonly CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture)
+    {
+        HasHeaderRecord = false,
+        BadDataFound = null,
+        TrimOptions = TrimOptions.Trim
+    };
 
     private static readonly FilePickerSaveOptions saveConfigFilePickerOptions = new FilePickerSaveOptions
     {
@@ -63,6 +82,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
     private int anlasCost;
     private bool disableInputFolder;
     private List<IDisposable> vibeTransferSubscriptions = [];
+    private NovelAIApi? api;
 
     public GenerationParameterControlViewModel()
     {
@@ -80,7 +100,6 @@ public class GenerationParameterControlViewModel : ReactiveObject
                 }
             },
         ];
-        GenerationConfigOnPropertyChanged(null, null);
     }
 
     private VibeTransferViewModel addVibeTransfer()
@@ -163,12 +182,30 @@ public class GenerationParameterControlViewModel : ReactiveObject
     private void GenerationConfigOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         int cost = AnlasCostCalculator.Calculate(GenerationConfig, Api?.SubscriptionInfo);
-        var replaceLines = GenerationConfig.Replace.Split(Environment.NewLine).Select(l => Math.Max(l.Split(',').Length, 1));
+        int replace = 1;
 
-        foreach (int line in replaceLines)
-            cost *= line;
+        // Trim spaces between words
+        string[] tags = GenerationConfig.Prompt.Split(',', StringSplitOptions.TrimEntries);
+        string prompt = string.Join(',', tags);
+        using var reader = new StringReader(GenerationConfig.Replace);
+        using (var csv = new CsvParser(reader, csvConfiguration))
+        {
+            while (csv.Read())
+            {
+                string[] records = csv.Record;
+                string toReplace = records[0];
+                int index = prompt.IndexOf(toReplace, StringComparison.Ordinal);
+                int end = index + toReplace.Length;
 
-        AnlasCost = cost;
+                // Ensure the matched tag is a full word split by comma
+                if (index >= 0 && (index == 0 || end == prompt.Length || Regex.IsMatch(prompt, $@",(?:\{{|\[)*{Regex.Escape(toReplace)}(?:\}}|\])*,")))
+                {
+                    replace *= records.Length;
+                }
+            }
+        }
+
+        AnlasCost = cost * replace;
     }
 
     private async Task saveConfig()

@@ -15,7 +15,7 @@
         <converters:AnlasCountConverter x:Key="AnlasCountConverter" />
     </LayoutTransformControl.Resources>
 
-    <Panel Margin="20, 10">
+    <Panel Margin="15,10">
         <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnDefinitions="*">
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,5">
                 <TextBlock Text="Token" VerticalAlignment="Center" Margin="0,0,5,0" />

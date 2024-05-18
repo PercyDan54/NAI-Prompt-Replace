@@ -157,9 +157,14 @@ public class MainViewModel : ReactiveObject
         if (folder.Count == 0)
             return;
 
+        string? path = folder[0].TryGetLocalPath();
+
+        if (path == null)
+            return;
+
         foreach (var vm in generationControlViewModels)
         {
-            var fileName = Util.GetValidFileName(Path.Combine(folder[0].TryGetLocalPath(), (Path.ChangeExtension(vm.Name, string.Empty) ?? "Untitled") + ".json"));
+            string fileName = Util.GetValidFileName(Path.Combine(path, Path.ChangeExtension(vm.Name, ".json")) ?? "Untitled");
             using var file = await folder[0].CreateFileAsync(Path.GetFileName(fileName));
             await vm.GenerationConfig.SaveAsync(file);
         }
@@ -362,11 +367,11 @@ public class MainViewModel : ReactiveObject
             using var reader = new StringReader(g.Replace);
             using (var csv = new CsvParser(reader, csvConfiguration))
             {
-                while (csv.Read())
+                while (await csv.ReadAsync())
                 {
                     string[] records = csv.Record;
                     string toReplace = records[0];
-                    int index = g.Prompt.IndexOf(toReplace, StringComparison.Ordinal);
+                    int index = prompt.IndexOf(toReplace, StringComparison.Ordinal);
                     int end = index + toReplace.Length;
 
                     // Ensure the matched tag is a full word split by comma

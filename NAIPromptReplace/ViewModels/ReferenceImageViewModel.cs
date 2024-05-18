@@ -138,7 +138,7 @@ public class ReferenceImageViewModel : ReactiveObject
             return;
         }
 
-        ExpanderText = $"{Title} ({Util.TruncateString(ImagePath, 32)})";
+        ExpanderText = $"{Title} ({Util.TruncateString(Path.GetFileName(ImagePath), 32)})";
         ImagePathText = $"{Util.TruncateString(ImagePath, 40)}";
     }
 

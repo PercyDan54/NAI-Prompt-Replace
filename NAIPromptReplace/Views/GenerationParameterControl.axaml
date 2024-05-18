@@ -16,7 +16,7 @@
     <Grid Name="MainGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="10">
         <Grid RowDefinitions="Auto,*,*,*,*" ColumnDefinitions="Auto,*">
             <TextBlock Text="Prompt" VerticalAlignment="Center" />
-            <TextBox Grid.Row="0" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Prompt}" />
+            <TextBox Grid.Row="0" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Prompt, TargetNullValue=''}" />
             <ProgressBar Grid.Row="1" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
                 <ProgressBar.Value>
                     <MultiBinding Converter="{StaticResource TextToTokenCountConverter}">
@@ -28,7 +28,7 @@
                 </ProgressBar.Value>
             </ProgressBar>
             <TextBlock Grid.Row="2" Grid.Column="0" Text="Negative" Margin="0,0,5,0" VerticalAlignment="Center" />
-            <TextBox Grid.Row="2" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" Text="{Binding GenerationConfig.GenerationParameter.NegativePrompt}" />
+            <TextBox Grid.Row="2" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" Text="{Binding GenerationConfig.GenerationParameter.NegativePrompt, TargetNullValue=''}" />
             <ProgressBar Grid.Row="3" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
                 <ProgressBar.Value>
                     <MultiBinding Converter="{StaticResource TextToTokenCountConverter}">
@@ -39,7 +39,7 @@
                 </ProgressBar.Value>
             </ProgressBar>
             <TextBlock Grid.Row="4" Grid.Column="0" Text="Replace" VerticalAlignment="Center" />
-            <TextBox Grid.Row="4" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Replace}" />
+            <TextBox Grid.Row="4" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Replace, TargetNullValue=''}" />
         </Grid>
         <WrapPanel Name="WrapPanel" Grid.Row="3" Grid.Column="0" Orientation="Horizontal">
             <CheckBox Content="SMEA" IsChecked="{Binding GenerationConfig.GenerationParameter.Smea}" IsEnabled="{Binding GenerationConfig.GenerationParameter.Sampler.AllowSmea}" />
