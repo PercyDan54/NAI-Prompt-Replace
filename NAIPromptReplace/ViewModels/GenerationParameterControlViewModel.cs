@@ -89,17 +89,16 @@ public class GenerationParameterControlViewModel : ReactiveObject
         SaveCommand = ReactiveCommand.CreateFromTask(saveConfig);
         BrowseOutputFolderCommand = ReactiveCommand.Create(browseOutputFolder);
         AddVibeTransferCommand = ReactiveCommand.Create(addVibeTransfer);
-        Img2ImgViewModels =
-        [
-            new ReferenceImageViewModel
+        var vm = new ReferenceImageViewModel
+        {
+            Title = "Img2Img",
+            Content = new Img2ImgControl
             {
-                Title = "Img2Img",
-                Content = new Img2ImgControl
-                {
-                    DataContext = this,
-                }
-            },
-        ];
+                DataContext = this,
+            }
+        };
+        vm.WhenAnyValue(v => v.ImageData).Subscribe(data => GenerationConfig.GenerationParameter.ImageData = data);
+        Img2ImgViewModels = [vm];
     }
 
     private VibeTransferViewModel addVibeTransfer()

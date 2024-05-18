@@ -358,6 +358,9 @@ public class GenerationParameter : INotifyPropertyChanged
     {
         var clone = (GenerationParameter)MemberwiseClone();
         clone.PropertyChanged = null;
+        clone.ReferenceImageMultiple = ReferenceImageMultiple.ToArray();
+        clone.ReferenceStrengthMultiple = ReferenceStrengthMultiple.ToArray();
+        clone.ReferenceInformationExtractedMultiple = ReferenceInformationExtractedMultiple.ToArray();
         return clone;
     }
 

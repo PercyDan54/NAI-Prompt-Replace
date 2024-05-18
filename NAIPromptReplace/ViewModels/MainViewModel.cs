@@ -338,12 +338,12 @@ public class MainViewModel : ReactiveObject
 
             for (int j = 0; j < g.GenerationParameter.ReferenceImageData.Length; j++)
             {
-                var referenceImageData = g.GenerationParameter.ReferenceImageData[j];
+                byte[] referenceImageData = g.GenerationParameter.ReferenceImageData[j];
 
                 g.GenerationParameter.ReferenceImageMultiple[j] = Convert.ToBase64String(referenceImageData);
             }
 
-            var imageData = g.GenerationParameter.ImageData;
+            byte[]? imageData = g.GenerationParameter.ImageData;
 
             if (imageData != null)
             {
