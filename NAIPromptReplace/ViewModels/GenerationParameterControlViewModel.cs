@@ -81,8 +81,8 @@ public class GenerationParameterControlViewModel : ReactiveObject
     private GenerationConfig generationConfig = new GenerationConfig();
     private int anlasCost;
     private bool disableInputFolder;
-    private List<IDisposable> vibeTransferSubscriptions = [];
     private NovelAIApi? api;
+    private int nextVibeTransferId;
 
     public GenerationParameterControlViewModel()
     {
@@ -94,7 +94,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
             Title = "Img2Img",
             Content = new Img2ImgControl
             {
-                DataContext = this,
+                DataContext = this
             }
         };
         vm.WhenAnyValue(v => v.ImageData).Subscribe(data => GenerationConfig.GenerationParameter.ImageData = data);
@@ -105,26 +105,24 @@ public class GenerationParameterControlViewModel : ReactiveObject
     {
         var vm = new VibeTransferViewModel
         {
-            Id = VibeTransferViewModels.Count,
-            RemoveSelfCommand = ReactiveCommand.Create<int>(removeVibeTransfer)
+            Id = nextVibeTransferId++,
+            RemoveSelfCommand = ReactiveCommand.Create<VibeTransferViewModel>(removeVibeTransfer),
         };
 
         vm.Content = new VibeTransferControl
         {
-            DataContext = vm,
+            DataContext = vm
         };
+        vm.Subscription = vm.WhenAnyValue(v => v.ImageData, v => v.ImagePath, v => v.ReferenceStrength, v => v.ReferenceInformationExtracted).Subscribe(_ => updateVibeTransfer());
 
-        var subscription = vm.WhenAnyValue(v => v.ImageData, v => v.ImagePath, v => v.ReferenceStrength, v => v.ReferenceInformationExtracted).Subscribe(_ => updateVibeTransfer());
-        vibeTransferSubscriptions.Add(subscription);
         VibeTransferViewModels.Add(vm);
         return vm;
     }
 
-    private void removeVibeTransfer(int id)
+    private void removeVibeTransfer(VibeTransferViewModel vm)
     {
-        vibeTransferSubscriptions[id].Dispose();
-        vibeTransferSubscriptions.RemoveAt(id);
-        VibeTransferViewModels.RemoveAt(id);
+        vm.Subscription.Dispose();
+        VibeTransferViewModels.Remove(vm);
     }
 
     private void loadVibeTransfer()
@@ -163,7 +161,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
         byte[][] imageDatas = new byte[count][];
         string[] imagePaths = new string[count];
 
-        for (int i = 0; i < vms.Length; i++)
+        for (int i = 0; i < count; i++)
         {
             var vm = vms[i];
             referenceInformationExtractedMultiple[i] = vm.ReferenceInformationExtracted;
