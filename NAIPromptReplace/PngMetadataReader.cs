@@ -121,10 +121,12 @@ public static class PngMetadataReader
     {
         using var bitmap = SKBitmap.Decode(data);
         bool hasAlpha = bitmap.AlphaType != SKAlphaType.Opaque;
-        byte stage = 0;
+        StealthPngReadingState state = StealthPngReadingState.ReadingSignature;
         bool alphaMode = false;
         bool compressed = false;
-        string bufferRgb = string.Empty, bufferAlpha = string.Empty, binaryData = string.Empty, content = string.Empty;
+        string content = string.Empty;
+        byte[] bufferAlpha = new byte[15], bufferRgb = new byte[15], byteData = [];
+        byte byteAlpha = 0, bitAlpha = 0, byteRgb = 0, bitRgb = 0;
         int indexRgb = 0, indexAlpha = 0;
         int paramLen = -1;
 
@@ -134,83 +136,98 @@ public static class PngMetadataReader
             {
                 var px = bitmap.GetPixel(i, j);
 
-                if (hasAlpha)
+                void addBit(byte bit, ref byte[] buffer, ref byte currentByte, ref byte currentBit, ref int index)
                 {
-                    bufferAlpha += px.Alpha & 1;
-                    indexAlpha++;
+                    currentByte <<= 1;
+                    currentByte |= bit;
+                    currentBit++;
+
+                    if (currentBit == 8)
+                    {
+                        buffer[index++] = currentByte;
+                        currentBit = 0;
+                        currentByte = 0;
+                    }
                 }
 
-                bufferRgb += px.Red & 1;
-                bufferRgb += px.Green & 1;
-                bufferRgb += px.Blue & 1;
-                indexRgb += 3;
-
-                if (stage == 0)
+                if (hasAlpha)
                 {
-                    if (indexAlpha == stealth_pnginfo_signature_alpha[0].Length * 8)
+                    addBit((byte)(px.Alpha & 1), ref bufferAlpha, ref byteAlpha, ref bitAlpha, ref indexAlpha);
+                }
+
+                addBit((byte)(px.Red & 1), ref bufferRgb, ref byteRgb, ref bitRgb, ref indexRgb);
+                addBit((byte)(px.Green & 1), ref bufferRgb, ref byteRgb, ref bitRgb, ref indexRgb);
+                addBit((byte)(px.Blue & 1), ref bufferRgb, ref byteRgb, ref bitRgb, ref indexRgb);
+
+                if (state == 0)
+                {
+                    if (indexAlpha == stealth_pnginfo_signature_alpha[0].Length)
                     {
-                        string decodedSig = binaryStringToString(bufferAlpha);
+                        string decodedSig = Encoding.UTF8.GetString(bufferAlpha);
 
                         for (int k = 0; k < stealth_pnginfo_signature_alpha.Length; k++)
                         {
                             if (stealth_pnginfo_signature_alpha[k] == decodedSig)
                             {
-                                stage++;
+                                state++;
                                 alphaMode = true;
                                 compressed = k == 0;
-                                bufferAlpha = string.Empty;
+                                bufferAlpha = new byte[4];
                                 indexAlpha = 0;
                                 break;
                             }
                         }
 
-                        if (stage != 1)
-                            stage = 3;
+                        if (state != StealthPngReadingState.ReadingParamLen)
+                            return content;
                     }
-                    else if (indexRgb == stealth_pnginfo_signature_rgb[0].Length * 8)
+                    else if (indexRgb == stealth_pnginfo_signature_rgb[0].Length)
                     {
-                        string decodedSig = binaryStringToString(bufferRgb);
+                        string decodedSig = Encoding.UTF8.GetString(bufferRgb);
 
                         for (int k = 0; k < stealth_pnginfo_signature_rgb.Length; k++)
                         {
                             if (stealth_pnginfo_signature_rgb[k] == decodedSig)
                             {
-                                stage++;
+                                state++;
                                 compressed = k == 0;
-                                bufferRgb = string.Empty;
+                                bufferRgb = new byte[4];
                                 indexRgb = 0;
                                 break;
                             }
                         }
+
+                        if (state != StealthPngReadingState.ReadingParamLen && (!hasAlpha || indexAlpha >= 15))
+                            state = StealthPngReadingState.ReadingEnd;
                     }
                 }
-                else if (stage == 1)
+                else if (state == StealthPngReadingState.ReadingParamLen)
                 {
-                    if (alphaMode && indexAlpha == 32)
+                    if (alphaMode && indexAlpha == 4)
                     {
-                        paramLen = Convert.ToInt32(bufferAlpha, 2);
-                        stage++;
-                        bufferAlpha = string.Empty;
+                        paramLen = BinaryPrimitives.ReadInt32BigEndian(bufferAlpha) / 8;
+                        state++;
+                        bufferAlpha = new byte[paramLen];
                         indexAlpha = 0;
                     }
-                    else if (indexRgb == 33)
+                    else if (indexRgb == 4 && bitRgb == 1)
                     {
-                        char pop = bufferRgb[^1];
-                        bufferRgb.Remove(bufferRgb.Length - 1);
-                        paramLen = Convert.ToInt32(bufferRgb, 2);
-                        stage++;
-                        bufferRgb += pop;
-                        indexRgb = 1;
+                        byte pop = byteRgb;
+                        paramLen = BinaryPrimitives.ReadInt32BigEndian(bufferRgb) / 8;
+                        state++;
+                        bufferRgb = new byte[paramLen];
+                        indexRgb = byteRgb = bitRgb = 0;
+                        addBit(pop, ref bufferRgb, ref byteRgb, ref bitRgb, ref indexRgb);
                     }
                 }
-                else if (stage == 2)
+                else if (state == StealthPngReadingState.ReadingData)
                 {
                     if (alphaMode)
                     {
                         if (indexAlpha == paramLen)
                         {
-                            binaryData = bufferAlpha;
-                            stage++;
+                            byteData = bufferAlpha;
+                            state++;
                             break;
                         }
                     }
@@ -221,27 +238,23 @@ public static class PngMetadataReader
                         if (diff < 0)
                             bufferRgb = bufferRgb[..diff];
 
-                        binaryData = bufferRgb;
-                        stage++;
+                        byteData = bufferRgb;
+                        state++;
                         break;
                     }
                 }
                 else
                 {
-                    stage = 3;
+                    state = StealthPngReadingState.ReadingEnd;
                 }
             }
 
-            if (stage == 3)
+            if (state == StealthPngReadingState.ReadingEnd)
                 break;
         }
 
-        if (!string.IsNullOrEmpty(binaryData))
+        if (byteData.Length > 0)
         {
-            byte[] byteData = binaryData.Chunk(8)
-                .Select(chars => Convert.ToByte(new string(chars), 2))
-                .ToArray();
-
             if (compressed)
             {
                 using var stream = new MemoryStream(byteData);
@@ -256,15 +269,6 @@ public static class PngMetadataReader
         }
 
         return content;
-    }
-
-    private static string binaryStringToString(string binaryString)
-    {
-        byte[] byteArray = binaryString.Chunk(8)
-            .Select(chars => Convert.ToByte(new string(chars), 2))
-            .ToArray();
-
-        return Encoding.UTF8.GetString(byteArray);
     }
 
     public static Dictionary<string, string> ReadTextHeaders(Stream stream)
@@ -304,5 +308,13 @@ public static class PngMetadataReader
 
             return dict;
         }
+    }
+
+    private enum StealthPngReadingState
+    {
+        ReadingSignature,
+        ReadingParamLen,
+        ReadingData,
+        ReadingEnd,
     }
 }

@@ -118,11 +118,11 @@ public class GenerationConfig : INotifyPropertyChanged
 
     public GenerationParameter GenerationParameter { get; set; } = new GenerationParameter();
 
-    public GenerationConfig Clone()
+    public GenerationConfig Clone(bool deepClone = false)
     {
         var clone = (GenerationConfig) MemberwiseClone();
         clone.PropertyChanged = null;
-        clone.GenerationParameter = GenerationParameter.Clone();
+        clone.GenerationParameter = GenerationParameter.Clone(deepClone);
         return clone;
     }
 
@@ -354,13 +354,18 @@ public class GenerationParameter : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    public GenerationParameter Clone()
+    public GenerationParameter Clone(bool deepClone)
     {
         var clone = (GenerationParameter)MemberwiseClone();
         clone.PropertyChanged = null;
-        clone.ReferenceImageMultiple = ReferenceImageMultiple.ToArray();
-        clone.ReferenceStrengthMultiple = ReferenceStrengthMultiple.ToArray();
-        clone.ReferenceInformationExtractedMultiple = ReferenceInformationExtractedMultiple.ToArray();
+
+        if (deepClone)
+        {
+            clone.ReferenceImageMultiple = ReferenceImageMultiple.ToArray();
+            clone.ReferenceStrengthMultiple = ReferenceStrengthMultiple.ToArray();
+            clone.ReferenceInformationExtractedMultiple = ReferenceInformationExtractedMultiple.ToArray();
+        }
+
         return clone;
     }
 

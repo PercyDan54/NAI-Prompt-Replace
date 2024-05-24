@@ -58,11 +58,11 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Sampler" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <ComboBox ItemsSource="{Binding GenerationConfig.Model.Samplers}" SelectedItem="{Binding GenerationConfig.GenerationParameter.Sampler}" DisplayMemberBinding="{ReflectionBinding Name}" MinWidth="150" HorizontalContentAlignment="Center" />
+                <ComboBox ItemsSource="{Binding GenerationConfig.Model.Samplers}" SelectedItem="{Binding GenerationConfig.GenerationParameter.Sampler}" DisplayMemberBinding="{Binding Name, DataType='models:SamplerInfo'}" MinWidth="150" HorizontalContentAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Model" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <ComboBox ItemsSource="{x:Static models:GenerationModelInfo.Models}" DisplayMemberBinding="{ReflectionBinding Name}" SelectedItem="{Binding GenerationConfig.Model}" MinWidth="120" />
+                <ComboBox ItemsSource="{x:Static models:GenerationModelInfo.Models}" DisplayMemberBinding="{Binding Name, DataType='models:GenerationModelInfo'}" SelectedItem="{Binding GenerationConfig.Model}" MinWidth="120" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Scale" HorizontalAlignment="Center" VerticalAlignment="Center" />

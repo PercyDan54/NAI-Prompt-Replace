@@ -61,12 +61,25 @@ public class MainViewModel : ReactiveObject
         }
     }
 
-    public ObservableCollection<TabItem> TabItems { get; set; } = [];
+    public ObservableCollection<TabViewModel> TabItems { get; set; } = [];
+
     private List<GenerationParameterControlViewModel> generationControlViewModels = [];
     private List<IDisposable> subscriptions = [];
     private int totalCost;
+    private int selectedTabIndex = -1;
+    private GenerationParameterControl? selectedContent;
 
-    public int SelectedTabIndex { get; set; }
+    public int SelectedTabIndex
+    {
+        get => selectedTabIndex;
+        set => this.RaiseAndSetIfChanged(ref selectedTabIndex, value);
+    }
+
+    public GenerationParameterControl? SelectedContent
+    {
+        get => selectedContent;
+        set => this.RaiseAndSetIfChanged(ref selectedContent, value);
+    }
 
     public int CurrentTask
     {
@@ -137,11 +150,12 @@ public class MainViewModel : ReactiveObject
 
         OpenHelpCommand = ReactiveCommand.Create(OpenHelp);
         UpdateTokenCommand = ReactiveCommand.Create(async () => await updateAccountInfo(true));
-        NewTabCommand = ReactiveCommand.Create(() => addTab("New config", new GenerationConfig()));
+        NewTabCommand = ReactiveCommand.Create(() => addTab("New Config", new GenerationConfig()));
         CloseTabCommand = ReactiveCommand.Create(closeTab);
         OpenFileCommand = ReactiveCommand.Create(openFile);
         SaveAllCommand = ReactiveCommand.CreateFromTask(saveAll);
         RunTasksCommand = ReactiveCommand.Create(runTasks);
+        this.WhenAnyValue(vm => vm.SelectedTabIndex).Subscribe(_ => updateTab());
     }
 
     private async Task saveAll()
@@ -221,7 +235,7 @@ public class MainViewModel : ReactiveObject
 
             if (generationConfig != null)
             {
-                addTab(file.Name[..Math.Min(32, file.Name.Length)].Trim(), generationConfig);
+                addTab(file.Name.Trim(), generationConfig);
             }
         }
         catch (Exception exception)
@@ -252,10 +266,24 @@ public class MainViewModel : ReactiveObject
             DataContext = vm,
         };
 
-        TabItems.Add(new TabItem { Header = header, Content = control });
+        TabItems.Add(new TabViewModel { Name = header, Control = control });
         generationControlViewModels.Add(vm);
         var subscription = vm.WhenAny(v => v.AnlasCost, (i) => i).Subscribe(i => updateTotalCost());
         subscriptions.Add(subscription);
+
+        if (SelectedTabIndex == -1)
+            SelectedTabIndex = 0;
+    }
+
+    private void updateTab()
+    {
+        if (SelectedTabIndex == -1 || TabItems.Count == 0)
+        {
+            SelectedContent = null;
+            return;
+        }
+
+        SelectedContent = TabItems[SelectedTabIndex].Control;
     }
 
     protected virtual GenerationParameterControlViewModel CreateGenerationParameterControlViewModel(string header, GenerationConfig generationConfig)
@@ -283,7 +311,7 @@ public class MainViewModel : ReactiveObject
 
     private void closeTab()
     {
-        if (TabItems.Count == 0)
+        if (TabItems.Count == 0 || SelectedTabIndex < 0)
             return;
 
         int index = SelectedTabIndex;
@@ -292,6 +320,19 @@ public class MainViewModel : ReactiveObject
         subscriptions.RemoveAt(index);
         TabItems.RemoveAt(index);
         updateTotalCost();
+
+        if (TabItems.Count > 0)
+        {
+            int newIndex = index - 1;
+
+            if (newIndex < 0)
+            {
+                if (TabItems.Count >= index)
+                    newIndex = index;
+            }
+            
+            SelectedTabIndex = newIndex;
+        }
     }
 
     private void runTasks()
@@ -326,7 +367,7 @@ public class MainViewModel : ReactiveObject
 
         foreach (var generationConfig in configs)
         {
-            var g = generationConfig.Clone();
+            var g = generationConfig.Clone(true);
             g.GenerationParameter.Seed ??= random.Next();
             long seed = g.GenerationParameter.Seed.Value;
 
@@ -338,9 +379,7 @@ public class MainViewModel : ReactiveObject
 
             for (int j = 0; j < g.GenerationParameter.ReferenceImageData.Length; j++)
             {
-                byte[] referenceImageData = g.GenerationParameter.ReferenceImageData[j];
-
-                g.GenerationParameter.ReferenceImageMultiple[j] = Convert.ToBase64String(referenceImageData);
+                g.GenerationParameter.ReferenceImageMultiple[j] = Convert.ToBase64String(g.GenerationParameter.ReferenceImageData[j]);
             }
 
             byte[]? imageData = g.GenerationParameter.ImageData;
@@ -389,10 +428,12 @@ public class MainViewModel : ReactiveObject
 
                 for (int j = 0; j < g.BatchSize; j++)
                 {
+                    long batchSeed = g.AllRandom && j > 0 ? random.Next() : seed + j;
+
                     foreach (var combo in combos)
                     {
                         var clone = g.Clone();
-                        clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
+                        clone.GenerationParameter.Seed = batchSeed;
 
                         for (int k = 0; k < combo.Count; k++)
                         {

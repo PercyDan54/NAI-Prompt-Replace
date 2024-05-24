@@ -10,11 +10,11 @@
     <StackPanel Orientation="Horizontal" Spacing="5">
         <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
             <TextBlock Text="Strength" HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <NumericUpDown Value="{Binding GenerationConfig.GenerationParameter.Strength}" ValueChanged="preventNullValue" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
+            <NumericUpDown Value="{Binding GenerationConfig.GenerationParameter.Strength, TargetNullValue=0.7}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
             <TextBlock Text="Noise" HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <NumericUpDown Value="{Binding  GenerationConfig.GenerationParameter.Noise}" ValueChanged="preventNullValue" FormatString="0.##" Increment="0.01" Minimum="0" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
+            <NumericUpDown Value="{Binding  GenerationConfig.GenerationParameter.Noise, TargetNullValue=0}" FormatString="0.##" Increment="0.01" Minimum="0" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
         </StackPanel>
     </StackPanel>
 </UserControl>

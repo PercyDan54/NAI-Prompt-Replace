@@ -46,7 +46,10 @@
                 </DockPanel>
             </Grid>
             <ScrollViewer Grid.Row="2" Margin="0,0,0,5">
-                <TabControl SelectedIndex="{Binding SelectedTabIndex}" ItemsSource="{Binding TabItems}" VerticalAlignment="Stretch" />
+                <StackPanel Orientation="Vertical">
+                    <ComboBox MinWidth="150" SelectedIndex="{Binding SelectedTabIndex}" DisplayMemberBinding="{Binding Name, DataType='vm:TabViewModel'}" ItemsSource="{Binding TabItems}" />
+                    <ContentControl Content="{Binding SelectedContent}" />
+                </StackPanel>
             </ScrollViewer>
             <DataGrid Grid.Row="3" Height="100" ItemsSource="{Binding Replacements}" Margin="0,0,0,5" AutoGenerateColumns="True" AutoGeneratingColumn="ReplacementDataGrid_OnAutoGeneratingColumn" />
             <Grid Grid.Row="4" Margin="0,20,0,20" RowDefinitions="Auto,*" ColumnDefinitions="Auto,*">
