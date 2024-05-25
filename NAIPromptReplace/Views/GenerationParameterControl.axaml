@@ -97,7 +97,7 @@
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.DataTemplates>
-                <DataTemplate x:DataType="vm:ReferenceImageViewModel">
+                <DataTemplate DataType="vm:ReferenceImageViewModel">
                     <controls:ReferenceImageExpander DragDrop.AllowDrop="True" ExpanderName="{Binding ExpanderText}" Content="{Binding Content}" 
                                                      Image="{Binding Image}" ImagePath="{Binding ImagePathText}"
                                                      BrowseCommand="{Binding BrowseCommand}" RemoveCommand="{Binding RemoveCommand}" />
@@ -111,7 +111,7 @@
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.DataTemplates>
-                <DataTemplate x:DataType="vm:ReferenceImageViewModel">
+                <DataTemplate DataType="vm:ReferenceImageViewModel">
                     <controls:ReferenceImageExpander DragDrop.AllowDrop="True" ExpanderName="{Binding ExpanderText}" Content="{Binding Content}" 
                                                      Image="{Binding Image}" ImagePath="{Binding ImagePathText}"
                                                      BrowseCommand="{Binding BrowseCommand}" RemoveCommand="{Binding RemoveCommand}" />

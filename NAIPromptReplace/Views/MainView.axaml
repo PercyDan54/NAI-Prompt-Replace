@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:models="clr-namespace:NAIPromptReplace.Models"
         xmlns:vm="clr-namespace:NAIPromptReplace.ViewModels"
         xmlns:controls="clr-namespace:NAIPromptReplace.Controls"
         xmlns:converters="clr-namespace:NAIPromptReplace.Converters"
@@ -13,6 +14,7 @@
         <converters:SubscriptionInfoToColorConverter x:Key="SubscriptionInfoToColorConverter" />
         <converters:SubscriptionInfoToTextConverter x:Key="SubscriptionInfoToTextConverter" />
         <converters:AnlasCountConverter x:Key="AnlasCountConverter" />
+        <converters:LogLevelToColorConverter x:Key="LogLevelToColorConverter" />
     </LayoutTransformControl.Resources>
 
     <Panel Margin="15,10">
@@ -57,7 +59,22 @@
                     <Button Content="{Binding RunButtonText}" Command="{Binding RunTasksCommand}" Width="70" HorizontalContentAlignment="Center" VerticalAlignment="Center" />
                     <controls:AnlasDisplay Value="{Binding TotalCost, Converter={StaticResource AnlasCountConverter}, Mode=OneWay}" HorizontalAlignment="Center" Height="20" />
                 </StackPanel>
-                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding LogText}" IsReadOnly="True" VerticalAlignment="Center" Height="130" TextWrapping="Wrap" />
+                <Border Grid.Row="0" Grid.Column="1" BorderBrush="Black" BorderThickness="2" CornerRadius="3" Height="150" VerticalAlignment="Stretch" Padding="10" Margin="10">
+                    <ScrollViewer>
+                        <ItemsControl ItemsSource="{Binding LogEntries}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Vertical" Spacing="5" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.DataTemplates>
+                                <DataTemplate DataType="models:LogEntry">
+                                    <SelectableTextBlock Text="{Binding Text}" Foreground="{Binding LogLevel, Converter={StaticResource LogLevelToColorConverter}}" />
+                                </DataTemplate>
+                            </ItemsControl.DataTemplates>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
                 <ProgressBar Grid.Row="1" Grid.Column="1" Maximum="{Binding TotalTasks}" Value="{Binding CurrentTask}" ShowProgressText="True" />
             </Grid>
         </Grid>

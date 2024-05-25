@@ -74,10 +74,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
             }
         ]
     };
-    private static readonly FolderPickerOpenOptions folderPickerOpenOptions = new FolderPickerOpenOptions
-    {
-        AllowMultiple = false
-    };
+    private static readonly FolderPickerOpenOptions folderPickerOpenOptions = new FolderPickerOpenOptions();
     private GenerationConfig generationConfig = new GenerationConfig();
     private int anlasCost;
     private bool disableInputFolder;

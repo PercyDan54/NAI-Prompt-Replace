@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
 using Avalonia.Controls;
+using Avalonia.Logging;
 using Avalonia.Platform.Storage;
 using CsvHelper;
 using CsvHelper.Configuration;
@@ -23,7 +24,6 @@ public class MainViewModel : ReactiveObject
     protected const string HELP_URL = "https://docs.qq.com/doc/DVkhyZk5tUmNhZVd1";
 
     private string showTokenButtonText = "Show";
-    private string logText = string.Empty;
     private bool showToken;
     private string runButtonText = "Run";
 
@@ -125,11 +125,7 @@ public class MainViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref subscriptionInfo, value);
     }
 
-    public string LogText
-    {
-        get => logText;
-        set => this.RaiseAndSetIfChanged(ref logText, value);
-    }
+    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ICommand ToggleShowTokenCommand { get; }
     public ICommand UpdateTokenCommand { get; }
@@ -163,10 +159,7 @@ public class MainViewModel : ReactiveObject
         if (App.StorageProvider == null)
             return;
 
-        var folder = await App.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-        {
-            AllowMultiple = false
-        });
+        var folder = await App.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions());
 
         if (folder.Count == 0)
             return;
@@ -180,6 +173,10 @@ public class MainViewModel : ReactiveObject
         {
             string fileName = Util.GetValidFileName(Path.Combine(path, Path.ChangeExtension(vm.Name, ".json")) ?? "Untitled");
             using var file = await folder[0].CreateFileAsync(Path.GetFileName(fileName));
+
+            if (file == null)
+                continue;
+
             await vm.GenerationConfig.SaveAsync(file);
         }
     }
@@ -238,23 +235,29 @@ public class MainViewModel : ReactiveObject
                 addTab(file.Name.Trim(), generationConfig);
             }
         }
-        catch (Exception exception)
+        catch (Exception e)
         {
-            writeLogLine(exception.Message);
+            writeWarning($"Error opening file: {e.Message}");
         }
     }
 
-    private void clearLog() => LogText = string.Empty;
+    private void clearLog() => LogEntries.Clear();
     
-    private void writeLogLine(object content)
+    private LogEntry writeLog(object content, LogEventLevel logLevel = LogEventLevel.Information)
     {
-        writeLog(content + Environment.NewLine);
+        var entry = new LogEntry
+        {
+            Text = content.ToString(),
+            LogLevel = logLevel
+        };
+        LogEntries.Add(entry);
+
+        return entry;
     }
 
-    private void writeLog(object content)
-    {
-        LogText += content.ToString();
-    }
+    private LogEntry writeWarning(object content) => writeLog(content, LogEventLevel.Warning);
+
+    private LogEntry writeError(object content) => writeLog(content, LogEventLevel.Error);
 
     private void addTab(string header, GenerationConfig generationConfig)
     {
@@ -355,7 +358,7 @@ public class MainViewModel : ReactiveObject
             {
                 if (task.Exception?.InnerException != null)
                 {
-                    writeLogLine($"Tasks Failed with an exception, please report this: {task.Exception.InnerException}");
+                    writeError($"Tasks Failed with an exception, please report this: {task.Exception.InnerException}");
                 }
             }), null, TaskCreationOptions.LongRunning);
         }
@@ -461,7 +464,7 @@ public class MainViewModel : ReactiveObject
 
         int i = 0;
         int retry = 0;
-        const int maxRetries = 5;
+        const int maxRetries = 10;
         var date = DateTime.Now;
         TotalTasks = tasks.Count;
 
@@ -469,8 +472,14 @@ public class MainViewModel : ReactiveObject
         {
             var task = tasks[i];
             token.ThrowIfCancellationRequested();
-            writeLog($"Running task {i + 1} / {tasks.Count}: ");
+            var progressLog = writeLog($"Running task {i + 1} / {tasks.Count}: ");
             HttpResponseMessage? resp = null;
+
+            void writeErrorInlined(string content)
+            {
+                progressLog.Text += content;
+                progressLog.LogLevel = LogEventLevel.Error;
+            }
 
             try
             {
@@ -479,14 +488,14 @@ public class MainViewModel : ReactiveObject
             }
             catch (Exception e)
             {
-                writeLogLine($"Error: {e.Message}");
+                writeErrorInlined($"Error: {e.Message}");
             }
 
             bool success = resp?.IsSuccessStatusCode ?? false;
 
             if (success)
             {
-                writeLogLine($"{(int)resp.StatusCode} {resp.ReasonPhrase}");
+                progressLog.Text += $"{(int)resp.StatusCode} {resp.ReasonPhrase}";
                 using var zip = new ZipArchive(await resp.Content.ReadAsStreamAsync());
                 var placeholders = new Dictionary<string, string>(StringComparer.Ordinal)
                 {
@@ -526,10 +535,12 @@ public class MainViewModel : ReactiveObject
             }
             else if (resp != null)
             {
+                string message = resp.StatusCode.ToString();
+                int statusCode = (int)resp.StatusCode;
+
                 if (resp.Content.Headers.ContentType?.MediaType is "application/json" or "text/plain")
                 {
-                    string message = await resp.Content.ReadAsStringAsync();
-                    int statusCode = (int)resp.StatusCode;
+                    message = await resp.Content.ReadAsStringAsync();
 
                     try
                     {
@@ -544,19 +555,16 @@ public class MainViewModel : ReactiveObject
                     catch
                     {
                     }
-                    writeLogLine($"Error: {statusCode} {message}");
                 }
-                else
-                {
-                    writeLogLine($"Error: {(int)resp.StatusCode} {resp.StatusCode}");
-                }
+
+                writeErrorInlined($"Error: {statusCode} {message}");
             }
 
             token.ThrowIfCancellationRequested();
 
             if (!success && retry < maxRetries && (AnlasCostCalculator.Calculate(task, api.SubscriptionInfo) == 0 || task.RetryAll))
             {
-                writeLogLine($"Failed, Retrying {++retry} / {maxRetries}");
+                writeWarning($"Failed, Retrying {++retry} / {maxRetries}");
                 Thread.Sleep(retry >= 3 || resp?.StatusCode == HttpStatusCode.TooManyRequests ? 5000 : 3000);
                 continue;
             }

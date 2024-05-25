@@ -28,7 +28,7 @@ public static class AnlasCostCalculator
         491, 499, 503, 509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691, 701, 709, 719, 727, 733, 739, 743,
         751, 757, 761
     ];
-    private static readonly float[] d =
+    private static readonly float[] smeaCosts =
     [
         .124f, .11f, .124f, .205f, .121f, .307f, .121f, .227f, .12f, .31f, .121f, .257f, .121f, .251f, .123f, .297f, .121f, .298f, .12f, .305f, .128f, .195f, .12f, .327f, .117f, .34f, .122f, .244f, .12f,
         .28f, .119f, .344f, .125f, .216f, .135f, .149f, .12f, .314f, .121f, .314f, .122f, .253f, .118f, .286f, .119f, .364f, .125f, .319f, .127f, .327f, .119f, .281f, .122f, .305f, .126f, .331f, .133f,
@@ -91,7 +91,7 @@ public static class AnlasCostCalculator
         3.061f, 3.745f, 3.078f, 3.759f, 3.116f, 3.8f, 3.176f, 3.835f, 3.248f, 3.917f, 3.303f, 3.949f, 3.366f, 4.011f, 3.424f, 4.059f, 3.493f, 4.067f, 3.529f, 4.156f, 3.565f, 4.197f, 3.626f, 4.261f, 3.675f,
         4.312f, 3.712f, 4.344f
     ];
-    private static readonly float[] m =
+    private static readonly float[] dynCosts =
     [
         .111f, .306f, .11f, .435f, .113f, .372f, .111f, .418f, .113f, .354f, .11f, .431f, .112f, .354f, .116f, .379f, .112f, .341f, .113f, .43f, .114f, .428f, .113f, .363f, .112f, .411f, .109f, .49f,
         .107f, .472f, .111f, .422f, .106f, .449f, .129f, .197f, .113f, .454f, .113f, .479f, .108f, .417f, .112f, .436f, .109f, .472f, .112f, .48f, .119f, .452f, .108f, .476f, .117f, .407f, .118f, .489f,
@@ -154,7 +154,7 @@ public static class AnlasCostCalculator
         6.956f, 2.801f, 7.054f, 2.846f, 7.22f, 2.879f, 7.245f, 2.895f, 7.242f, 2.995f, 7.462f, 3.016f, 7.503f, 3.058f, 7.585f, 3.113f, 7.712f, 3.187f, 7.861f, 3.242f, 8.028f, 3.311f, 8.162f, 3.364f,
         8.307f, 3.427f, 8.384f, 3.465f, 8.516f, 3.491f, 8.6f, 3.553f, 8.705f, 3.607f, 8.804f, 3.639f, 8.894f
     ];
-    private static readonly float[] h =
+    private static readonly float[] naiCosts =
     [
         .07f, .067f, .07f, .138f, .074f, .121f, .069f, .165f, .069f, .172f, .068f, .229f, .07f, .13f, .071f, .21f, .068f, .153f, .069f, .149f, .071f, .127f, .068f, .185f, .062f, .389f, .067f, .206f, .067f,
         .18f, .068f, .179f, .067f, .222f, .083f, .028f, .069f, .155f, .068f, .204f, .067f, .206f, .066f, .21f, .07f, .221f, .072f, .234f, .075f, .273f, .067f, .215f, .072f, .22f, .075f, .243f, .081f,
@@ -216,7 +216,7 @@ public static class AnlasCostCalculator
         1.946f, 1.937f, 1.946f, 2.01f, 1.984f, 2.022f, 2.004f, 2.048f, 2.012f, 2.084f, 2.022f, 2.134f, 2.039f, 2.173f, 2.069f, 2.215f, 2.1f, 2.248f, 2.115f, 2.296f, 2.145f, 2.319f, 2.174f, 2.337f, 2.173f,
         2.376f, 2.186f, 2.416f, 2.204f, 2.437f, 2.221f
     ];
-    private static readonly float[] g =
+    private static readonly float[] ddimCosts =
     [
         .072f, .086f, .072f, .183f, .069f, .278f, .073f, .151f, .069f, .246f, .07f, .202f, .069f, .203f, .07f, .233f, .068f, .222f, .071f, .185f, .069f, .237f, .074f, .142f, .068f, .237f, .069f, .257f,
         .07f, .224f, .074f, .188f, .069f, .258f, .072f, .255f, .062f, .602f, .075f, .192f, .07f, .226f, .071f, .207f, .073f, .25f, .072f, .298f, .076f, .328f, .069f, .271f, .076f, .266f, .075f, .31f, .08f,
@@ -319,20 +319,20 @@ public static class AnlasCostCalculator
         }
         else
         {
-            float[] curve = h;
+            float[] costs = naiCosts;
 
             if (sm)
             {
-                curve = d;
+                costs = smeaCosts;
 
                 if (dyn)
-                    curve = m;
+                    costs = dynCosts;
             }
             else if (sampler == SamplerInfo.Ddim)
-                curve = g;
+                costs = ddimCosts;
 
             int index = resolutionCurve[(int)(MathF.Floor(width / 64f) * MathF.Floor(height / 64f))];
-            v = curve[index] * steps + curve[index + 1];
+            v = costs[index] * steps + costs[index + 1];
         }
 
         int result = (int)Math.Max(MathF.Ceiling(v * strength), 2);
