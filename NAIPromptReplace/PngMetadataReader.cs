@@ -84,7 +84,7 @@ public static class PngMetadataReader
         if (!headers.TryGetValue(comment_key, out string? comment))
         {
             memoryStream.Position = 0;
-            comment = ReadStealthPng(memoryStream.ToArray());
+            comment = ReadStealthPng(memoryStream);
 
             if (!string.IsNullOrEmpty(comment))
             {
@@ -117,9 +117,9 @@ public static class PngMetadataReader
         return config;
     }
 
-    public static string ReadStealthPng(byte[] data)
+    public static string ReadStealthPng(Stream stream)
     {
-        using var bitmap = SKBitmap.Decode(data);
+        using var bitmap = SKBitmap.Decode(stream);
         bool hasAlpha = bitmap.AlphaType != SKAlphaType.Opaque;
         StealthPngReadingState state = StealthPngReadingState.ReadingSignature;
         bool alphaMode = false;
@@ -142,7 +142,7 @@ public static class PngMetadataReader
                     currentByte |= bit;
                     currentBit++;
 
-                    if (currentBit == 8)
+                    if (currentBit == 8 && index < buffer.Length)
                     {
                         buffer[index++] = currentByte;
                         currentBit = 0;
@@ -257,8 +257,8 @@ public static class PngMetadataReader
         {
             if (compressed)
             {
-                using var stream = new MemoryStream(byteData);
-                using var gzip = new GZipStream(stream, CompressionMode.Decompress);
+                using var dataStream = new MemoryStream(byteData);
+                using var gzip = new GZipStream(dataStream, CompressionMode.Decompress);
                 using var reader = new StreamReader(gzip);
                 content = reader.ReadToEnd();
             }

@@ -1,3 +1,5 @@
+using SkiaSharp;
+
 namespace NAIPromptReplace;
 
 public static class Util
@@ -43,6 +45,22 @@ public static class Util
         }
 
         return combos.ToList();
+    }
+
+    public static SKBitmap RemoveImageAlpha(Stream stream)
+    {
+        var bitmap = SKBitmap.Decode(stream);
+
+        for (int i = 0; i < bitmap.Width; i++)
+        {
+            for (int j = 0; j < bitmap.Height; j++)
+            {
+                var pixel = bitmap.GetPixel(i, j);
+                bitmap.SetPixel(i, j, pixel.WithAlpha(byte.MaxValue));
+            }
+        }
+
+        return bitmap;
     }
 
     public static string TruncateString(string input, int maxLength)

@@ -10,7 +10,7 @@ namespace NAIPromptReplace.Controls;
 
 public class ReferenceImageExpander : ContentControl
 {
-    public static readonly StyledProperty<string?> ImagePathProperty = AvaloniaProperty.Register<ReferenceImageExpander, string?>(nameof(ImagePath), null, true);
+    public static readonly StyledProperty<string?> ImagePathProperty = AvaloniaProperty.Register<ReferenceImageExpander, string?>(nameof(ImagePath));
     public static readonly StyledProperty<IImage?> ImageProperty = AvaloniaProperty.Register<ReferenceImageExpander, IImage?>(nameof(Image));
     public static readonly StyledProperty<ICommand?> BrowseCommandProperty = AvaloniaProperty.Register<ReferenceImageExpander, ICommand?>(nameof(BrowseCommand));
     public static readonly StyledProperty<ICommand?> RemoveCommandProperty = AvaloniaProperty.Register<ReferenceImageExpander, ICommand?>(nameof(RemoveCommand));
@@ -66,6 +66,7 @@ public class ReferenceImageExpander : ContentControl
     {
         if (e.Data.Contains(DataFormats.Files))
         {
+            e.Handled = true;
             var files = e.Data.GetFiles() ?? Array.Empty<IStorageItem>();
 
             foreach (var item in files)
@@ -75,8 +76,6 @@ public class ReferenceImageExpander : ContentControl
                     await ((ReferenceImageViewModel)DataContext).SetReferenceImage(file)!;
                 }
             }
-
-            e.Handled = true;
         }
     }
 }

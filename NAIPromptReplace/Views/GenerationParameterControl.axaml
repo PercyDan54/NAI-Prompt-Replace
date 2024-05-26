@@ -6,14 +6,14 @@
              xmlns:controls="clr-namespace:NAIPromptReplace.Controls"
              xmlns:converters="clr-namespace:NAIPromptReplace.Converters"
              xmlns:models="clr-namespace:NAIPromptReplace.Models"
-             mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="750"
+             mc:Ignorable="d" d:DesignWidth="1050" d:DesignHeight="750"
              x:Class="NAIPromptReplace.Views.GenerationParameterControl"
              x:DataType="vm:GenerationParameterControlViewModel">
     <UserControl.Resources>
         <converters:TextToTokenCountConverter x:Key="TextToTokenCountConverter" />
         <converters:AnlasCountConverter x:Key="AnlasCountConverter" />
     </UserControl.Resources>
-    <Grid Name="MainGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="10">
+    <Grid Name="MainGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="700,*" Margin="10">
         <Grid RowDefinitions="Auto,*,*,*,*" ColumnDefinitions="Auto,*">
             <TextBlock Text="Prompt" VerticalAlignment="Center" />
             <TextBox Grid.Row="0" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Prompt, TargetNullValue=''}" />
@@ -87,10 +87,10 @@
             <CheckBox Content="Random All Image Seeds" IsChecked="{Binding GenerationConfig.AllRandom}" />
             <CheckBox Content="Legacy V3 Extend" IsChecked="{Binding GenerationConfig.GenerationParameter.LegacyV3Extend}" />
             <CheckBox Content="Retry non-free tasks" IsChecked="{Binding GenerationConfig.RetryAll}" />
-            <CheckBox Content="Save JPEG copy" IsChecked="{Binding GenerationConfig.SaveJpeg}" />
+            <CheckBox Content="Save No Metadata copy" IsChecked="{Binding GenerationConfig.SaveJpeg}" />
             <controls:AnlasDisplay Value="{Binding AnlasCost, Converter={StaticResource AnlasCountConverter}}" Height="20" />
         </WrapPanel>
-        <ItemsControl Grid.Row="4" ItemsSource="{Binding Img2ImgViewModels}">
+        <ItemsControl Grid.Row="4" Grid.Column="0" ItemsSource="{Binding Img2ImgViewModels}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel Orientation="Vertical" Spacing="5" />
@@ -104,7 +104,7 @@
                 </DataTemplate>
             </ItemsControl.DataTemplates>
         </ItemsControl>
-        <ItemsControl Grid.Row="5" ItemsSource="{Binding VibeTransferViewModels}">
+        <ItemsControl Grid.Row="5" Grid.Column="0" ItemsSource="{Binding VibeTransferViewModels}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel Orientation="Vertical" Spacing="5" />
@@ -118,7 +118,7 @@
                 </DataTemplate>
             </ItemsControl.DataTemplates>
         </ItemsControl>
-        <Grid Grid.Row="6" RowDefinitions="*,*,*" ColumnDefinitions="Auto,*">
+        <Grid Grid.Row="6" Grid.Column="0" RowDefinitions="*,*,*" ColumnDefinitions="Auto,*">
             <Button Grid.ColumnSpan="2" Margin="0,0,5,5" Content="Add Vibe Transfer" Command="{Binding AddVibeTransferCommand}" VerticalAlignment="Center" />
             <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,5,0" Text="Output Path" VerticalAlignment="Center" />
             <DockPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,5">
@@ -130,5 +130,32 @@
             <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding  GenerationConfig.OutputFilename}" />
         </Grid>
         <Button Grid.Row="7" Grid.Column="0" HorizontalAlignment="Center" Content="Save Config" Command="{Binding SaveCommand}" />
+        <Grid Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" RowDefinitions="*" VerticalAlignment="Top" HorizontalAlignment="Center">
+            <Carousel SelectedIndex="{Binding SelectedImageIndex}" ItemsSource="{Binding Images}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <Carousel.DataTemplates>
+                    <DataTemplate DataType="IImage">
+                        <Image MaxHeight="350" Source="{Binding}" Margin="5,5" />
+                    </DataTemplate>
+                </Carousel.DataTemplates>
+            </Carousel>
+        </Grid>
+        <Grid Grid.Row="3" Grid.Column="1" VerticalAlignment="Top" ColumnDefinitions="*,3*,*">
+            <Button Content="&lt;" Command="{Binding PrevImageCommand}" />
+            <SplitButton Grid.Column="1" Content="Save Copy" Command="{Binding SaveImageCommand}" HorizontalAlignment="Center">
+                <SplitButton.CommandParameter>
+                    <x:Boolean>False</x:Boolean>
+                </SplitButton.CommandParameter>
+                <SplitButton.Flyout>
+                    <MenuFlyout Placement="Bottom">
+                        <MenuItem Header="Save Original" Command="{Binding SaveImageCommand}">
+                            <MenuItem.CommandParameter>
+                                <x:Boolean>True</x:Boolean>
+                            </MenuItem.CommandParameter>
+                        </MenuItem>
+                    </MenuFlyout>
+                </SplitButton.Flyout>
+            </SplitButton>
+            <Button Grid.Column="2" Content=">" Command="{Binding NextImageCommand}" HorizontalAlignment="Right" />
+        </Grid>
     </Grid>
 </UserControl>

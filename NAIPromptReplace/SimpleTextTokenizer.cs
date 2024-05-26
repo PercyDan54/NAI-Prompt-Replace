@@ -28,9 +28,9 @@ public partial class SimpleTextTokenizer
     {
         var merges = new List<string>();
         using (var fileStream = typeof(SimpleTextTokenizer).Assembly.GetManifestResourceStream("NAIPromptReplace.Assets.bpe_simple_vocab_16e6.txt.gz"))
-        using (var textStream = new GZipStream(fileStream, CompressionMode.Decompress))
         {
-            var reader = new StreamReader(textStream);
+            using var textStream = new GZipStream(fileStream, CompressionMode.Decompress);
+            using var reader = new StreamReader(textStream);
 
             reader.ReadLine(); // ignore first line
             string? line;
@@ -38,7 +38,7 @@ public partial class SimpleTextTokenizer
             {
                 if (line.Length == 0) continue;
 
-                var bpe = line.Split(' ');
+                string[] bpe = line.Split(' ');
                 if (bpe.Length != 2) continue;
 
                 merges.Add(line);
@@ -54,7 +54,7 @@ public partial class SimpleTextTokenizer
         var bpeRanks = new Dictionary<string, float>();
 
         // append merges
-        foreach (var merge in merges)
+        foreach (string merge in merges)
         {            
             vocab.Add(merge.Replace(" ", ""));
 
@@ -66,7 +66,7 @@ public partial class SimpleTextTokenizer
         var vocabEncoder = new Dictionary<string, int>();
         var vocabDecoder = new Dictionary<int, string>();
         index = 0;
-        foreach (var entry in vocab)
+        foreach (string entry in vocab)
         {
             vocabEncoder.Add(entry, index);
             vocabDecoder.Add(index, entry);
@@ -135,8 +135,8 @@ public partial class SimpleTextTokenizer
     private static IList<(string, string)> GetPairs(string[] word)
     {
         var pairs = new List<(string, string)>();
-        var prevChar = word[0];
-        foreach (var @char in word.Skip(1))
+        string prevChar = word[0];
+        foreach (string @char in word.Skip(1))
         {
             pairs.Add((prevChar, @char));
             prevChar = @char;
@@ -174,7 +174,7 @@ public partial class SimpleTextTokenizer
 
     public IReadOnlyCollection<int> Encode(string input)
     {
-        var text = whitespace()
+        string text = whitespace()
             .Replace(input, " ")
             .Trim()
             .ToLowerInvariant();
@@ -184,11 +184,11 @@ public partial class SimpleTextTokenizer
 
         foreach (Match match in matches)
         {
-            var bytes = Encoding.UTF8.GetBytes(match.Value);
-            var reEncodedString = new string(bytes.Select(b => _byteEncoder[b]).ToArray());
-            var bpeString = BytePairEncode(reEncodedString);
+            byte[] bytes = Encoding.UTF8.GetBytes(match.Value);
+            string reEncodedString = new string(bytes.Select(b => _byteEncoder[b]).ToArray());
+            string bpeString = BytePairEncode(reEncodedString);
 
-            var tokens = bpeString
+            int[] tokens = bpeString
                 .Split(' ')
                 .Select(bpeToken => _vocabEncoder[bpeToken])
                 .ToArray();
@@ -211,9 +211,9 @@ public partial class SimpleTextTokenizer
 
     private string BytePairEncode(string input)
     {
-        if (_bpeCache.TryGetValue(input, out var encode)) return encode;
+        if (_bpeCache.TryGetValue(input, out string? encode)) return encode;
 
-        var word = input.ToCharArray().Select(c => $"{c}").ToArray();
+        string[] word = input.ToCharArray().Select(c => $"{c}").ToArray();
         word[^1] = $"{word[^1]}</w>";
         var pairs = GetPairs(word);
 
@@ -223,10 +223,10 @@ public partial class SimpleTextTokenizer
         {
             // get item with the smallest rank
             var bigram = GetBySmallestRank(pairs, _bpeRanks);
-            var bigramStr = $"{bigram.Item1} {bigram.Item2}";
+            string bigramStr = $"{bigram.Item1} {bigram.Item2}";
             if (_bpeRanks.ContainsKey(bigramStr) == false) break;
 
-            var (first, second) = bigram;
+            (string first, string second) = bigram;
             var newWord = new List<string>();
             int i = 0;
             while (i < word.Length)
@@ -259,7 +259,7 @@ public partial class SimpleTextTokenizer
             pairs = GetPairs(word);
         }
 
-        var result = string.Join(" ", word);
+        string result = string.Join(" ", word);
         _bpeCache.Add(input, result);
         return result;
     }

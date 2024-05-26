@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Logging;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using CsvHelper;
 using CsvHelper.Configuration;
@@ -203,6 +204,7 @@ public class MainViewModel : ReactiveObject
             await using var stream = await file.OpenReadAsync();
             using var reader = new StreamReader(stream);
             GenerationConfig? generationConfig = null;
+            bool isImage = false;
 
             switch (Path.GetExtension(file.Name))
             {
@@ -212,6 +214,7 @@ public class MainViewModel : ReactiveObject
 
                 case ".png":
                     generationConfig = PngMetadataReader.ReadFile(file);
+                    isImage = true;
                     break;
 
                 case ".csv":
@@ -232,7 +235,13 @@ public class MainViewModel : ReactiveObject
 
             if (generationConfig != null)
             {
-                addTab(file.Name.Trim(), generationConfig);
+                var vm = addTab(file.Name.Trim(), generationConfig);
+
+                if (isImage)
+                {
+                    stream.Position = 0;
+                    vm.Images.Add(new Bitmap(stream));
+                }
             }
         }
         catch (Exception e)
@@ -259,7 +268,7 @@ public class MainViewModel : ReactiveObject
 
     private LogEntry writeError(object content) => writeLog(content, LogEventLevel.Error);
 
-    private void addTab(string header, GenerationConfig generationConfig)
+    private GenerationParameterControlViewModel addTab(string header, GenerationConfig generationConfig)
     {
         var vm = CreateGenerationParameterControlViewModel(header, generationConfig);
 
@@ -276,6 +285,8 @@ public class MainViewModel : ReactiveObject
 
         if (SelectedTabIndex == -1)
             SelectedTabIndex = 0;
+
+        return vm;
     }
 
     private void updateTab()
@@ -351,10 +362,9 @@ public class MainViewModel : ReactiveObject
         {
             RunButtonText = "Cancel";
             cancellationTokenSource = new CancellationTokenSource();
-            var configs = generationControlViewModels.Select(vm => vm.GenerationConfig).ToList();
             CurrentTask = 0;
             clearLog();
-            Task.Factory.StartNew(_ => createAndRunTasks(configs, cancellationTokenSource.Token).ContinueWith(task =>
+            Task.Factory.StartNew(_ => createAndRunTasks(generationControlViewModels, cancellationTokenSource.Token).ContinueWith(task =>
             {
                 if (task.Exception?.InnerException != null)
                 {
@@ -364,13 +374,13 @@ public class MainViewModel : ReactiveObject
         }
     }
 
-    private async Task createAndRunTasks(List<GenerationConfig> configs, CancellationToken token)
+    private async Task createAndRunTasks(List<GenerationParameterControlViewModel> viewModels, CancellationToken token)
     {
-        var tasks = new List<GenerationConfig>();
+        var tasks = new List<(GenerationParameterControlViewModel, GenerationConfig)>();
 
-        foreach (var generationConfig in configs)
+        foreach (var vm in viewModels)
         {
-            var g = generationConfig.Clone(true);
+            var g = vm.GenerationConfig.Clone(true);
             g.GenerationParameter.Seed ??= random.Next();
             long seed = g.GenerationParameter.Seed.Value;
 
@@ -389,11 +399,20 @@ public class MainViewModel : ReactiveObject
 
             if (imageData != null)
             {
-                using var im = SKBitmap.Decode(imageData);
-                using var resized = im.Resize(new SKSizeI(g.GenerationParameter.Width, g.GenerationParameter.Height), SKFilterQuality.High);
-                using var data = resized.Encode(SKEncodedImageFormat.Png, 100);
-                g.GenerationParameter.Image = Convert.ToBase64String(data.ToArray());
-                g.GenerationParameter.ExtraNoiseSeed = seed;
+                try
+                {
+                    using var im = SKBitmap.Decode(imageData);
+                    using var resized = im.Resize(new SKSizeI(g.GenerationParameter.Width, g.GenerationParameter.Height), SKFilterQuality.High);
+                    using var data = resized.Encode(SKEncodedImageFormat.Png, 100);
+                    g.GenerationParameter.Image = Convert.ToBase64String(data.ToArray());
+                    g.GenerationParameter.ExtraNoiseSeed = seed;
+                }
+                catch (Exception e)
+                {
+                    writeError($"Unable to load Img2Img image: {e.Message}");
+                    g.GenerationParameter.ImageData = null;
+                    g.GenerationParameter.Strength = g.GenerationParameter.Noise = null;
+                }
             }
             else
             {
@@ -445,7 +464,7 @@ public class MainViewModel : ReactiveObject
 
                         clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements);
                         clone.CurrentReplace = string.Join(',', combo);
-                        tasks.Add(clone);
+                        tasks.Add((vm, clone));
                     }
                 }
             }
@@ -457,9 +476,11 @@ public class MainViewModel : ReactiveObject
                     clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
                     clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements);
                     clone.CurrentReplace = clone.Prompt;
-                    tasks.Add(clone);
+                    tasks.Add((vm, clone));
                 }
             }
+            
+            vm.Images.Clear();
         }
 
         int i = 0;
@@ -471,6 +492,7 @@ public class MainViewModel : ReactiveObject
         while (i < tasks.Count)
         {
             var task = tasks[i];
+            var generationConfig = task.Item2;
             token.ThrowIfCancellationRequested();
             var progressLog = writeLog($"Running task {i + 1} / {tasks.Count}: ");
             HttpResponseMessage? resp = null;
@@ -483,7 +505,7 @@ public class MainViewModel : ReactiveObject
 
             try
             {
-                resp = await api.Generate(task, task.GenerationParameter.ImageData == null ? "generate" : "img2img").WaitAsync(TimeSpan.FromMinutes(2));
+                resp = await api.Generate(generationConfig, generationConfig.GenerationParameter.ImageData == null ? "generate" : "img2img").WaitAsync(TimeSpan.FromMinutes(2));
                 updateAccountInfo();
             }
             catch (Exception e)
@@ -501,12 +523,12 @@ public class MainViewModel : ReactiveObject
                 {
                     { "date", date.ToShortDateString() },
                     { "time", date.ToShortTimeString() },
-                    { "seed", task.GenerationParameter.Seed.ToString() ?? string.Empty },
-                    { "prompt", task.Prompt },
-                    { "replace", task.CurrentReplace },
+                    { "seed", generationConfig.GenerationParameter.Seed.ToString() ?? string.Empty },
+                    { "prompt", generationConfig.Prompt },
+                    { "replace", generationConfig.CurrentReplace },
                 };
 
-                var storageFile = GetOutputFileForTask(task, placeholders);
+                var storageFile = GetOutputFileForTask(generationConfig, placeholders);
                 using var file = await storageFile.OpenWriteAsync();
 
                 foreach (var entry in zip.Entries)
@@ -516,19 +538,22 @@ public class MainViewModel : ReactiveObject
                     await s.CopyToAsync(memoryStream);
                     memoryStream.Position = 0;
                     await memoryStream.CopyToAsync(file);
+                    memoryStream.Position = 0;
+                    task.Item1.Images.Add(new Bitmap(memoryStream));
 
-                    if (task.SaveJpeg)
+                    if (generationConfig.SaveJpeg)
                     {
                         memoryStream.Position = 0;
-                        using var image = SKImage.FromEncodedData(memoryStream);
-                        using var data = image.Encode(SKEncodedImageFormat.Jpeg, 100);
-                        var folder = task.StorageFolder ?? await storageFile.GetParentAsync();
+                        using var image = Util.RemoveImageAlpha(memoryStream);
+                        var folder = generationConfig.StorageFolder ?? await storageFile.GetParentAsync();
 
                         if (folder != null)
                         {
-                            using var jpegFile = await folder.CreateFileAsync(Path.ChangeExtension(storageFile.Name, "jpg"));
-                            using var outputStream = await jpegFile.OpenWriteAsync();
-                            data.SaveTo(outputStream);
+                            string name = Path.GetFileNameWithoutExtension(storageFile.Name) + "_copy";
+                            string extension = Path.GetExtension(storageFile.Name);
+                            using var copyFile = await folder.CreateFileAsync(Util.GetValidFileName(Path.ChangeExtension(name, extension)));
+                            using var outputStream = await copyFile.OpenWriteAsync();
+                            image.Encode(outputStream, SKEncodedImageFormat.Png, 100);
                         }
                     }
                 }
@@ -562,7 +587,7 @@ public class MainViewModel : ReactiveObject
 
             token.ThrowIfCancellationRequested();
 
-            if (!success && retry < maxRetries && (AnlasCostCalculator.Calculate(task, api.SubscriptionInfo) == 0 || task.RetryAll))
+            if (!success && retry < maxRetries && (AnlasCostCalculator.Calculate(generationConfig, api.SubscriptionInfo) == 0 || generationConfig.RetryAll))
             {
                 writeWarning($"Failed, Retrying {++retry} / {maxRetries}");
                 Thread.Sleep(retry >= 3 || resp?.StatusCode == HttpStatusCode.TooManyRequests ? 5000 : 3000);

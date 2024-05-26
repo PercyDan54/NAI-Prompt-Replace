@@ -3,12 +3,14 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using CsvHelper;
 using CsvHelper.Configuration;
 using NAIPromptReplace.Controls;
 using NAIPromptReplace.Models;
 using ReactiveUI;
+using SkiaSharp;
 
 namespace NAIPromptReplace.ViewModels;
 
@@ -34,13 +36,16 @@ public class GenerationParameterControlViewModel : ReactiveObject
         set
         {
             this.RaiseAndSetIfChanged(ref api, value);
-            GenerationConfigOnPropertyChanged(null, null);
+            updateCost();
         }
     }
     public ICommand BrowseOutputFolderCommand { get; }
     public ICommand? OpenOutputFolderCommand { get; set; }
     public ICommand SaveCommand { get; }
     public ICommand AddVibeTransferCommand { get; }
+    public ICommand PrevImageCommand { get; }
+    public ICommand NextImageCommand { get; }
+    public ICommand SaveImageCommand { get; }
 
     public bool DisableInputFolder
     {
@@ -54,8 +59,15 @@ public class GenerationParameterControlViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref anlasCost, value);
     }
 
+    public int SelectedImageIndex
+    {
+        get => selectedImageIndex;
+        set => this.RaiseAndSetIfChanged(ref selectedImageIndex, value);
+    }
+
     public ObservableCollection<ReferenceImageViewModel> Img2ImgViewModels { get; }
     public ObservableCollection<VibeTransferViewModel> VibeTransferViewModels { get; } = [];
+    public ObservableCollection<Bitmap> Images { get; } = [];
 
     private static readonly CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture)
     {
@@ -74,18 +86,33 @@ public class GenerationParameterControlViewModel : ReactiveObject
             }
         ]
     };
+    private static readonly FilePickerSaveOptions saveImageFilePickerOptions = new FilePickerSaveOptions
+    {
+        FileTypeChoices =
+        [
+            new FilePickerFileType("PNG")
+            {
+                Patterns = ["*.png"]
+            }
+        ]
+    };
+
     private static readonly FolderPickerOpenOptions folderPickerOpenOptions = new FolderPickerOpenOptions();
     private GenerationConfig generationConfig = new GenerationConfig();
     private int anlasCost;
     private bool disableInputFolder;
     private NovelAIApi? api;
     private int nextVibeTransferId;
+    private int selectedImageIndex;
 
     public GenerationParameterControlViewModel()
     {
         SaveCommand = ReactiveCommand.CreateFromTask(saveConfig);
         BrowseOutputFolderCommand = ReactiveCommand.Create(browseOutputFolder);
         AddVibeTransferCommand = ReactiveCommand.Create(addVibeTransfer);
+        PrevImageCommand = ReactiveCommand.Create(() => SelectedImageIndex--);
+        NextImageCommand = ReactiveCommand.Create(() => SelectedImageIndex++);
+        SaveImageCommand = ReactiveCommand.CreateFromTask<bool>(saveImage);
         var vm = new ReferenceImageViewModel
         {
             Title = "Img2Img",
@@ -175,6 +202,11 @@ public class GenerationParameterControlViewModel : ReactiveObject
 
     private void GenerationConfigOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        updateCost();
+    }
+
+    private void updateCost()
+    {
         int cost = AnlasCostCalculator.Calculate(GenerationConfig, Api?.SubscriptionInfo);
         int replace = 1;
 
@@ -213,6 +245,29 @@ public class GenerationParameterControlViewModel : ReactiveObject
             return;
 
         await GenerationConfig.SaveAsync(file);
+    }
+
+    private async Task saveImage(bool original)
+    {
+        if (App.StorageProvider == null || Images.Count == 0)
+            return;
+
+        var file = await App.StorageProvider.SaveFilePickerAsync(saveImageFilePickerOptions);
+
+        if (file == null)
+            return;
+
+        await using var fileStream = await file.OpenWriteAsync();
+        await using var stream = original ? fileStream : new MemoryStream();
+        var image = Images[SelectedImageIndex];
+        image.Save(stream);
+
+        if (original)
+            return;
+
+        stream.Position = 0;
+        using var removeImageAlpha = Util.RemoveImageAlpha(stream);
+        removeImageAlpha.Encode(fileStream, SKEncodedImageFormat.Png, 100);
     }
 
     private async void browseOutputFolder()
