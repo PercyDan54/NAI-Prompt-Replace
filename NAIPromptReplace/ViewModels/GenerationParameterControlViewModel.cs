@@ -27,7 +27,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
             this.RaiseAndSetIfChanged(ref generationConfig, value);
             generationConfig.PropertyChanged += GenerationConfigOnPropertyChanged;
             generationConfig.GenerationParameter.PropertyChanged += GenerationConfigOnPropertyChanged;
-            loadVibeTransfer();
+            loadImages();
         }
     }
     public NovelAIApi? Api
@@ -116,12 +116,17 @@ public class GenerationParameterControlViewModel : ReactiveObject
         var vm = new ReferenceImageViewModel
         {
             Title = "Img2Img",
+            StrictImageFile = true,
             Content = new Img2ImgControl
             {
                 DataContext = this
             }
         };
-        vm.WhenAnyValue(v => v.ImageData).Subscribe(data => GenerationConfig.GenerationParameter.ImageData = data);
+        vm.WhenAnyValue(v => v.ImageData, v => v.ImagePath).Subscribe(value =>
+        {
+            GenerationConfig.GenerationParameter.ImageData = value.Item1;
+            GenerationConfig.GenerationParameter.Image = value.Item2;
+        });
         Img2ImgViewModels = [vm];
     }
 
@@ -149,22 +154,36 @@ public class GenerationParameterControlViewModel : ReactiveObject
         VibeTransferViewModels.Remove(vm);
     }
 
-    private void loadVibeTransfer()
+    private void loadImages()
     {
+        var img2ImgFile = App.StorageProvider?.TryGetFileFromPathAsync(GenerationConfig.GenerationParameter.Image ?? string.Empty).Result;
+
+        if (img2ImgFile != null)
+            Img2ImgViewModels[0].SetReferenceImage(img2ImgFile).ConfigureAwait(false);
+
         if (GenerationConfig.GenerationParameter.ReferenceStrength != null)
         {
             GenerationConfig.GenerationParameter.ReferenceImageMultiple = [GenerationConfig.GenerationParameter.ReferenceImage ?? string.Empty];
+            GenerationConfig.GenerationParameter.ReferenceStrengthMultiple = [GenerationConfig.GenerationParameter.ReferenceStrength.GetValueOrDefault(1)];
+            GenerationConfig.GenerationParameter.ReferenceInformationExtractedMultiple = [GenerationConfig.GenerationParameter.ReferenceInformationExtracted.GetValueOrDefault(1)];
         }
 
-        foreach (string referenceImage in GenerationConfig.GenerationParameter.ReferenceImageMultiple)
+        GenerationConfig.GenerationParameter.ReferenceImage = null;
+        GenerationConfig.GenerationParameter.ReferenceStrength = null;
+        GenerationConfig.GenerationParameter.ReferenceInformationExtracted = null;
+
+        // TODO: This is stupid. addVibeTransfer() creates subscriptions which resets ReferenceImageMultiple etc
+        string[] referenceImageMultiple = GenerationConfig.GenerationParameter.ReferenceImageMultiple;
+        double[] referenceStrengthMultiple = GenerationConfig.GenerationParameter.ReferenceStrengthMultiple;
+        double[] referenceInformationExtractedMultiple = GenerationConfig.GenerationParameter.ReferenceInformationExtractedMultiple;
+
+        for (int i = 0; i < referenceImageMultiple.Length; i++)
         {
+            string referenceImage = referenceImageMultiple[i];
             var vm = addVibeTransfer();
 
-            vm.ReferenceStrength = GenerationConfig.GenerationParameter.ReferenceStrength.GetValueOrDefault();
-            vm.ReferenceInformationExtracted = GenerationConfig.GenerationParameter.ReferenceInformationExtracted.GetValueOrDefault();
-            GenerationConfig.GenerationParameter.ReferenceImage = null;
-            GenerationConfig.GenerationParameter.ReferenceStrength = null;
-            GenerationConfig.GenerationParameter.ReferenceInformationExtracted = null;
+            vm.ReferenceStrength = referenceStrengthMultiple[i];
+            vm.ReferenceInformationExtracted = referenceInformationExtractedMultiple[i];
 
             if (!string.IsNullOrEmpty(referenceImage))
             {

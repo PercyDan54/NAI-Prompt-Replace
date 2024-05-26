@@ -27,6 +27,7 @@ public class ReferenceImageViewModel : ReactiveObject
     private byte[]? imageData;
     private string expanderText = string.Empty;
     private string imagePathText = string.Empty;
+    private bool strictImageFile;
 
     public string Title
     {
@@ -78,6 +79,12 @@ public class ReferenceImageViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref image, value);
     }
 
+    public bool StrictImageFile
+    {
+        get => strictImageFile;
+        set => this.RaiseAndSetIfChanged(ref strictImageFile, value);
+    }
+
     public ICommand BrowseCommand { get; set; }
     public ICommand RemoveCommand { get; set; }
 
@@ -107,25 +114,22 @@ public class ReferenceImageViewModel : ReactiveObject
     public async Task SetReferenceImage(IStorageFile file)
     {
         using var stream = await file.OpenReadAsync();
-        using var stream1 = new MemoryStream();
-        await stream.CopyToAsync(stream1);
-        ImageData = stream1.ToArray();
+        using var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+        using var im = SKImage.FromEncodedData(memoryStream);
 
-        if (!OperatingSystem.IsAndroid())
+        if (im != null)
         {
-            ImagePath = file.TryGetLocalPath();
-            loadReferenceImage();
+            memoryStream.Position = 0;
+            Image = new Bitmap(memoryStream);
         }
-        else
-        {
-            stream1.Position = 0;
-            using var im = SKImage.FromEncodedData(stream1);
 
-            if (im != null)
-            {
-                stream1.Position = 0;
-                Image = new Bitmap(stream1);
-            }
+        if (im != null || !StrictImageFile)
+        {
+            memoryStream.Position = 0;
+            ImagePath = file.TryGetLocalPath();
+            ImageData = memoryStream.ToArray();
         }
     }
 
@@ -140,28 +144,6 @@ public class ReferenceImageViewModel : ReactiveObject
 
         ExpanderText = $"{Title} ({Util.TruncateString(Path.GetFileName(ImagePath), 32)})";
         ImagePathText = $"{Util.TruncateString(ImagePath, 40)}";
-    }
-
-    private void loadReferenceImage()
-    {
-        string? file = ImagePath;
-
-        if (!File.Exists(file))
-        {
-            ImagePath = null;
-            Image = null;
-            return;
-        }
-
-        using var fileStream = File.OpenRead(file);
-        using var im = SKImage.FromEncodedData(fileStream);
-        fileStream.Position = 0;
-
-        if (im != null)
-        {
-            fileStream.Position = 0;
-            Image = new Bitmap(fileStream);
-        }
     }
 
     protected virtual void RemoveReferenceImage()
