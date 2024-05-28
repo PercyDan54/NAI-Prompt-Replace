@@ -337,9 +337,6 @@ public static class AnlasCostCalculator
 
         int result = (int)Math.Max(MathF.Ceiling(v * strength), 2);
 
-        if (parameter.UncondScale != 1)
-            result = (int)MathF.Ceiling(1.3f * result);
-
         return result * batchSize;
     }
 }

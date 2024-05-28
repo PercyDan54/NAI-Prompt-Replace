@@ -110,10 +110,6 @@
                             <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.Scale}" Increment="0.1" Minimum="0" Maximum="10" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
-                            <TextBlock Text="Undesired Content Strength" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            <NumericUpDown ValueChanged="preventNullValue" FormatString="P0" Value="{Binding GenerationConfig.GenerationParameter.UncondScale}" Minimum="0" Maximum="1.5" Increment="0.05" MinWidth="130" HorizontalContentAlignment="Center" />
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
                             <TextBlock Text="Prompt Guidance Rescale" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             <NumericUpDown ValueChanged="preventNullValue" Minimum="0" Maximum="1" FormatString="0.##" Increment="0.01" Value="{Binding GenerationConfig.GenerationParameter.CfgRescale}" MinWidth="130" HorizontalContentAlignment="Center" />
                         </StackPanel>
@@ -178,7 +174,37 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="Placeholders">
-                WIP
+                <StackPanel Orientation="Vertical" Spacing="5" Margin="0,5">
+                    <ItemsControl ItemsSource="{Binding Img2ImgViewModels}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Vertical" Spacing="5" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.DataTemplates>
+                            <DataTemplate DataType="vm:ReferenceImageViewModel">
+                                <controls:ReferenceImageExpander DragDrop.AllowDrop="True" ExpanderName="{Binding ExpanderText}" Content="{Binding Content}"
+                                                                 Image="{Binding Image}" ImagePath="{Binding ImagePathText}"
+                                                                 BrowseCommand="{Binding BrowseCommand}" RemoveCommand="{Binding RemoveCommand}" />
+                            </DataTemplate>
+                        </ItemsControl.DataTemplates>
+                    </ItemsControl>
+                    <ItemsControl ItemsSource="{Binding VibeTransferViewModels}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Vertical" Spacing="5" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.DataTemplates>
+                            <DataTemplate DataType="vm:ReferenceImageViewModel">
+                                <controls:ReferenceImageExpander DragDrop.AllowDrop="True" ExpanderName="{Binding ExpanderText}" Content="{Binding Content}"
+                                                                 Image="{Binding Image}" ImagePath="{Binding ImagePathText}"
+                                                                 BrowseCommand="{Binding BrowseCommand}" RemoveCommand="{Binding RemoveCommand}" />
+                            </DataTemplate>
+                        </ItemsControl.DataTemplates>
+                    </ItemsControl>
+                    <Button Margin="0,0,5,5" Content="Add Placeholder" Command="{Binding AddVibeTransferCommand}" VerticalAlignment="Center" />
+                </StackPanel>
             </TabItem>
         </TabControl.Items>
     </TabControl>

@@ -198,7 +198,6 @@ public class GenerationParameter : INotifyPropertyChanged
     private bool smea;
     private bool dyn;
     private byte steps = 28;
-    private double uncondScale = 1;
     private double cfgRescale;
     private short width = 832;
     private short height = 1216;
@@ -305,16 +304,6 @@ public class GenerationParameter : INotifyPropertyChanged
         set
         {
             steps = value;
-            NotifyPropertyChanged();
-        }
-    }
-
-    public double UncondScale
-    {
-        get => uncondScale;
-        set
-        {
-            uncondScale = value;
             NotifyPropertyChanged();
         }
     }
