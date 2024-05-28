@@ -11,12 +11,7 @@ public partial class GenerationParameterControl : UserControl
 
         foreach (var control in WrapPanel.Children)
         {
-            control.Margin = new Thickness(0,0,5,5);
-        }
-
-        foreach (var control in MainGrid.Children)
-        {
-            control.Margin = new Thickness(0,0,0,5);
+            control.Margin = new Thickness(0, 0, 5, 5);
         }
     }
 

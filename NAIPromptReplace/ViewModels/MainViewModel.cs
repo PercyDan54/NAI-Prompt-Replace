@@ -410,7 +410,6 @@ public class MainViewModel : ReactiveObject
                 catch (Exception e)
                 {
                     writeError($"Unable to load Img2Img image: {e.Message}");
-                    g.GenerationParameter.ImageData = null;
                     g.GenerationParameter.Strength = g.GenerationParameter.Noise = null;
                 }
             }
@@ -479,7 +478,7 @@ public class MainViewModel : ReactiveObject
                     tasks.Add((vm, clone));
                 }
             }
-            
+
             vm.Images.Clear();
         }
 
@@ -497,7 +496,7 @@ public class MainViewModel : ReactiveObject
             var progressLog = writeLog($"Running task {i + 1} / {tasks.Count}: ");
             HttpResponseMessage? resp = null;
 
-            void writeErrorInlined(string content)
+            void writeErrorResult(string content)
             {
                 progressLog.Text += content;
                 progressLog.LogLevel = LogEventLevel.Error;
@@ -510,7 +509,7 @@ public class MainViewModel : ReactiveObject
             }
             catch (Exception e)
             {
-                writeErrorInlined($"Error: {e.Message}");
+                writeErrorResult($"Error: {e.Message}");
             }
 
             bool success = resp?.IsSuccessStatusCode ?? false;
@@ -552,8 +551,12 @@ public class MainViewModel : ReactiveObject
                             string name = Path.GetFileNameWithoutExtension(storageFile.Name) + "_copy";
                             string extension = Path.GetExtension(storageFile.Name);
                             using var copyFile = await folder.CreateFileAsync(Util.GetValidFileName(Path.ChangeExtension(name, extension)));
-                            using var outputStream = await copyFile.OpenWriteAsync();
-                            image.Encode(outputStream, SKEncodedImageFormat.Png, 100);
+
+                            if (copyFile != null)
+                            {
+                                using var outputStream = await copyFile.OpenWriteAsync();
+                                image.Encode(outputStream, SKEncodedImageFormat.Png, 100);
+                            }
                         }
                     }
                 }
@@ -582,7 +585,7 @@ public class MainViewModel : ReactiveObject
                     }
                 }
 
-                writeErrorInlined($"Error: {statusCode} {message}");
+                writeErrorResult($"Error: {statusCode} {message}");
             }
 
             token.ThrowIfCancellationRequested();

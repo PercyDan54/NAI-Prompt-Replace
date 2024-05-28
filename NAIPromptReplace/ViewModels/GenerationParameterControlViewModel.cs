@@ -65,6 +65,12 @@ public class GenerationParameterControlViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref selectedImageIndex, value);
     }
 
+    public string GenerationLogs
+    {
+        get => generationLogs;
+        set => this.RaiseAndSetIfChanged(ref generationLogs, value);
+    }
+
     public ObservableCollection<ReferenceImageViewModel> Img2ImgViewModels { get; }
     public ObservableCollection<VibeTransferViewModel> VibeTransferViewModels { get; } = [];
     public ObservableCollection<Bitmap> Images { get; } = [];
@@ -104,13 +110,14 @@ public class GenerationParameterControlViewModel : ReactiveObject
     private NovelAIApi? api;
     private int nextVibeTransferId;
     private int selectedImageIndex;
+    private string generationLogs = string.Empty;
 
     public GenerationParameterControlViewModel()
     {
         SaveCommand = ReactiveCommand.CreateFromTask(saveConfig);
         BrowseOutputFolderCommand = ReactiveCommand.Create(browseOutputFolder);
         AddVibeTransferCommand = ReactiveCommand.Create(addVibeTransfer);
-        PrevImageCommand = ReactiveCommand.Create(() => SelectedImageIndex--);
+        PrevImageCommand = ReactiveCommand.Create(() => SelectedImageIndex = Math.Max(0, SelectedImageIndex - 1));
         NextImageCommand = ReactiveCommand.Create(() => SelectedImageIndex++);
         SaveImageCommand = ReactiveCommand.CreateFromTask<bool>(saveImage);
         var vm = new ReferenceImageViewModel
@@ -161,6 +168,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
         if (img2ImgFile != null)
             Img2ImgViewModels[0].SetReferenceImage(img2ImgFile).ConfigureAwait(false);
 
+        // Convert legacy single-image parameters
         if (GenerationConfig.GenerationParameter.ReferenceStrength != null)
         {
             GenerationConfig.GenerationParameter.ReferenceImageMultiple = [GenerationConfig.GenerationParameter.ReferenceImage ?? string.Empty];
@@ -168,6 +176,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
             GenerationConfig.GenerationParameter.ReferenceInformationExtractedMultiple = [GenerationConfig.GenerationParameter.ReferenceInformationExtracted.GetValueOrDefault(1)];
         }
 
+        // Clear legacy single-image parameters
         GenerationConfig.GenerationParameter.ReferenceImage = null;
         GenerationConfig.GenerationParameter.ReferenceStrength = null;
         GenerationConfig.GenerationParameter.ReferenceInformationExtracted = null;

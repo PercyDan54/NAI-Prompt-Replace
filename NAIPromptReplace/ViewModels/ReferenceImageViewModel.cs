@@ -138,7 +138,7 @@ public class ReferenceImageViewModel : ReactiveObject
         if (string.IsNullOrEmpty(ImagePath))
         {
             ExpanderText = Title;
-            ImagePathText = "Select Image";
+            ImagePathText = "No Image Selected";
             return;
         }
 

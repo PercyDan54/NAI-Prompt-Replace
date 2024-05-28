@@ -53,7 +53,7 @@
                     <ContentControl Content="{Binding SelectedContent}" />
                 </StackPanel>
             </ScrollViewer>
-            <DataGrid Grid.Row="3" Height="100" ItemsSource="{Binding Replacements}" Margin="0,0,0,5" AutoGenerateColumns="True" AutoGeneratingColumn="ReplacementDataGrid_OnAutoGeneratingColumn" />
+            <DataGrid Grid.Row="3" Height="100" ItemsSource="{Binding Replacements}" CanUserResizeColumns="True" Margin="0,0,0,5" AutoGenerateColumns="True" IsReadOnly="True" AutoGeneratingColumn="ReplacementDataGrid_OnAutoGeneratingColumn" />
             <Grid Grid.Row="4" Margin="0,20,0,20" RowDefinitions="Auto,*" ColumnDefinitions="Auto,*">
                 <StackPanel Grid.Row="0" Grid.Column="0" Spacing="5" VerticalAlignment="Center" Orientation="Vertical" Margin="5">
                     <Button Content="{Binding RunButtonText}" Command="{Binding RunTasksCommand}" Width="70" HorizontalContentAlignment="Center" VerticalAlignment="Center" />
@@ -69,7 +69,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.DataTemplates>
                                 <DataTemplate DataType="models:LogEntry">
-                                    <SelectableTextBlock Text="{Binding Text}" Foreground="{Binding LogLevel, Converter={StaticResource LogLevelToColorConverter}}" />
+                                    <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" Foreground="{Binding LogLevel, Converter={StaticResource LogLevelToColorConverter}}" />
                                 </DataTemplate>
                             </ItemsControl.DataTemplates>
                         </ItemsControl>
