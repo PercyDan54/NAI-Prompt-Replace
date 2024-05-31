@@ -497,6 +497,8 @@ public class MainViewModel : ReactiveObject
                 }
             }
 
+            var usedPlaceholders = placeholderGroups.Where(p => tags.Contains(p.Keyword)).ToArray();
+
             if (replaceLines.Count > 0 && replaceLines[0].Length > 1)
             {
                 var combos = Util.GetAllPossibleCombos(replaceLines);
@@ -505,7 +507,7 @@ public class MainViewModel : ReactiveObject
                 for (int j = 0; j < g.BatchSize; j++)
                 {
                     long batchSeed = g.AllRandom && j > 0 ? random.Next() : seed + j;
-                    var placeholders = getPlaceholders(placeholderGroups);
+                    var placeholders = getPlaceholders(usedPlaceholders);
 
                     foreach (var combo in combos)
                     {
@@ -529,7 +531,7 @@ public class MainViewModel : ReactiveObject
                 for (int j = 0; j < g.BatchSize; j++)
                 {
                     var clone = g.Clone();
-                    var placeholders = getPlaceholders(placeholderGroups);
+                    var placeholders = getPlaceholders(usedPlaceholders);
 
                     clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
                     clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, placeholders);
@@ -711,7 +713,7 @@ public class MainViewModel : ReactiveObject
 
             int randomBrackets = placeholder.RandomBrackets;
 
-            if (randomBrackets > 0)
+            if (randomBrackets >= 0)
             {
                 int randomBracketsMax = Math.Max(randomBrackets, placeholder.RandomBracketsMax);
 
