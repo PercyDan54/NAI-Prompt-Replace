@@ -29,9 +29,9 @@ public class MainViewModel : ReactiveObject
     private string runButtonText = "Run";
 
 #if DEBUG
-    private readonly Random random = new Random(1337);
+    private static readonly Random random = new Random(1337);
 #else
-    private readonly Random random = new Random();
+    private static readonly Random random = new Random();
 #endif
     private Dictionary<string, string> replacements { get; set; } = [];
     private readonly NovelAIApi api = new NovelAIApi();
@@ -51,6 +51,14 @@ public class MainViewModel : ReactiveObject
         ],
         AllowMultiple = true
     };
+    private static readonly FilePickerSaveOptions jsonFilePickerOptions = new FilePickerSaveOptions
+    {
+        Title = "Open File",
+        FileTypeChoices =
+        [
+            new FilePickerFileType("JSON") { Patterns = ["*.json"] }
+        ]
+    };
 
     public Config Config
     {
@@ -63,6 +71,8 @@ public class MainViewModel : ReactiveObject
     }
 
     public ObservableCollection<TabViewModel> TabItems { get; set; } = [];
+    public ObservableCollection<PlaceholderGroupViewModel> Placeholders { get; set; } = [];
+    public ObservableCollection<TextReplacement> Replacements { get; set; } = [];
 
     private List<GenerationParameterControlViewModel> generationControlViewModels = [];
     private List<IDisposable> subscriptions = [];
@@ -100,8 +110,6 @@ public class MainViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref totalCost, value);
     }
 
-    public ObservableCollection<TextReplacement> Replacements { get; set; } = [];
-
     public bool ShowToken
     {
         get => showToken;
@@ -136,6 +144,9 @@ public class MainViewModel : ReactiveObject
     public ICommand? SaveAllCommand { get; protected set; }
     public ICommand OpenFileCommand { get; }
     public ICommand RunTasksCommand { get; }
+    public ICommand AddPlaceholderCommand { get; }
+    public ICommand RemovePlaceholderCommand { get; }
+    public ICommand SavePlaceholderCommand { get; }
 
     public MainViewModel()
     {
@@ -152,7 +163,24 @@ public class MainViewModel : ReactiveObject
         OpenFileCommand = ReactiveCommand.Create(openFile);
         SaveAllCommand = ReactiveCommand.CreateFromTask(saveAll);
         RunTasksCommand = ReactiveCommand.Create(runTasks);
+        RemovePlaceholderCommand = ReactiveCommand.Create<PlaceholderGroupViewModel>(v => Placeholders.Remove(v));
+        AddPlaceholderCommand = ReactiveCommand.Create(addPlaceholder);
+        SavePlaceholderCommand = ReactiveCommand.Create(savePlaceholder);
         this.WhenAnyValue(vm => vm.SelectedTabIndex).Subscribe(_ => updateTab());
+    }
+
+    private async Task savePlaceholder()
+    {
+        if (App.StorageProvider == null)
+            return;
+
+        var file = await App.StorageProvider.SaveFilePickerAsync(jsonFilePickerOptions);
+
+        if (file != null)
+        {
+            var stream = await file.OpenWriteAsync();
+            await JsonSerializer.SerializeAsync(stream, Placeholders.Select(p => p.Group), GenerationConfig.SerializerOptions);
+        }
     }
 
     private async Task saveAll()
@@ -209,7 +237,23 @@ public class MainViewModel : ReactiveObject
             switch (Path.GetExtension(file.Name))
             {
                 case ".json":
-                    generationConfig = JsonSerializer.Deserialize<GenerationConfig>(await reader.ReadToEndAsync(), GenerationConfig.SerializerOptions);
+                    var jsonDocument = await JsonDocument.ParseAsync(stream);
+
+                    if (jsonDocument.RootElement.ValueKind == JsonValueKind.Object)
+                        generationConfig = jsonDocument.Deserialize<GenerationConfig>(GenerationConfig.SerializerOptions);
+                    else if (jsonDocument.RootElement.ValueKind == JsonValueKind.Array)
+                    {
+                        var placeholders = jsonDocument.Deserialize<PlaceholderGroup[]>(GenerationConfig.SerializerOptions);;
+
+                        if (placeholders != null)
+                        {
+                            foreach (var placeholderGroup in placeholders)
+                            {
+                                var vm = addPlaceholder();
+                                vm.Group = placeholderGroup;
+                            }
+                        }
+                    }
                     break;
 
                 case ".png":
@@ -286,6 +330,16 @@ public class MainViewModel : ReactiveObject
         if (SelectedTabIndex == -1)
             SelectedTabIndex = 0;
 
+        return vm;
+    }
+
+    private PlaceholderGroupViewModel addPlaceholder()
+    {
+        var vm = new PlaceholderGroupViewModel
+        {
+            RemoveCommand = RemovePlaceholderCommand
+        };
+        Placeholders.Add(vm);
         return vm;
     }
 
@@ -377,6 +431,7 @@ public class MainViewModel : ReactiveObject
     private async Task createAndRunTasks(List<GenerationParameterControlViewModel> viewModels, CancellationToken token)
     {
         var tasks = new List<(GenerationParameterControlViewModel, GenerationConfig)>();
+        var placeholderGroups = Placeholders.Select(s => s.Group).ToArray();
 
         foreach (var vm in viewModels)
         {
@@ -450,6 +505,7 @@ public class MainViewModel : ReactiveObject
                 for (int j = 0; j < g.BatchSize; j++)
                 {
                     long batchSeed = g.AllRandom && j > 0 ? random.Next() : seed + j;
+                    var placeholders = getPlaceholders(placeholderGroups);
 
                     foreach (var combo in combos)
                     {
@@ -461,6 +517,7 @@ public class MainViewModel : ReactiveObject
                             clone.Prompt = clone.Prompt.Replace(toReplaces[k], combo[k]);
                         }
 
+                        clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, placeholders);
                         clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements);
                         clone.CurrentReplace = string.Join(',', combo);
                         tasks.Add((vm, clone));
@@ -472,7 +529,10 @@ public class MainViewModel : ReactiveObject
                 for (int j = 0; j < g.BatchSize; j++)
                 {
                     var clone = g.Clone();
+                    var placeholders = getPlaceholders(placeholderGroups);
+
                     clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
+                    clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, placeholders);
                     clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements);
                     clone.CurrentReplace = clone.Prompt;
                     tasks.Add((vm, clone));
@@ -604,6 +664,73 @@ public class MainViewModel : ReactiveObject
 
         RunButtonText = "Run";
         cancellationTokenSource = null;
+    }
+
+    private static Dictionary<string, string> getPlaceholders(PlaceholderGroup[] placeholderGroups)
+    {
+        var dict = new Dictionary<string, string>();
+
+        foreach (var placeholder in placeholderGroups)
+        {
+            List<string> csvParsed = [];
+            using var stringReader = new StringReader(placeholder.Text);
+            using (var csv = new CsvParser(stringReader, csvConfiguration))
+            {
+                while (csv.Read())
+                {
+                    csvParsed.AddRange(csv.Record);
+                }
+            }
+
+            if (csvParsed.Count == 0)
+                continue;
+
+            string[] placeholderTags = csvParsed.ToArray();
+
+            if (placeholder.Shuffled)
+                random.Shuffle(placeholderTags);
+
+            string[] chosen = [];
+
+            switch (placeholder.SelectionMethod)
+            {
+                case SelectionMethod.All:
+                    chosen = placeholderTags;
+                    break;
+                case SelectionMethod.SingleSequential:
+                    chosen = [placeholderTags[placeholder.SingleSequentialNum]];
+                    placeholder.SingleSequentialNum = (placeholder.SingleSequentialNum + 1) % placeholderTags.Length;
+                    break;
+                case SelectionMethod.MultipleNum:
+                    chosen = random.GetItems(placeholderTags, placeholder.MultipleNum);
+                    break;
+                case SelectionMethod.MultipleProb:
+                    chosen = placeholderTags.Where(_ => random.NextDouble() < placeholder.MultipleProb).ToArray();
+                    break;
+            }
+
+            int randomBrackets = placeholder.RandomBrackets;
+
+            if (randomBrackets > 0)
+            {
+                int randomBracketsMax = Math.Max(randomBrackets, placeholder.RandomBracketsMax);
+
+                for (int k = 0; k < chosen.Length; k++)
+                {
+                    bool addWeight = random.NextDouble() < 0.5;
+                    char bracketStartChar = addWeight ? '{' : '[';
+                    char bracketEndChar = addWeight ? '}' : ']';
+                    int bracketCount = randomBrackets == randomBracketsMax ? randomBrackets : random.Next(randomBrackets, randomBracketsMax);
+                    string bracketStart = new string(bracketStartChar, bracketCount);
+                    string bracketEnd = new string(bracketEndChar, bracketCount);
+                    chosen[k] = $"{bracketStart}{chosen[k]}{bracketEnd}";
+                }
+            }
+
+            dict.TryAdd(placeholder.Keyword, string.Join(',', chosen));
+        }
+
+        return dict;
     }
 
     protected virtual IStorageFile? GetOutputFileForTask(GenerationConfig task, Dictionary<string,string> placeholders)

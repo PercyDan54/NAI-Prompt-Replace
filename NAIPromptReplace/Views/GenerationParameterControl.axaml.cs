@@ -8,11 +8,6 @@ public partial class GenerationParameterControl : UserControl
     public GenerationParameterControl()
     {
         InitializeComponent();
-
-        foreach (var control in WrapPanel.Children)
-        {
-            control.Margin = new Thickness(0, 0, 5, 5);
-        }
     }
 
     private void preventNullValue(object? sender, NumericUpDownValueChangedEventArgs e)

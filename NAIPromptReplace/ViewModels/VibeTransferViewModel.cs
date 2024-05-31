@@ -24,7 +24,7 @@ public class VibeTransferViewModel : ReferenceImageViewModel, IEquatable<VibeTra
 
     public ICommand? RemoveSelfCommand { get; set; }
     public int Id { get; set; }
-    public IDisposable Subscription { get; set; }
+    public IDisposable? Subscription { get; set; }
     private double referenceInformationExtracted = 1;
     private double referenceStrength = 1;
 

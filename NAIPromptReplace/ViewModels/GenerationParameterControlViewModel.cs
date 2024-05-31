@@ -157,7 +157,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
 
     private void removeVibeTransfer(VibeTransferViewModel vm)
     {
-        vm.Subscription.Dispose();
+        vm.Subscription?.Dispose();
         VibeTransferViewModels.Remove(vm);
     }
 
@@ -285,17 +285,20 @@ public class GenerationParameterControlViewModel : ReactiveObject
         if (file == null)
             return;
 
-        await using var fileStream = await file.OpenWriteAsync();
-        await using var stream = original ? fileStream : new MemoryStream();
-        var image = Images[SelectedImageIndex];
-        image.Save(stream);
+        await Task.Run(async () =>
+        {
+            await using var fileStream = await file.OpenWriteAsync();
+            await using var stream = original ? fileStream : new MemoryStream();
+            var image = Images[SelectedImageIndex];
+            image.Save(stream);
 
-        if (original)
-            return;
+            if (original)
+                return;
 
-        stream.Position = 0;
-        using var removeImageAlpha = Util.RemoveImageAlpha(stream);
-        removeImageAlpha.Encode(fileStream, SKEncodedImageFormat.Png, 100);
+            stream.Position = 0;
+            using var removeImageAlpha = Util.RemoveImageAlpha(stream);
+            removeImageAlpha.Encode(fileStream, SKEncodedImageFormat.Png, 100);
+        });
     }
 
     private async void browseOutputFolder()

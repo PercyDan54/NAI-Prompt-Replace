@@ -58,16 +58,12 @@ public class SamplerInfo : IEquatable<SamplerInfo>
     public string Id { get; init; } = string.Empty;
     public bool AllowSmea { get; init; } = true;
 
-    public static bool operator ==(SamplerInfo? sampler, SamplerInfo? other) => sampler != null && sampler.Equals(other);
-    public static bool operator !=(SamplerInfo? sampler, SamplerInfo? other) => !ReferenceEquals(sampler, null) && !sampler.Equals(other);
-
     public bool Equals(SamplerInfo? other)
     {
         if (ReferenceEquals(null, other))
             return false;
         if (ReferenceEquals(this, other))
             return true;
-
         return Id == other.Id;
     }
 
@@ -79,12 +75,12 @@ public class SamplerInfo : IEquatable<SamplerInfo>
             return true;
         if (obj.GetType() != GetType())
             return false;
-
         return Equals((SamplerInfo)obj);
     }
 
-    public override int GetHashCode()
-    {
-        return Id.GetHashCode();
-    }
+    public override int GetHashCode() => Id.GetHashCode();
+
+    public static bool operator ==(SamplerInfo? left, SamplerInfo? right) => Equals(left, right);
+
+    public static bool operator !=(SamplerInfo? left, SamplerInfo? right) => !Equals(left, right);
 }

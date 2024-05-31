@@ -82,43 +82,52 @@
             </TabItem>
             <TabItem Header="Settings">
                 <Grid RowDefinitions="Auto,Auto" Margin="0,5">
-                    <WrapPanel Name="WrapPanel" Orientation="Horizontal">
+                    <WrapPanel Orientation="Horizontal">
+                        <WrapPanel.Styles>
+                            <Style Selector="WrapPanel > :is(Control)">
+                                <Setter Property="Margin" Value="0,0,5,5" />
+                            </Style>
+                            <Style Selector="WrapPanel > TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center" />
+                                <Setter Property="VerticalAlignment" Value="Center" />
+                            </Style>
+                        </WrapPanel.Styles>
                         <CheckBox Content="SMEA" IsChecked="{Binding GenerationConfig.GenerationParameter.Smea}" IsEnabled="{Binding GenerationConfig.GenerationParameter.Sampler.AllowSmea}" />
                         <CheckBox Content="DYN" IsChecked="{Binding GenerationConfig.GenerationParameter.Dyn}" IsEnabled="{Binding GenerationConfig.GenerationParameter.Sampler.AllowSmea}" />
-                        <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
+                        <StackPanel Orientation="Horizontal" Height="20">
                             <TextBlock Text="Width" VerticalAlignment="Center" />
                             <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Width}" Increment="2" Minimum="1" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="5">
+                        <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Height" VerticalAlignment="Center" />
                             <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Height}" Increment="2" Minimum="1" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="5" Height="20">
+                        <StackPanel Orientation="Horizontal" Height="20">
                             <TextBlock Text="Seed" VerticalAlignment="Center" />
                             <NumericUpDown FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Seed}" HorizontalContentAlignment="Center" MinWidth="150" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="5">
-                            <TextBlock Text="Sampler" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Sampler" />
                             <ComboBox ItemsSource="{Binding GenerationConfig.Model.Samplers}" SelectedItem="{Binding GenerationConfig.GenerationParameter.Sampler}" DisplayMemberBinding="{Binding Name, DataType='models:SamplerInfo'}" MinWidth="150" HorizontalContentAlignment="Center" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="5">
-                            <TextBlock Text="Model" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Model" />
                             <ComboBox ItemsSource="{x:Static models:GenerationModelInfo.Models}" DisplayMemberBinding="{Binding Name, DataType='models:GenerationModelInfo'}" SelectedItem="{Binding GenerationConfig.Model}" MinWidth="120" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="5">
-                            <TextBlock Text="Scale" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Scale" />
                             <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.Scale}" Increment="0.1" Minimum="0" Maximum="10" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
-                            <TextBlock Text="Prompt Guidance Rescale" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" Height="30">
+                            <TextBlock Text="Prompt Guidance Rescale" />
                             <NumericUpDown ValueChanged="preventNullValue" Minimum="0" Maximum="1" FormatString="0.##" Increment="0.01" Value="{Binding GenerationConfig.GenerationParameter.CfgRescale}" MinWidth="130" HorizontalContentAlignment="Center" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
-                            <TextBlock Text="Noise Schedule" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" Height="30">
                             <ComboBox ItemsSource="{x:Static models:GenerationModelInfo.Schedulers}" SelectedItem="{Binding GenerationConfig.GenerationParameter.NoiseSchedule}" MinWidth="100" HorizontalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <TextBlock Text="Noise Schedule" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="5" Height="30">
-                            <TextBlock Text="Batch Size" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" Height="30">
+                            <TextBlock Text="Batch Size" />
                             <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.BatchSize}" Minimum="1" MinWidth="130" HorizontalContentAlignment="Center" />
                         </StackPanel>
                         <CheckBox Content="Random All Image Seeds" IsChecked="{Binding GenerationConfig.AllRandom}" />
@@ -141,11 +150,11 @@
                 </Grid>
             </TabItem>
             <TabItem Header="Reference Images">
-                <StackPanel Orientation="Vertical" Spacing="5" Margin="0,5">
+                <StackPanel Orientation="Vertical" Margin="0,5">
                     <ItemsControl ItemsSource="{Binding Img2ImgViewModels}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" Spacing="5" />
+                                <StackPanel Orientation="Vertical" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.DataTemplates>
@@ -159,7 +168,7 @@
                     <ItemsControl ItemsSource="{Binding VibeTransferViewModels}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" Spacing="5" />
+                                <StackPanel Orientation="Vertical" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.DataTemplates>
@@ -171,39 +180,6 @@
                         </ItemsControl.DataTemplates>
                     </ItemsControl>
                     <Button Margin="0,0,5,5" Content="Add Vibe Transfer" Command="{Binding AddVibeTransferCommand}" VerticalAlignment="Center" />
-                </StackPanel>
-            </TabItem>
-            <TabItem Header="Placeholders">
-                <StackPanel Orientation="Vertical" Spacing="5" Margin="0,5">
-                    <ItemsControl ItemsSource="{Binding Img2ImgViewModels}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" Spacing="5" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.DataTemplates>
-                            <DataTemplate DataType="vm:ReferenceImageViewModel">
-                                <controls:ReferenceImageExpander DragDrop.AllowDrop="True" ExpanderName="{Binding ExpanderText}" Content="{Binding Content}"
-                                                                 Image="{Binding Image}" ImagePath="{Binding ImagePathText}"
-                                                                 BrowseCommand="{Binding BrowseCommand}" RemoveCommand="{Binding RemoveCommand}" />
-                            </DataTemplate>
-                        </ItemsControl.DataTemplates>
-                    </ItemsControl>
-                    <ItemsControl ItemsSource="{Binding VibeTransferViewModels}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" Spacing="5" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.DataTemplates>
-                            <DataTemplate DataType="vm:ReferenceImageViewModel">
-                                <controls:ReferenceImageExpander DragDrop.AllowDrop="True" ExpanderName="{Binding ExpanderText}" Content="{Binding Content}"
-                                                                 Image="{Binding Image}" ImagePath="{Binding ImagePathText}"
-                                                                 BrowseCommand="{Binding BrowseCommand}" RemoveCommand="{Binding RemoveCommand}" />
-                            </DataTemplate>
-                        </ItemsControl.DataTemplates>
-                    </ItemsControl>
-                    <Button Margin="0,0,5,5" Content="Add Placeholder" Command="{Binding AddVibeTransferCommand}" VerticalAlignment="Center" />
                 </StackPanel>
             </TabItem>
         </TabControl.Items>

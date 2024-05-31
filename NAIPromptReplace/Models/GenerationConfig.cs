@@ -32,7 +32,7 @@ public class GenerationConfig : INotifyPropertyChanged
                 return;
 
             prompt = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
@@ -45,7 +45,7 @@ public class GenerationConfig : INotifyPropertyChanged
                 return;
 
             replace = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
@@ -58,7 +58,7 @@ public class GenerationConfig : INotifyPropertyChanged
                 return;
 
             model = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
@@ -71,7 +71,7 @@ public class GenerationConfig : INotifyPropertyChanged
                 return;
 
             outputPath = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
@@ -93,7 +93,7 @@ public class GenerationConfig : INotifyPropertyChanged
                 return;
 
             replacements = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
@@ -106,7 +106,7 @@ public class GenerationConfig : INotifyPropertyChanged
                 return;
 
             batchSize = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
@@ -185,7 +185,7 @@ public class GenerationConfig : INotifyPropertyChanged
         return $"{GenerationParameter.Seed} - {Prompt}";
     }
 
-    private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
@@ -213,7 +213,7 @@ public class GenerationParameter : INotifyPropertyChanged
                 return;
 
             negativePrompt = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
@@ -226,7 +226,7 @@ public class GenerationParameter : INotifyPropertyChanged
                 return;
 
             sampler = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
@@ -283,7 +283,7 @@ public class GenerationParameter : INotifyPropertyChanged
         set
         {
             smea = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
@@ -294,7 +294,7 @@ public class GenerationParameter : INotifyPropertyChanged
         set
         {
             dyn = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
@@ -304,7 +304,7 @@ public class GenerationParameter : INotifyPropertyChanged
         set
         {
             steps = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
@@ -314,7 +314,7 @@ public class GenerationParameter : INotifyPropertyChanged
         set
         {
             cfgRescale = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
@@ -324,7 +324,7 @@ public class GenerationParameter : INotifyPropertyChanged
         set
         {
             width = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
@@ -334,11 +334,11 @@ public class GenerationParameter : INotifyPropertyChanged
         set
         {
             height = value;
-            NotifyPropertyChanged();
+            OnPropertyChanged();
         }
     }
 
-    private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }

@@ -2,18 +2,23 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="using:NAIPromptReplace.Controls">
     <Design.PreviewWith>
-        <controls:ReferenceImageExpander ExpanderName="Test" />
+        <controls:ReferenceImageExpander ExpanderName="Test" Width="250" Height="150" />
     </Design.PreviewWith>
 
     <Style Selector="controls|ReferenceImageExpander">
         <Setter Property="Template">
             <ControlTemplate>
-                <Expander HorizontalAlignment="{TemplateBinding HorizontalAlignment}" VerticalAlignment="{TemplateBinding VerticalAlignment}" Header="{TemplateBinding ExpanderName}" >
+                <Expander HorizontalAlignment="{TemplateBinding HorizontalAlignment}" VerticalAlignment="{TemplateBinding VerticalAlignment}">
+                    <Expander.Header>
+                        <Panel VerticalAlignment="Stretch">
+                            <TextBlock HorizontalAlignment="Left" Text="{TemplateBinding ExpanderName}" VerticalAlignment="Center" Margin="5,0" />
+                            <Button HorizontalAlignment="Right" Content="Remove" Command="{TemplateBinding RemoveCommand}" />
+                        </Panel>
+                    </Expander.Header>
                     <Grid RowDefinitions="*,Auto,Auto" Margin="0,5,0,0">
                         <DockPanel>
                             <TextBlock Text="{TemplateBinding ImagePath}" />
                             <Button DockPanel.Dock="Right" HorizontalAlignment="Right" Command="{TemplateBinding BrowseCommand}" Content="Browse" />
-                            <Button DockPanel.Dock="Right" HorizontalAlignment="Right" Command="{TemplateBinding RemoveCommand}" Content="Remove" />
                         </DockPanel>
                         <ContentPresenter Grid.Row="1" Margin="0,5" Content="{TemplateBinding Content}" />
                         <Image Grid.Row="2" Source="{TemplateBinding Image}" MaxHeight="480" Stretch="Uniform" />
