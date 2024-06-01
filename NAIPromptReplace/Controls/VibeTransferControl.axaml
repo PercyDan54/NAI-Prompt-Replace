@@ -7,12 +7,12 @@
              MinHeight="65"
              x:Class="NAIPromptReplace.Controls.VibeTransferControl"
              x:DataType="vm:VibeTransferViewModel">
-    <StackPanel Orientation="Horizontal">
-        <StackPanel Orientation="Horizontal" Height="30">
+    <StackPanel Orientation="Horizontal" Spacing="5">
+        <StackPanel Orientation="Horizontal" Height="30" Spacing="5">
             <TextBlock Text="Information Extracted" HorizontalAlignment="Center" VerticalAlignment="Center" />
             <NumericUpDown Value="{Binding ReferenceInformationExtracted, TargetNullValue=1}" FormatString="0.##" Increment="0.01" Minimum="0.01" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
         </StackPanel>
-        <StackPanel Orientation="Horizontal" Height="30">
+        <StackPanel Orientation="Horizontal" Height="30" Spacing="5">
             <TextBlock Text="Reference Strength" HorizontalAlignment="Center" VerticalAlignment="Center" />
             <NumericUpDown Value="{Binding  ReferenceStrength, TargetNullValue=1}" FormatString="0.##" Increment="0.01" Minimum="0" Maximum="0.99" MinWidth="100" HorizontalContentAlignment="Center" />
         </StackPanel>

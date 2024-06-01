@@ -21,7 +21,7 @@
             <TabItem Header="Prompt">
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" ColumnDefinitions="3*,*" Margin="10">
                     <Grid RowDefinitions="Auto,*,*,*,*" ColumnDefinitions="Auto,*">
-                        <TextBlock Text="Prompt" VerticalAlignment="Center" />
+                        <TextBlock Text="Prompt" />
                         <TextBox Grid.Row="0" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Prompt, TargetNullValue=''}" />
                         <ProgressBar Grid.Row="1" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
                             <ProgressBar.Value>
@@ -33,7 +33,7 @@
                                 </MultiBinding>
                             </ProgressBar.Value>
                         </ProgressBar>
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Negative" Margin="0,0,5,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Negative" Margin="0,0,5,0" />
                         <TextBox Grid.Row="2" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" Text="{Binding GenerationConfig.GenerationParameter.NegativePrompt, TargetNullValue=''}" />
                         <ProgressBar Grid.Row="3" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
                             <ProgressBar.Value>
@@ -44,7 +44,7 @@
                                 </MultiBinding>
                             </ProgressBar.Value>
                         </ProgressBar>
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Replace" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Replace" />
                         <TextBox Grid.Row="4" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Replace, TargetNullValue=''}" />
                     </Grid>
                     <Grid Grid.Row="0" Grid.Column="1" Grid.RowSpan="5" Grid.RowDefinitions="Auto,*" VerticalAlignment="Stretch" Margin="5,0">
@@ -84,26 +84,25 @@
                 <Grid RowDefinitions="Auto,Auto" Margin="0,5">
                     <WrapPanel Orientation="Horizontal">
                         <WrapPanel.Styles>
+                            <Style Selector="WrapPanel > StackPanel">
+                                <Setter Property="Spacing" Value="5" />
+                            </Style>
                             <Style Selector="WrapPanel > :is(Control)">
                                 <Setter Property="Margin" Value="0,0,5,5" />
-                            </Style>
-                            <Style Selector="WrapPanel > TextBlock">
-                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                <Setter Property="VerticalAlignment" Value="Center" />
                             </Style>
                         </WrapPanel.Styles>
                         <CheckBox Content="SMEA" IsChecked="{Binding GenerationConfig.GenerationParameter.Smea}" IsEnabled="{Binding GenerationConfig.GenerationParameter.Sampler.AllowSmea}" />
                         <CheckBox Content="DYN" IsChecked="{Binding GenerationConfig.GenerationParameter.Dyn}" IsEnabled="{Binding GenerationConfig.GenerationParameter.Sampler.AllowSmea}" />
-                        <StackPanel Orientation="Horizontal" Height="20">
-                            <TextBlock Text="Width" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Width" />
                             <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Width}" Increment="2" Minimum="1" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Height" VerticalAlignment="Center" />
+                            <TextBlock Text="Height" />
                             <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Height}" Increment="2" Minimum="1" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Height="20">
-                            <TextBlock Text="Seed" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Seed" />
                             <NumericUpDown FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Seed}" HorizontalContentAlignment="Center" MinWidth="150" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
@@ -118,15 +117,15 @@
                             <TextBlock Text="Scale" />
                             <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.Scale}" Increment="0.1" Minimum="0" Maximum="10" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Height="30">
+                        <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Prompt Guidance Rescale" />
                             <NumericUpDown ValueChanged="preventNullValue" Minimum="0" Maximum="1" FormatString="0.##" Increment="0.01" Value="{Binding GenerationConfig.GenerationParameter.CfgRescale}" MinWidth="130" HorizontalContentAlignment="Center" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Height="30">
-                            <ComboBox ItemsSource="{x:Static models:GenerationModelInfo.Schedulers}" SelectedItem="{Binding GenerationConfig.GenerationParameter.NoiseSchedule}" MinWidth="100" HorizontalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Noise Schedule" />
+                            <ComboBox ItemsSource="{x:Static models:GenerationModelInfo.Schedulers}" SelectedItem="{Binding GenerationConfig.GenerationParameter.NoiseSchedule}" MinWidth="100" HorizontalContentAlignment="Center" HorizontalAlignment="Center" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Height="30">
+                        <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Batch Size" />
                             <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.BatchSize}" Minimum="1" MinWidth="130" HorizontalContentAlignment="Center" />
                         </StackPanel>
@@ -137,34 +136,29 @@
                         <controls:AnlasDisplay Value="{Binding AnlasCost, Converter={StaticResource AnlasCountConverter}}" Height="20" />
                     </WrapPanel>
                     <Grid Grid.Row="1" RowDefinitions="*,*,*" ColumnDefinitions="Auto,*">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,5,0" Text="Output Path" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,5,0" Text="Output Path" />
                         <DockPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,5">
                             <Button DockPanel.Dock="Right" Content="Open" Command="{Binding OpenOutputFolderCommand}" />
                             <Button DockPanel.Dock="Right" Content="Browse" Command="{Binding BrowseOutputFolderCommand}" />
                             <TextBox Margin="0,0,5,0" Text="{Binding  GenerationConfig.OutputPath}" IsReadOnly="{Binding DisableInputFolder}" />
                         </DockPanel>
-                        <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,5,0" Text="Output File Name" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,5,0" Text="Output File Name" />
                         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding  GenerationConfig.OutputFilename}" />
                         <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Content="Save Config" Command="{Binding SaveCommand}" HorizontalAlignment="Center" Margin="0,5" />
                     </Grid>
                 </Grid>
             </TabItem>
             <TabItem Header="Reference Images">
-                <StackPanel Orientation="Vertical" Margin="0,5">
-                    <ItemsControl ItemsSource="{Binding Img2ImgViewModels}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.DataTemplates>
+                <StackPanel Orientation="Vertical" Margin="0,5" Spacing="5">
+                    <ContentControl Content="{Binding Img2ImgViewModel}">
+                        <ContentControl.ContentTemplate>
                             <DataTemplate DataType="vm:ReferenceImageViewModel">
                                 <controls:ReferenceImageExpander DragDrop.AllowDrop="True" ExpanderName="{Binding ExpanderText}" Content="{Binding Content}"
                                                                  Image="{Binding Image}" ImagePath="{Binding ImagePathText}"
                                                                  BrowseCommand="{Binding BrowseCommand}" RemoveCommand="{Binding RemoveCommand}" />
                             </DataTemplate>
-                        </ItemsControl.DataTemplates>
-                    </ItemsControl>
+                        </ContentControl.ContentTemplate>
+                    </ContentControl>
                     <ItemsControl ItemsSource="{Binding VibeTransferViewModels}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -179,7 +173,7 @@
                             </DataTemplate>
                         </ItemsControl.DataTemplates>
                     </ItemsControl>
-                    <Button Margin="0,0,5,5" Content="Add Vibe Transfer" Command="{Binding AddVibeTransferCommand}" VerticalAlignment="Center" />
+                    <Button Margin="0,0,5,5" Content="Add Vibe Transfer" Command="{Binding AddVibeTransferCommand}" />
                 </StackPanel>
             </TabItem>
         </TabControl.Items>

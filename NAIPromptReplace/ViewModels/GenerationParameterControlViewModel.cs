@@ -71,7 +71,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref generationLogs, value);
     }
 
-    public ObservableCollection<ReferenceImageViewModel> Img2ImgViewModels { get; }
+    public ReferenceImageViewModel Img2ImgViewModel { get; }
     public ObservableCollection<VibeTransferViewModel> VibeTransferViewModels { get; } = [];
     public ObservableCollection<Bitmap> Images { get; } = [];
 
@@ -134,7 +134,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
             GenerationConfig.GenerationParameter.ImageData = value.Item1;
             GenerationConfig.GenerationParameter.Image = value.Item2;
         });
-        Img2ImgViewModels = [vm];
+        Img2ImgViewModel = vm;
     }
 
     private VibeTransferViewModel addVibeTransfer()
@@ -166,7 +166,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
         var img2ImgFile = App.StorageProvider?.TryGetFileFromPathAsync(GenerationConfig.GenerationParameter.Image ?? string.Empty).Result;
 
         if (img2ImgFile != null)
-            Img2ImgViewModels[0].SetReferenceImage(img2ImgFile).ConfigureAwait(false);
+            Img2ImgViewModel.SetReferenceImage(img2ImgFile).ConfigureAwait(false);
 
         // Convert legacy single-image parameters
         if (GenerationConfig.GenerationParameter.ReferenceStrength != null)
