@@ -116,6 +116,8 @@ public class GenerationConfig : INotifyPropertyChanged
 
     public bool SaveJpeg { get; set; }
 
+    public bool FixedSeed { get; set; }
+
     public GenerationParameter GenerationParameter { get; set; } = new GenerationParameter();
 
     public GenerationConfig Clone(bool deepClone = false)

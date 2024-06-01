@@ -112,19 +112,19 @@
                                                             </StackPanel>
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Text="Random Brackets" />
-                                                                <NumericUpDown Value="{Binding Group.RandomBrackets, TargetNullValue='0'}" Minimum="0" FormatString="0" />
+                                                                <NumericUpDown Value="{Binding Group.RandomBrackets, TargetNullValue=0}" Minimum="0" FormatString="0" />
                                                             </StackPanel>
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Text="Max Random Brackets" />
-                                                                <NumericUpDown Value="{Binding Group.RandomBracketsMax, TargetNullValue='0'}" Minimum="0" FormatString="0" />
+                                                                <NumericUpDown Value="{Binding Group.RandomBracketsMax, TargetNullValue=0}" Minimum="0" FormatString="0" />
                                                             </StackPanel>
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Text="Multiple Num Count" />
-                                                                <NumericUpDown Value="{Binding Group.MultipleNum, TargetNullValue='1'}" Minimum="1" FormatString="0" />
+                                                                <NumericUpDown Value="{Binding Group.MultipleNum, TargetNullValue=1}" Minimum="1" FormatString="0" />
                                                             </StackPanel>
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Text="Multiple Prob Probability" />
-                                                                <NumericUpDown Value="{Binding Group.MultipleProb, TargetNullValue='0'}" Minimum="0" Increment="0.001" FormatString="P2" />
+                                                                <NumericUpDown Value="{Binding Group.MultipleProb, TargetNullValue=0.5}" Minimum="0" Increment="0.001" FormatString="P2" />
                                                             </StackPanel>
                                                        </WrapPanel>
                                                     </Grid>

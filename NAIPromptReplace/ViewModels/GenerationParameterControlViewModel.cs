@@ -65,15 +65,9 @@ public class GenerationParameterControlViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref selectedImageIndex, value);
     }
 
-    public string GenerationLogs
-    {
-        get => generationLogs;
-        set => this.RaiseAndSetIfChanged(ref generationLogs, value);
-    }
-
     public ReferenceImageViewModel Img2ImgViewModel { get; }
     public ObservableCollection<VibeTransferViewModel> VibeTransferViewModels { get; } = [];
-    public ObservableCollection<Bitmap> Images { get; } = [];
+    public ObservableCollection<GenerationLog> GenerationLogs { get; } = [];
 
     private static readonly CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture)
     {
@@ -277,7 +271,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
 
     private async Task saveImage(bool original)
     {
-        if (App.StorageProvider == null || Images.Count == 0)
+        if (App.StorageProvider == null || GenerationLogs.Count == 0)
             return;
 
         var file = await App.StorageProvider.SaveFilePickerAsync(saveImageFilePickerOptions);
@@ -289,8 +283,8 @@ public class GenerationParameterControlViewModel : ReactiveObject
         {
             await using var fileStream = await file.OpenWriteAsync();
             await using var stream = original ? fileStream : new MemoryStream();
-            var image = Images[SelectedImageIndex];
-            image.Save(stream);
+            var image = GenerationLogs[SelectedImageIndex].Image;
+            image?.Save(stream);
 
             if (original)
                 return;

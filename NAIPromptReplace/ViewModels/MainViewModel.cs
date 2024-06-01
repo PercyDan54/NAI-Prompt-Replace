@@ -284,7 +284,7 @@ public class MainViewModel : ReactiveObject
                 if (isImage)
                 {
                     stream.Position = 0;
-                    vm.Images.Add(new Bitmap(stream));
+                    vm.GenerationLogs.Add(new GenerationLog { Image = new Bitmap(stream) });
                 }
             }
         }
@@ -430,7 +430,7 @@ public class MainViewModel : ReactiveObject
 
     private async Task createAndRunTasks(List<GenerationParameterControlViewModel> viewModels, CancellationToken token)
     {
-        var tasks = new List<(GenerationParameterControlViewModel, GenerationConfig)>();
+        var tasks = new List<GenerationTask>();
         var placeholderGroups = Placeholders.Select(s => s.Group).ToArray();
 
         foreach (var vm in viewModels)
@@ -506,7 +506,7 @@ public class MainViewModel : ReactiveObject
 
                 for (int j = 0; j < g.BatchSize; j++)
                 {
-                    long batchSeed = g.AllRandom && j > 0 ? random.Next() : seed + j;
+                    long batchSeed = g.AllRandom && j > 0 ? random.Next() : seed + (g.FixedSeed ? 0 : j);
                     var placeholders = getPlaceholders(usedPlaceholders);
 
                     foreach (var combo in combos)
@@ -522,7 +522,7 @@ public class MainViewModel : ReactiveObject
                         clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, placeholders);
                         clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements);
                         clone.CurrentReplace = string.Join(',', combo);
-                        tasks.Add((vm, clone));
+                        tasks.Add(new GenerationTask(clone, vm) { Placeholders = placeholders });
                     }
                 }
             }
@@ -533,15 +533,15 @@ public class MainViewModel : ReactiveObject
                     var clone = g.Clone();
                     var placeholders = getPlaceholders(usedPlaceholders);
 
-                    clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + j;
+                    clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + (g.FixedSeed ? 0 : j);
                     clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, placeholders);
                     clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements);
                     clone.CurrentReplace = clone.Prompt;
-                    tasks.Add((vm, clone));
+                    tasks.Add(new GenerationTask(clone, vm) { Placeholders = placeholders });
                 }
             }
 
-            vm.Images.Clear();
+            vm.GenerationLogs.Clear();
         }
 
         int i = 0;
@@ -553,7 +553,7 @@ public class MainViewModel : ReactiveObject
         while (i < tasks.Count)
         {
             var task = tasks[i];
-            var generationConfig = task.Item2;
+            var generationConfig = task.GenerationConfig;
             token.ThrowIfCancellationRequested();
             var progressLog = writeLog($"Running task {i + 1} / {tasks.Count}: ");
             HttpResponseMessage? resp = null;
@@ -589,6 +589,11 @@ public class MainViewModel : ReactiveObject
                     { "replace", generationConfig.CurrentReplace },
                 };
 
+                foreach (var placeholder in task.Placeholders)
+                {
+                    placeholders.TryAdd(placeholder.Key, placeholder.Value);
+                }
+
                 var storageFile = GetOutputFileForTask(generationConfig, placeholders);
                 using var file = await storageFile.OpenWriteAsync();
 
@@ -600,7 +605,9 @@ public class MainViewModel : ReactiveObject
                     memoryStream.Position = 0;
                     await memoryStream.CopyToAsync(file);
                     memoryStream.Position = 0;
-                    task.Item1.Images.Add(new Bitmap(memoryStream));
+                    string fileName = storageFile.Name;
+                    task.Filename = fileName;
+                    task.ViewModel.GenerationLogs.Add(new GenerationLog { Image = new Bitmap(memoryStream) });
 
                     if (generationConfig.SaveJpeg)
                     {
@@ -610,8 +617,8 @@ public class MainViewModel : ReactiveObject
 
                         if (folder != null)
                         {
-                            string name = Path.GetFileNameWithoutExtension(storageFile.Name) + "_copy";
-                            string extension = Path.GetExtension(storageFile.Name);
+                            string name = Path.GetFileNameWithoutExtension(fileName) + "_copy";
+                            string extension = Path.GetExtension(fileName);
                             using var copyFile = await folder.CreateFileAsync(Util.GetValidFileName(Path.ChangeExtension(name, extension)));
 
                             if (copyFile != null)
@@ -722,7 +729,7 @@ public class MainViewModel : ReactiveObject
                     bool addWeight = random.NextDouble() < 0.5;
                     char bracketStartChar = addWeight ? '{' : '[';
                     char bracketEndChar = addWeight ? '}' : ']';
-                    int bracketCount = randomBrackets == randomBracketsMax ? randomBrackets : random.Next(randomBrackets, randomBracketsMax);
+                    int bracketCount = randomBrackets == randomBracketsMax ? randomBrackets : random.Next(randomBrackets, randomBracketsMax + 1);
                     string bracketStart = new string(bracketStartChar, bracketCount);
                     string bracketEnd = new string(bracketEndChar, bracketCount);
                     chosen[k] = $"{bracketStart}{chosen[k]}{bracketEnd}";

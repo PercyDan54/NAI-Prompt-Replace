@@ -19,7 +19,7 @@
     <TabControl>
         <TabControl.Items>
             <TabItem Header="Prompt">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" ColumnDefinitions="3*,*" Margin="10">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" ColumnDefinitions="*" Margin="10">
                     <Grid RowDefinitions="Auto,*,*,*,*" ColumnDefinitions="Auto,*">
                         <TextBlock Text="Prompt" />
                         <TextBox Grid.Row="0" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Prompt, TargetNullValue=''}" />
@@ -47,15 +47,11 @@
                         <TextBlock Grid.Row="4" Grid.Column="0" Text="Replace" />
                         <TextBox Grid.Row="4" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Replace, TargetNullValue=''}" />
                     </Grid>
-                    <Grid Grid.Row="0" Grid.Column="1" Grid.RowSpan="5" Grid.RowDefinitions="Auto,*" VerticalAlignment="Stretch" Margin="5,0">
-                        <TextBlock Text="Generation Log" Margin="0,0,0,5" />
-                        <TextBox Grid.Row="1" Text="{Binding GenerationLogs}" IsReadOnly="True" VerticalAlignment="Stretch" MinHeight="150" />
-                    </Grid>
-                    <Grid Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" RowDefinitions="*,Auto" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,5">
-                        <Carousel SelectedIndex="{Binding SelectedImageIndex}" ItemsSource="{Binding Images}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <Grid Grid.Row="5" Grid.Column="0" RowDefinitions="*,Auto" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,5">
+                        <Carousel SelectedIndex="{Binding SelectedImageIndex}" ItemsSource="{Binding GenerationLogs}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                             <Carousel.DataTemplates>
-                                <DataTemplate DataType="IImage">
-                                    <Image MaxHeight="480" Stretch="Uniform" Source="{Binding}" Margin="0,0,0,5" />
+                                <DataTemplate DataType="models:GenerationLog">
+                                    <Image MaxHeight="480" Stretch="Uniform" Source="{Binding Image}" Margin="0,0,0,5" />
                                 </DataTemplate>
                             </Carousel.DataTemplates>
                         </Carousel>
@@ -129,7 +125,8 @@
                             <TextBlock Text="Batch Size" />
                             <NumericUpDown ValueChanged="preventNullValue" FormatString="0" Value="{Binding GenerationConfig.BatchSize}" Minimum="1" MinWidth="130" HorizontalContentAlignment="Center" />
                         </StackPanel>
-                        <CheckBox Content="Random All Image Seeds" IsChecked="{Binding GenerationConfig.AllRandom}" />
+                        <CheckBox Content="Random All Batch Seeds" IsChecked="{Binding GenerationConfig.AllRandom}" />
+                        <CheckBox Content="Fixed Image Seeds" IsChecked="{Binding GenerationConfig.FixedSeed}" />
                         <CheckBox Content="Legacy V3 Extend" IsChecked="{Binding GenerationConfig.GenerationParameter.LegacyV3Extend}" />
                         <CheckBox Content="Retry non-free tasks" IsChecked="{Binding GenerationConfig.RetryAll}" />
                         <CheckBox Content="Save No Metadata copy" IsChecked="{Binding GenerationConfig.SaveJpeg}" />

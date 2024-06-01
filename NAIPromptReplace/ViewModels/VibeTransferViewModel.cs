@@ -26,7 +26,7 @@ public class VibeTransferViewModel : ReferenceImageViewModel, IEquatable<VibeTra
     public int Id { get; set; }
     public IDisposable? Subscription { get; set; }
     private double referenceInformationExtracted = 1;
-    private double referenceStrength = 1;
+    private double referenceStrength = 0.6;
 
     protected override void RemoveReferenceImage()
     {
