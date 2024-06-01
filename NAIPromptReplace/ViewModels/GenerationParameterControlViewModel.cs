@@ -67,7 +67,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
 
     public ReferenceImageViewModel Img2ImgViewModel { get; }
     public ObservableCollection<VibeTransferViewModel> VibeTransferViewModels { get; } = [];
-    public ObservableCollection<GenerationLog> GenerationLogs { get; } = [];
+    public ObservableCollection<GenerationLogViewModel> GenerationLogs { get; } = [];
 
     private static readonly CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture)
     {
@@ -86,16 +86,6 @@ public class GenerationParameterControlViewModel : ReactiveObject
             }
         ]
     };
-    private static readonly FilePickerSaveOptions saveImageFilePickerOptions = new FilePickerSaveOptions
-    {
-        FileTypeChoices =
-        [
-            new FilePickerFileType("PNG")
-            {
-                Patterns = ["*.png"]
-            }
-        ]
-    };
 
     private static readonly FolderPickerOpenOptions folderPickerOpenOptions = new FolderPickerOpenOptions();
     private GenerationConfig generationConfig = new GenerationConfig();
@@ -104,7 +94,6 @@ public class GenerationParameterControlViewModel : ReactiveObject
     private NovelAIApi? api;
     private int nextVibeTransferId;
     private int selectedImageIndex;
-    private string generationLogs = string.Empty;
 
     public GenerationParameterControlViewModel()
     {
@@ -113,7 +102,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
         AddVibeTransferCommand = ReactiveCommand.Create(addVibeTransfer);
         PrevImageCommand = ReactiveCommand.Create(() => SelectedImageIndex = Math.Max(0, SelectedImageIndex - 1));
         NextImageCommand = ReactiveCommand.Create(() => SelectedImageIndex++);
-        SaveImageCommand = ReactiveCommand.CreateFromTask<bool>(saveImage);
+
         var vm = new ReferenceImageViewModel
         {
             Title = "Img2Img",
@@ -267,32 +256,6 @@ public class GenerationParameterControlViewModel : ReactiveObject
             return;
 
         await GenerationConfig.SaveAsync(file);
-    }
-
-    private async Task saveImage(bool original)
-    {
-        if (App.StorageProvider == null || GenerationLogs.Count == 0)
-            return;
-
-        var file = await App.StorageProvider.SaveFilePickerAsync(saveImageFilePickerOptions);
-
-        if (file == null)
-            return;
-
-        await Task.Run(async () =>
-        {
-            await using var fileStream = await file.OpenWriteAsync();
-            await using var stream = original ? fileStream : new MemoryStream();
-            var image = GenerationLogs[SelectedImageIndex].Image;
-            image?.Save(stream);
-
-            if (original)
-                return;
-
-            stream.Position = 0;
-            using var removeImageAlpha = Util.RemoveImageAlpha(stream);
-            removeImageAlpha.Encode(fileStream, SKEncodedImageFormat.Png, 100);
-        });
     }
 
     private async void browseOutputFolder()

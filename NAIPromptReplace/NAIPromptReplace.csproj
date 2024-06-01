@@ -12,15 +12,16 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.0.10"/>
-        <PackageReference Include="Avalonia.ReactiveUI" Version="11.0.10"/>
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.10"/>
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.0.10"/>
+        <PackageReference Include="Avalonia" Version="11.0.10" />
+        <PackageReference Include="DialogHost.Avalonia" Version="0.7.7" />
+        <PackageReference Include="Avalonia.ReactiveUI" Version="11.0.10" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.10" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.0.10" />
         <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.0.10" />
-        <PackageReference Include="CsvHelper" Version="31.0.2"/>
-        <PackageReference Include="SkiaSharp" Version="2.88.7"/>
+        <PackageReference Include="CsvHelper" Version="31.0.2" />
+        <PackageReference Include="SkiaSharp" Version="2.88.7" />
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.0.10"/>
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.0.10" />
     </ItemGroup>
 
     <ItemGroup>

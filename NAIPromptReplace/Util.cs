@@ -1,3 +1,5 @@
+using Avalonia;
+using Avalonia.Media.Imaging;
 using SkiaSharp;
 
 namespace NAIPromptReplace;
@@ -61,6 +63,35 @@ public static class Util
         }
 
         return bitmap;
+    }
+
+    public static Bitmap ResizeBitmap(Bitmap image, int? maxWidth = null, int? maxHeight = null)
+    {
+        if (maxHeight.HasValue || maxWidth.HasValue)
+        {
+            int width = image.PixelSize.Width;
+            int height = image.PixelSize.Height;
+            maxWidth ??= width;
+            maxHeight ??= height;
+            float ratioBitmap = width / (float)height;
+            float ratioMax = maxWidth.Value / (float)maxHeight.Value;
+
+            int finalWidth = maxWidth.Value;
+            int finalHeight = maxHeight.Value;
+            if (ratioMax > ratioBitmap)
+            {
+                finalWidth = (int) (maxHeight * ratioBitmap);
+            }
+            else
+            {
+                finalHeight = (int) (maxWidth / ratioBitmap);
+            }
+
+            image = image.CreateScaledBitmap(new PixelSize(finalWidth, finalHeight));
+            return image;
+        }
+  
+        return image;
     }
 
     public static string TruncateString(string input, int maxLength)

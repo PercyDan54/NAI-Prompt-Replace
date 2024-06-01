@@ -6,6 +6,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Logging;
 using Avalonia.Media.Imaging;
@@ -284,7 +285,11 @@ public class MainViewModel : ReactiveObject
                 if (isImage)
                 {
                     stream.Position = 0;
-                    vm.GenerationLogs.Add(new GenerationLog { Image = new Bitmap(stream) });
+                    var image = new Bitmap(stream);
+                    vm.GenerationLogs.Add(new GenerationLogViewModel
+                    {
+                        GenerationLog = new GenerationLog { Image = image, Thumbnail = image }
+                    });
                 }
             }
         }
@@ -605,9 +610,25 @@ public class MainViewModel : ReactiveObject
                     memoryStream.Position = 0;
                     await memoryStream.CopyToAsync(file);
                     memoryStream.Position = 0;
+
                     string fileName = storageFile.Name;
                     task.Filename = fileName;
-                    task.ViewModel.GenerationLogs.Add(new GenerationLog { Image = new Bitmap(memoryStream) });
+                    var logImage = new Bitmap(memoryStream);
+                    var thumbnail = Util.ResizeBitmap(logImage, maxHeight: 250);
+                    task.ViewModel.GenerationLogs.Add(new GenerationLogViewModel
+                    {
+                        GenerationLog = new GenerationLog
+                        {
+                            Image = logImage,
+                            Thumbnail = thumbnail,
+                            Text = $@"{fileName}
+
+Placeholders:
+{string.Join(Environment.NewLine, task.Placeholders.Select(kvp => $"  - {kvp.Key}: {kvp.Value}"))}
+
+Prompt: {task.GenerationConfig.Prompt}"
+                        }
+                    });
 
                     if (generationConfig.SaveJpeg)
                     {
