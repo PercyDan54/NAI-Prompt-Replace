@@ -13,8 +13,10 @@ public class GenerationLogViewModel : ReactiveObject
         SaveImageCommand = ReactiveCommand.CreateFromTask<bool>(saveImage);;
     }
 
-    public GenerationLog GenerationLog { get; set; }
+    public GenerationLog GenerationLog { get; set; } = new GenerationLog();
     public ICommand SaveImageCommand { get; set; }
+    public ICommand DeleteImageCommand { get; set; }
+
     private static readonly FilePickerSaveOptions saveImageFilePickerOptions = new FilePickerSaveOptions
     {
         FileTypeChoices =

@@ -12,6 +12,5 @@ public class GenerationTask
 
     public GenerationConfig GenerationConfig { get; set; }
     public GenerationParameterControlViewModel ViewModel { get; set; }
-    public string Filename { get; set; } = string.Empty;
     public Dictionary<string, string> Placeholders { get; set; } = [];
 }

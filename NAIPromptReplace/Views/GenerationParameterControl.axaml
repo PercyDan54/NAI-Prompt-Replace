@@ -40,6 +40,7 @@
                                                         <x:Boolean>True</x:Boolean>
                                                     </MenuItem.CommandParameter>
                                                 </MenuItem>
+                                                <MenuItem Header="Delete File" Command="{Binding DeleteImageCommand}" CommandParameter="{Binding}" />
                                             </MenuFlyout>
                                         </SplitButton.Flyout>
                                     </SplitButton>
@@ -109,6 +110,7 @@
                                                                             <x:Boolean>True</x:Boolean>
                                                                         </MenuItem.CommandParameter>
                                                                     </MenuItem>
+                                                                    <MenuItem Header="Delete File" Command="{Binding DeleteImageCommand}" CommandParameter="{Binding}" />
                                                                 </MenuFlyout>
                                                             </SplitButton.Flyout>
                                                         </SplitButton>

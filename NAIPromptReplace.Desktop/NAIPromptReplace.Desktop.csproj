@@ -5,6 +5,8 @@
         <Nullable>enable</Nullable>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationIcon>..\NAIPromptReplace\Assets\novelai-square.ico</ApplicationIcon>
+        <AssemblyVersion>2.0.1</AssemblyVersion>
+        <FileVersion>2.0.1</FileVersion>
     </PropertyGroup>
 
     <PropertyGroup>

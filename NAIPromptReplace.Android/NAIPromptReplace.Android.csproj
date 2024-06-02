@@ -5,15 +5,17 @@
         <SupportedOSPlatformVersion>21</SupportedOSPlatformVersion>
         <Nullable>enable</Nullable>
         <ApplicationId>me.percydan.naipromptreplace</ApplicationId>
-        <ApplicationVersion>1</ApplicationVersion>
-        <ApplicationDisplayVersion>2.0.0</ApplicationDisplayVersion>
+        <ApplicationVersion>2</ApplicationVersion>
+        <ApplicationDisplayVersion>2.0.1</ApplicationDisplayVersion>
         <AndroidPackageFormat>apk</AndroidPackageFormat>
         <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
         <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
     </PropertyGroup>
+
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <AndroidSupportedAbis>armeabi-v7a;arm64-v8a</AndroidSupportedAbis>
+      <AndroidSupportedAbis>x86_64;armeabi-v7a;arm64-v8a</AndroidSupportedAbis>
     </PropertyGroup>
+
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
       <AndroidSupportedAbis>armeabi-v7a;arm64-v8a</AndroidSupportedAbis>
     </PropertyGroup>

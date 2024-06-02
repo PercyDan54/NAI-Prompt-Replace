@@ -14,7 +14,7 @@ public class AnlasCountConverter : IValueConverter
                 return subscriptionInfo.TotalTrainingStepsLeft.ToString();
             
             default:
-                return value == null ? 0 : value.ToString();
+                return value == null ? "0" : value.ToString();
         }
     }
 

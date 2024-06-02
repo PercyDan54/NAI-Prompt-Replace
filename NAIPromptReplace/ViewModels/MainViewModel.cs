@@ -288,7 +288,7 @@ public class MainViewModel : ReactiveObject
                     var image = new Bitmap(stream);
                     vm.GenerationLogs.Add(new GenerationLogViewModel
                     {
-                        GenerationLog = new GenerationLog { Image = image, Thumbnail = image }
+                        GenerationLog = new GenerationLog { File = file, Image = image, Thumbnail = image, Text = generationConfig.Prompt }
                     });
                 }
             }
@@ -612,13 +612,28 @@ public class MainViewModel : ReactiveObject
                     memoryStream.Position = 0;
 
                     string fileName = storageFile.Name;
-                    task.Filename = fileName;
                     var logImage = new Bitmap(memoryStream);
                     var thumbnail = Util.ResizeBitmap(logImage, maxHeight: 250);
                     task.ViewModel.GenerationLogs.Add(new GenerationLogViewModel
                     {
+                        DeleteImageCommand = ReactiveCommand.CreateFromTask<GenerationLogViewModel>(async viewModel =>
+                        {
+                            if (viewModel.GenerationLog.File != null)
+                            {
+                                try
+                                {
+                                    await viewModel.GenerationLog.File.DeleteAsync();
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            task.ViewModel.GenerationLogs.Remove(viewModel);
+                        }),
                         GenerationLog = new GenerationLog
                         {
+                            File = storageFile,
                             Image = logImage,
                             Thumbnail = thumbnail,
                             Text = $@"{fileName}

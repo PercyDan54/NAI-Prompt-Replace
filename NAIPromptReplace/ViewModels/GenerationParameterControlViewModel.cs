@@ -43,9 +43,6 @@ public class GenerationParameterControlViewModel : ReactiveObject
     public ICommand? OpenOutputFolderCommand { get; set; }
     public ICommand SaveCommand { get; }
     public ICommand AddVibeTransferCommand { get; }
-    public ICommand PrevImageCommand { get; }
-    public ICommand NextImageCommand { get; }
-    public ICommand SaveImageCommand { get; }
 
     public bool DisableInputFolder
     {
@@ -57,12 +54,6 @@ public class GenerationParameterControlViewModel : ReactiveObject
     {
         get => anlasCost;
         set => this.RaiseAndSetIfChanged(ref anlasCost, value);
-    }
-
-    public int SelectedImageIndex
-    {
-        get => selectedImageIndex;
-        set => this.RaiseAndSetIfChanged(ref selectedImageIndex, value);
     }
 
     public ReferenceImageViewModel Img2ImgViewModel { get; }
@@ -93,15 +84,12 @@ public class GenerationParameterControlViewModel : ReactiveObject
     private bool disableInputFolder;
     private NovelAIApi? api;
     private int nextVibeTransferId;
-    private int selectedImageIndex;
 
     public GenerationParameterControlViewModel()
     {
         SaveCommand = ReactiveCommand.CreateFromTask(saveConfig);
         BrowseOutputFolderCommand = ReactiveCommand.Create(browseOutputFolder);
         AddVibeTransferCommand = ReactiveCommand.Create(addVibeTransfer);
-        PrevImageCommand = ReactiveCommand.Create(() => SelectedImageIndex = Math.Max(0, SelectedImageIndex - 1));
-        NextImageCommand = ReactiveCommand.Create(() => SelectedImageIndex++);
 
         var vm = new ReferenceImageViewModel
         {
