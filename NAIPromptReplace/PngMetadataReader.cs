@@ -26,14 +26,14 @@ public static class PngMetadataReader
         // ReferenceStrength will be 0 if no reference image is set, set to null instead
         if (parameter.ReferenceStrength < 0.01)
             parameter.ReferenceStrength = null;
-        
+
         var generationConfig = new GenerationConfig
         {
             GenerationParameter = parameter
         };
 
         bool legacy = true;
-        
+
         foreach (var property in jsonDocument.RootElement.EnumerateObject())
         {
             if (property.Name == "legacy_v3_extend")
@@ -41,7 +41,7 @@ public static class PngMetadataReader
 
             if (property.Value.ValueKind != JsonValueKind.String)
                 continue;
-            
+
             string value = property.Value.GetString() ?? string.Empty;
 
             switch (property.Name)
@@ -60,12 +60,11 @@ public static class PngMetadataReader
         return generationConfig;
     }
 
-    public static GenerationConfig ReadFile(IStorageFile file)
+    public static GenerationConfig ReadFile(Stream stream)
     {
         const string comment_key = "Comment";
         const string source_key = "Source";
 
-        using var stream = file.OpenReadAsync().Result;
         using var memoryStream = new MemoryStream();
         stream.CopyTo(memoryStream);
         memoryStream.Position = 0;
@@ -75,7 +74,7 @@ public static class PngMetadataReader
 
         if (!headerBytes.SequenceEqual(png_header))
         {
-            throw new Exception($"File {file.Name} is an invalid PNG file");
+            throw new Exception("Invalid PNG file");
         }
 
         var headers = ReadTextHeaders(memoryStream);
@@ -107,7 +106,7 @@ public static class PngMetadataReader
         }
 
         if (string.IsNullOrEmpty(comment))
-            throw new Exception($"Image {file.Name} does not contain generation info");
+            throw new Exception("Image does not contain generation info");
 
         var config = ReadJson(comment);
 

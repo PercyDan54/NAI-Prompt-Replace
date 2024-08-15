@@ -9,7 +9,7 @@ namespace NAIPromptReplace.Desktop;
 class Program
 {
     [DllImport("user32.dll")]
-    public static extern int MessageBox(IntPtr hWnd, String text, String caption, int options);
+    public static extern int MessageBox(IntPtr hWnd, string text, string caption, int options);
 
     // Initialization code. Don't use any Avalonia, third-party APIs or any
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized

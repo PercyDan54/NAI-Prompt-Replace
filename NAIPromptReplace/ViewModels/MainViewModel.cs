@@ -258,7 +258,7 @@ public class MainViewModel : ReactiveObject
                     break;
 
                 case ".png":
-                    generationConfig = PngMetadataReader.ReadFile(file);
+                    generationConfig = PngMetadataReader.ReadFile(stream);
                     isImage = true;
                     break;
 
@@ -295,7 +295,7 @@ public class MainViewModel : ReactiveObject
         }
         catch (Exception e)
         {
-            writeWarning($"Error opening file: {e.Message}");
+            writeWarning($"Error opening file {file.Name}: {e.Message}");
         }
     }
 
@@ -331,9 +331,7 @@ public class MainViewModel : ReactiveObject
         generationControlViewModels.Add(vm);
         var subscription = vm.WhenAny(v => v.AnlasCost, (i) => i).Subscribe(i => updateTotalCost());
         subscriptions.Add(subscription);
-
-        if (SelectedTabIndex == -1)
-            SelectedTabIndex = 0;
+        SelectedTabIndex = TabItems.Count - 1;
 
         return vm;
     }
@@ -484,25 +482,29 @@ public class MainViewModel : ReactiveObject
             g.Replace = string.Join(',', g.Replace.Split(',', StringSplitOptions.TrimEntries));
             List<string[]> replaceLines = [];
 
+            bool containsTag(string tag) => Regex.IsMatch(prompt, $@",(?:\{{|\[)*{Regex.Escape(tag)}(?:\}}|\])*,");
+
             using var reader = new StringReader(g.Replace);
             using (var csv = new CsvParser(reader, csvConfiguration))
             {
+                string promptTrimmed = prompt.TrimStart('{').TrimStart('[');
+
                 while (await csv.ReadAsync())
                 {
                     string[] records = csv.Record;
                     string toReplace = records[0];
-                    int index = prompt.IndexOf(toReplace, StringComparison.Ordinal);
+                    int index = promptTrimmed.IndexOf(toReplace, StringComparison.Ordinal);
                     int end = index + toReplace.Length;
 
                     // Ensure the matched tag is a full word split by comma
-                    if (index >= 0 && (index == 0 || end == prompt.Length || Regex.IsMatch(prompt, $@",(?:\{{|\[)*{Regex.Escape(toReplace)}(?:\}}|\])*,")))
+                    if (index >= 0 && (index == 0 || end == promptTrimmed.Length || containsTag(toReplace)))
                     {
                         replaceLines.Add(records);
                     }
                 }
             }
 
-            var usedPlaceholders = placeholderGroups.Where(p => tags.Contains(p.Keyword)).ToArray();
+            var usedPlaceholders = placeholderGroups.Where(p => containsTag(p.Keyword)).ToArray();
 
             if (replaceLines.Count > 0 && replaceLines[0].Length > 1)
             {
@@ -616,32 +618,32 @@ public class MainViewModel : ReactiveObject
                     var thumbnail = Util.ResizeBitmap(logImage, maxHeight: 250);
                     task.ViewModel.GenerationLogs.Add(new GenerationLogViewModel
                     {
-                        DeleteImageCommand = ReactiveCommand.CreateFromTask<GenerationLogViewModel>(async viewModel =>
+                        DeleteImageCommand = ReactiveCommand.CreateFromTask<GenerationLogViewModel>(async log =>
                         {
-                            if (viewModel.GenerationLog.File != null)
+                            if (log.GenerationLog.File != null)
                             {
                                 try
                                 {
-                                    await viewModel.GenerationLog.File.DeleteAsync();
+                                    await log.GenerationLog.File.DeleteAsync();
                                 }
                                 catch
                                 {
                                 }
                             }
 
-                            task.ViewModel.GenerationLogs.Remove(viewModel);
+                            task.ViewModel.GenerationLogs.Remove(log);
                         }),
                         GenerationLog = new GenerationLog
                         {
                             File = storageFile,
                             Image = logImage,
                             Thumbnail = thumbnail,
-                            Text = $@"{fileName}
+                            Text = $@"{fileName.Replace(",", ", ")}
 
 Placeholders:
 {string.Join(Environment.NewLine, task.Placeholders.Select(kvp => $"  - {kvp.Key}: {kvp.Value}"))}
 
-Prompt: {task.GenerationConfig.Prompt}"
+Prompt: {task.GenerationConfig.Prompt.Replace(",", ", ")}"
                         }
                     });
 
@@ -698,7 +700,7 @@ Prompt: {task.GenerationConfig.Prompt}"
             if (!success && retry < maxRetries && (AnlasCostCalculator.Calculate(generationConfig, api.SubscriptionInfo) == 0 || generationConfig.RetryAll))
             {
                 writeWarning($"Failed, Retrying {++retry} / {maxRetries}");
-                Thread.Sleep(retry >= 3 || resp?.StatusCode == HttpStatusCode.TooManyRequests ? 5000 : 3000);
+                await Task.Delay(retry >= 3 || resp?.StatusCode == HttpStatusCode.TooManyRequests ? 5000 : 3000);
                 continue;
             }
 
@@ -750,26 +752,27 @@ Prompt: {task.GenerationConfig.Prompt}"
                     chosen = random.GetItems(placeholderTags, placeholder.MultipleNum);
                     break;
                 case SelectionMethod.MultipleProb:
-                    chosen = placeholderTags.Where(_ => random.NextDouble() < placeholder.MultipleProb).ToArray();
+                    chosen = placeholderTags.Where(_ => random.NextDouble() <= placeholder.MultipleProb).ToArray();
                     break;
             }
 
             int randomBrackets = placeholder.RandomBrackets;
+            int randomBracketsMax = Math.Max(randomBrackets, placeholder.RandomBracketsMax);
 
-            if (randomBrackets >= 0)
+            for (int k = 0; k < chosen.Length; k++)
             {
-                int randomBracketsMax = Math.Max(randomBrackets, placeholder.RandomBracketsMax);
+                int bracketCount = randomBrackets == randomBracketsMax ? randomBrackets : random.Next(randomBrackets, randomBracketsMax + 1);
 
-                for (int k = 0; k < chosen.Length; k++)
-                {
-                    bool addWeight = random.NextDouble() < 0.5;
-                    char bracketStartChar = addWeight ? '{' : '[';
-                    char bracketEndChar = addWeight ? '}' : ']';
-                    int bracketCount = randomBrackets == randomBracketsMax ? randomBrackets : random.Next(randomBrackets, randomBracketsMax + 1);
-                    string bracketStart = new string(bracketStartChar, bracketCount);
-                    string bracketEnd = new string(bracketEndChar, bracketCount);
-                    chosen[k] = $"{bracketStart}{chosen[k]}{bracketEnd}";
-                }
+                if (bracketCount == 0)
+                    continue;
+
+                bool addWeight = bracketCount > 0;
+                char bracketStartChar = addWeight ? '{' : '[';
+                char bracketEndChar = addWeight ? '}' : ']';
+                bracketCount = Math.Abs(bracketCount);
+                string bracketStart = new string(bracketStartChar, bracketCount);
+                string bracketEnd = new string(bracketEndChar, bracketCount);
+                chosen[k] = $"{bracketStart}{chosen[k]}{bracketEnd}";
             }
 
             dict.TryAdd(placeholder.Keyword, string.Join(',', chosen));

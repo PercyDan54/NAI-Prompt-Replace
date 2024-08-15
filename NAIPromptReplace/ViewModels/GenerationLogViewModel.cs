@@ -15,7 +15,7 @@ public class GenerationLogViewModel : ReactiveObject
 
     public GenerationLog GenerationLog { get; set; } = new GenerationLog();
     public ICommand SaveImageCommand { get; set; }
-    public ICommand DeleteImageCommand { get; set; }
+    public ICommand? DeleteImageCommand { get; set; }
 
     private static readonly FilePickerSaveOptions saveImageFilePickerOptions = new FilePickerSaveOptions
     {
@@ -42,8 +42,7 @@ public class GenerationLogViewModel : ReactiveObject
         {
             await using var fileStream = await file.OpenWriteAsync();
             await using var stream = original ? fileStream : new MemoryStream();
-            var image = GenerationLog.Image;
-            image?.Save(stream);
+            GenerationLog.Image?.Save(stream);
 
             if (original)
                 return;

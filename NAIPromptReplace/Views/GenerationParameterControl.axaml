@@ -20,111 +20,80 @@
     <TabControl>
         <TabControl.Items>
             <TabItem Header="Prompt">
-                <dialogHostAvalonia:DialogHost CloseOnClickAway="True" DisableOpeningAnimation="True">
-                    <dialogHostAvalonia:DialogHost.DialogContentTemplate>
-                        <DataTemplate DataType="vm:GenerationLogViewModel">
-                            <Grid Background="Gainsboro" ColumnDefinitions="Auto,*">
-                                <Image MaxHeight="540" Stretch="Uniform" Source="{Binding GenerationLog.Image}" Margin="0,0,5,5" />
-                                <StackPanel Grid.Column="1" Spacing="5">
-                                    <ScrollViewer MaxHeight="300">
-                                        <SelectableTextBlock ScrollViewer.HorizontalScrollBarVisibility="Auto" Text="{Binding GenerationLog.Text}" TextWrapping="Wrap" Margin="0,0,0,5" />
-                                    </ScrollViewer>
-                                    <SplitButton Content="Save Copy" Command="{Binding SaveImageCommand}" HorizontalAlignment="Center">
-                                        <SplitButton.CommandParameter>
-                                            <x:Boolean>False</x:Boolean>
-                                        </SplitButton.CommandParameter>
-                                        <SplitButton.Flyout>
-                                            <MenuFlyout Placement="Bottom">
-                                                <MenuItem Header="Save Original" Command="{Binding SaveImageCommand}">
-                                                    <MenuItem.CommandParameter>
-                                                        <x:Boolean>True</x:Boolean>
-                                                    </MenuItem.CommandParameter>
-                                                </MenuItem>
-                                                <MenuItem Header="Delete File" Command="{Binding DeleteImageCommand}" CommandParameter="{Binding}" />
-                                            </MenuFlyout>
-                                        </SplitButton.Flyout>
-                                    </SplitButton>
-                                </StackPanel>
-                            </Grid>
-                        </DataTemplate>
-                    </dialogHostAvalonia:DialogHost.DialogContentTemplate>
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" ColumnDefinitions="*" Margin="10">
-                        <Grid RowDefinitions="Auto,*,*,*,*" ColumnDefinitions="Auto,*">
-                            <TextBlock Text="Prompt" />
-                            <TextBox Grid.Row="0" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Prompt, TargetNullValue=''}" />
-                            <ProgressBar Grid.Row="1" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
-                                <ProgressBar.Value>
-                                    <MultiBinding Converter="{StaticResource TextToTokenCountConverter}">
-                                        <MultiBinding.Bindings>
-                                            <Binding Path="GenerationConfig.Prompt" />
-                                            <Binding Path="GenerationConfig.Replacements" />
-                                        </MultiBinding.Bindings>
-                                    </MultiBinding>
-                                </ProgressBar.Value>
-                            </ProgressBar>
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Negative" Margin="0,0,5,0" />
-                            <TextBox Grid.Row="2" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" Text="{Binding GenerationConfig.GenerationParameter.NegativePrompt, TargetNullValue=''}" />
-                            <ProgressBar Grid.Row="3" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
-                                <ProgressBar.Value>
-                                    <MultiBinding Converter="{StaticResource TextToTokenCountConverter}">
-                                        <MultiBinding.Bindings>
-                                            <Binding Path="GenerationConfig.GenerationParameter.NegativePrompt" />
-                                        </MultiBinding.Bindings>
-                                    </MultiBinding>
-                                </ProgressBar.Value>
-                            </ProgressBar>
-                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Replace" />
-                            <TextBox Grid.Row="4" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Replace, TargetNullValue=''}" />
-                        </Grid>
-                        <Grid Grid.Row="5" Grid.Column="0" RowDefinitions="*,Auto" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,5">
-                            <ItemsControl ItemsSource="{Binding GenerationLogs}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel>
-                                            <WrapPanel.Styles>
-                                                <Style Selector="WrapPanel > :is(Control)">
-                                                    <Setter Property="Margin" Value="0,0,5,5" />
-                                                </Style>
-                                            </WrapPanel.Styles>
-                                        </WrapPanel>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.DataTemplates>
-                                    <DataTemplate DataType="vm:GenerationLogViewModel">
-                                        <Panel>
-                                            <Grid Background="Gainsboro" ColumnDefinitions="Auto,*" MaxWidth="420">
-                                                <Image MaxHeight="250" Stretch="Uniform" Source="{Binding GenerationLog.Thumbnail}" Margin="0,0,5,5" />
-                                                <StackPanel Grid.Column="1" Spacing="5">
-                                                    <ScrollViewer MaxHeight="300">
-                                                        <SelectableTextBlock ScrollViewer.HorizontalScrollBarVisibility="Auto" Text="{Binding GenerationLog.Text}" TextWrapping="WrapWithOverflow" Margin="0,0,0,5" />
-                                                    </ScrollViewer>
-                                                    <StackPanel Orientation="Horizontal" Spacing="5">
-                                                        <SplitButton Content="Save Copy" Command="{Binding SaveImageCommand}" Margin="0,0,0,5">
-                                                            <SplitButton.CommandParameter>
-                                                                <x:Boolean>False</x:Boolean>
-                                                            </SplitButton.CommandParameter>
-                                                            <SplitButton.Flyout>
-                                                                <MenuFlyout Placement="Bottom">
-                                                                    <MenuItem Header="Save Original" Command="{Binding SaveImageCommand}">
-                                                                        <MenuItem.CommandParameter>
-                                                                            <x:Boolean>True</x:Boolean>
-                                                                        </MenuItem.CommandParameter>
-                                                                    </MenuItem>
-                                                                    <MenuItem Header="Delete File" Command="{Binding DeleteImageCommand}" CommandParameter="{Binding}" />
-                                                                </MenuFlyout>
-                                                            </SplitButton.Flyout>
-                                                        </SplitButton>
-                                                        <Button Content="Details" Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=dialogHostAvalonia:DialogHost}, Path=OpenDialogCommand}" CommandParameter="{Binding}" Margin="0,0,0,5" />
-                                                    </StackPanel>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Panel>
-                                    </DataTemplate>
-                                </ItemsControl.DataTemplates>
-                            </ItemsControl>
-                        </Grid>
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" ColumnDefinitions="*" Margin="10">
+                    <Grid RowDefinitions="Auto,*,*,*,*" ColumnDefinitions="Auto,*">
+                        <TextBlock Text="Prompt" />
+                        <TextBox Grid.Row="0" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Prompt, TargetNullValue=''}" />
+                        <ProgressBar Grid.Row="1" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
+                            <ProgressBar.Value>
+                                <MultiBinding Converter="{StaticResource TextToTokenCountConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding Path="GenerationConfig.Prompt" />
+                                        <Binding Path="GenerationConfig.Replacements" />
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </ProgressBar.Value>
+                        </ProgressBar>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Negative" Margin="0,0,5,0" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" Text="{Binding GenerationConfig.GenerationParameter.NegativePrompt, TargetNullValue=''}" />
+                        <ProgressBar Grid.Row="3" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
+                            <ProgressBar.Value>
+                                <MultiBinding Converter="{StaticResource TextToTokenCountConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding Path="GenerationConfig.GenerationParameter.NegativePrompt" />
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </ProgressBar.Value>
+                        </ProgressBar>
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Replace" />
+                        <TextBox Grid.Row="4" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Replace, TargetNullValue=''}" />
                     </Grid>
-                </dialogHostAvalonia:DialogHost>
+                    <Grid Grid.Row="5" Grid.Column="0" RowDefinitions="*,Auto" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,5">
+                        <ItemsControl ItemsSource="{Binding GenerationLogs}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel>
+                                        <WrapPanel.Styles>
+                                            <Style Selector="WrapPanel > :is(Control)">
+                                                <Setter Property="Margin" Value="0,0,5,5" />
+                                            </Style>
+                                        </WrapPanel.Styles>
+                                    </WrapPanel>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.DataTemplates>
+                                <DataTemplate DataType="vm:GenerationLogViewModel">
+                                    <Grid Background="Gainsboro" ColumnDefinitions="Auto,*" MaxWidth="520">
+                                        <Image MaxHeight="250" MaxWidth="300" Stretch="Uniform" Source="{Binding GenerationLog.Thumbnail}" Margin="0,0,5,5" />
+                                        <StackPanel Grid.Column="1" Spacing="5">
+                                            <ScrollViewer MaxHeight="300">
+                                                <SelectableTextBlock ScrollViewer.HorizontalScrollBarVisibility="Auto" Text="{Binding GenerationLog.Text}" TextWrapping="Wrap" Margin="0,0,0,5" />
+                                            </ScrollViewer>
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <SplitButton Content="Save Copy" Command="{Binding SaveImageCommand}" Margin="0,0,0,5">
+                                                    <SplitButton.CommandParameter>
+                                                        <x:Boolean>False</x:Boolean>
+                                                    </SplitButton.CommandParameter>
+                                                    <SplitButton.Flyout>
+                                                        <MenuFlyout Placement="Bottom">
+                                                            <MenuItem Header="Save Original" Command="{Binding SaveImageCommand}">
+                                                                <MenuItem.CommandParameter>
+                                                                    <x:Boolean>True</x:Boolean>
+                                                                </MenuItem.CommandParameter>
+                                                            </MenuItem>
+                                                            <MenuItem Header="Delete File" Command="{Binding DeleteImageCommand}" CommandParameter="{Binding}" />
+                                                        </MenuFlyout>
+                                                    </SplitButton.Flyout>
+                                                </SplitButton>
+                                                <Button Content="Details" Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=dialogHostAvalonia:DialogHost}, Path=OpenDialogCommand}" CommandParameter="{Binding}" Margin="0,0,0,5" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.DataTemplates>
+                        </ItemsControl>
+                    </Grid>
+                </Grid>
             </TabItem>
             <TabItem Header="Settings">
                 <Grid RowDefinitions="Auto,Auto" Margin="0,5">
@@ -209,7 +178,7 @@
                     <ItemsControl ItemsSource="{Binding VibeTransferViewModels}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" />
+                                <StackPanel Orientation="Vertical" Spacing="5" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.DataTemplates>
