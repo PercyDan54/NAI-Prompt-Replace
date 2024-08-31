@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace NAIPromptReplace.Models;
 
-public class PlaceholderGroup : INotifyPropertyChanged, IEquatable<PlaceholderGroup>
+public class Wildcard : INotifyPropertyChanged, IEquatable<Wildcard>
 {
     private string name = "Unnamed";
     public string Name
@@ -40,7 +40,7 @@ public class PlaceholderGroup : INotifyPropertyChanged, IEquatable<PlaceholderGr
     [JsonConverter(typeof(JsonStringEnumConverter<SelectionMethod>))]
     public SelectionMethod SelectionMethod { get; set; }
 
-    public bool Equals(PlaceholderGroup? other)
+    public bool Equals(Wildcard? other)
     {
         if (ReferenceEquals(null, other))
             return false;
@@ -57,14 +57,14 @@ public class PlaceholderGroup : INotifyPropertyChanged, IEquatable<PlaceholderGr
             return true;
         if (obj.GetType() != this.GetType())
             return false;
-        return Equals((PlaceholderGroup)obj);
+        return Equals((Wildcard)obj);
     }
 
     public override int GetHashCode() => HashCode.Combine(Name, Keyword);
 
-    public static bool operator ==(PlaceholderGroup? left, PlaceholderGroup? right) => Equals(left, right);
+    public static bool operator ==(Wildcard? left, Wildcard? right) => Equals(left, right);
 
-    public static bool operator !=(PlaceholderGroup? left, PlaceholderGroup? right) => !Equals(left, right);
+    public static bool operator !=(Wildcard? left, Wildcard? right) => !Equals(left, right);
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)

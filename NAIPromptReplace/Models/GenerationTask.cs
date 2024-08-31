@@ -12,5 +12,5 @@ public class GenerationTask
 
     public GenerationConfig GenerationConfig { get; set; }
     public GenerationParameterControlViewModel ViewModel { get; set; }
-    public Dictionary<string, string> Placeholders { get; set; } = [];
+    public Dictionary<string, string> Wildcards { get; set; } = [];
 }

@@ -6,7 +6,6 @@ using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Logging;
 using Avalonia.Media.Imaging;
@@ -72,7 +71,7 @@ public class MainViewModel : ReactiveObject
     }
 
     public ObservableCollection<TabViewModel> TabItems { get; set; } = [];
-    public ObservableCollection<PlaceholderGroupViewModel> Placeholders { get; set; } = [];
+    public ObservableCollection<WildcardViewModel> Wildcards { get; set; } = [];
     public ObservableCollection<TextReplacement> Replacements { get; set; } = [];
 
     private List<GenerationParameterControlViewModel> generationControlViewModels = [];
@@ -145,9 +144,9 @@ public class MainViewModel : ReactiveObject
     public ICommand? SaveAllCommand { get; protected set; }
     public ICommand OpenFileCommand { get; }
     public ICommand RunTasksCommand { get; }
-    public ICommand AddPlaceholderCommand { get; }
-    public ICommand RemovePlaceholderCommand { get; }
-    public ICommand SavePlaceholderCommand { get; }
+    public ICommand AddWildcardCommand { get; }
+    public ICommand RemoveWildcardCommand { get; }
+    public ICommand SaveWildcardCommand { get; }
 
     public MainViewModel()
     {
@@ -164,13 +163,13 @@ public class MainViewModel : ReactiveObject
         OpenFileCommand = ReactiveCommand.Create(openFile);
         SaveAllCommand = ReactiveCommand.CreateFromTask(saveAll);
         RunTasksCommand = ReactiveCommand.Create(runTasks);
-        RemovePlaceholderCommand = ReactiveCommand.Create<PlaceholderGroupViewModel>(v => Placeholders.Remove(v));
-        AddPlaceholderCommand = ReactiveCommand.Create(addPlaceholder);
-        SavePlaceholderCommand = ReactiveCommand.Create(savePlaceholder);
+        RemoveWildcardCommand = ReactiveCommand.Create<WildcardViewModel>(v => Wildcards.Remove(v));
+        AddWildcardCommand = ReactiveCommand.Create(addWildcard);
+        SaveWildcardCommand = ReactiveCommand.Create(saveWildcard);
         this.WhenAnyValue(vm => vm.SelectedTabIndex).Subscribe(_ => updateTab());
     }
 
-    private async Task savePlaceholder()
+    private async Task saveWildcard()
     {
         if (App.StorageProvider == null)
             return;
@@ -180,7 +179,7 @@ public class MainViewModel : ReactiveObject
         if (file != null)
         {
             var stream = await file.OpenWriteAsync();
-            await JsonSerializer.SerializeAsync(stream, Placeholders.Select(p => p.Group), GenerationConfig.SerializerOptions);
+            await JsonSerializer.SerializeAsync(stream, Wildcards.Select(p => p.Wildcard), GenerationConfig.SerializerOptions);
         }
     }
 
@@ -244,14 +243,14 @@ public class MainViewModel : ReactiveObject
                         generationConfig = jsonDocument.Deserialize<GenerationConfig>(GenerationConfig.SerializerOptions);
                     else if (jsonDocument.RootElement.ValueKind == JsonValueKind.Array)
                     {
-                        var placeholders = jsonDocument.Deserialize<PlaceholderGroup[]>(GenerationConfig.SerializerOptions);;
+                        var placeholders = jsonDocument.Deserialize<Wildcard[]>(GenerationConfig.SerializerOptions);;
 
                         if (placeholders != null)
                         {
                             foreach (var placeholderGroup in placeholders)
                             {
-                                var vm = addPlaceholder();
-                                vm.Group = placeholderGroup;
+                                var vm = addWildcard();
+                                vm.Wildcard = placeholderGroup;
                             }
                         }
                     }
@@ -336,13 +335,13 @@ public class MainViewModel : ReactiveObject
         return vm;
     }
 
-    private PlaceholderGroupViewModel addPlaceholder()
+    private WildcardViewModel addWildcard()
     {
-        var vm = new PlaceholderGroupViewModel
+        var vm = new WildcardViewModel
         {
-            RemoveCommand = RemovePlaceholderCommand
+            RemoveCommand = RemoveWildcardCommand
         };
-        Placeholders.Add(vm);
+        Wildcards.Add(vm);
         return vm;
     }
 
@@ -434,7 +433,7 @@ public class MainViewModel : ReactiveObject
     private async Task createAndRunTasks(List<GenerationParameterControlViewModel> viewModels, CancellationToken token)
     {
         var tasks = new List<GenerationTask>();
-        var placeholderGroups = Placeholders.Select(s => s.Group).ToArray();
+        var placeholderGroups = Wildcards.Select(s => s.Wildcard).ToArray();
 
         foreach (var vm in viewModels)
         {
@@ -504,7 +503,7 @@ public class MainViewModel : ReactiveObject
                 }
             }
 
-            var usedPlaceholders = placeholderGroups.Where(p => containsTag(p.Keyword)).ToArray();
+            var usedWildcards = placeholderGroups.Where(p => containsTag(p.Keyword)).ToArray();
 
             if (replaceLines.Count > 0 && replaceLines[0].Length > 1)
             {
@@ -514,7 +513,7 @@ public class MainViewModel : ReactiveObject
                 for (int j = 0; j < g.BatchSize; j++)
                 {
                     long batchSeed = g.AllRandom && j > 0 ? random.Next() : seed + (g.FixedSeed ? 0 : j);
-                    var placeholders = getPlaceholders(usedPlaceholders);
+                    var placeholders = getWildcards(usedWildcards);
 
                     foreach (var combo in combos)
                     {
@@ -523,13 +522,20 @@ public class MainViewModel : ReactiveObject
 
                         for (int k = 0; k < combo.Count; k++)
                         {
-                            clone.Prompt = clone.Prompt.Replace(toReplaces[k], combo[k]);
+                            string toReplace = toReplaces[k];
+                            int index = clone.Prompt.IndexOf(toReplace, StringComparison.Ordinal);
+
+                            if (index < 0)
+                                continue;
+
+                            int length = toReplace.Length;
+                            clone.Prompt = clone.Prompt[..index] + combo[k] + clone.Prompt[(index + length)..];
                         }
 
                         clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, placeholders);
                         clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements);
                         clone.CurrentReplace = string.Join(',', combo);
-                        tasks.Add(new GenerationTask(clone, vm) { Placeholders = placeholders });
+                        tasks.Add(new GenerationTask(clone, vm) { Wildcards = placeholders });
                     }
                 }
             }
@@ -538,13 +544,13 @@ public class MainViewModel : ReactiveObject
                 for (int j = 0; j < g.BatchSize; j++)
                 {
                     var clone = g.Clone();
-                    var placeholders = getPlaceholders(usedPlaceholders);
+                    var placeholders = getWildcards(usedWildcards);
 
                     clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + (g.FixedSeed ? 0 : j);
                     clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, placeholders);
                     clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements);
                     clone.CurrentReplace = clone.Prompt;
-                    tasks.Add(new GenerationTask(clone, vm) { Placeholders = placeholders });
+                    tasks.Add(new GenerationTask(clone, vm) { Wildcards = placeholders });
                 }
             }
 
@@ -596,7 +602,7 @@ public class MainViewModel : ReactiveObject
                     { "replace", generationConfig.CurrentReplace },
                 };
 
-                foreach (var placeholder in task.Placeholders)
+                foreach (var placeholder in task.Wildcards)
                 {
                     placeholders.TryAdd(placeholder.Key, placeholder.Value);
                 }
@@ -640,8 +646,8 @@ public class MainViewModel : ReactiveObject
                             Thumbnail = thumbnail,
                             Text = $@"{fileName.Replace(",", ", ")}
 
-Placeholders:
-{string.Join(Environment.NewLine, task.Placeholders.Select(kvp => $"  - {kvp.Key}: {kvp.Value}"))}
+Wildcards:
+{string.Join(Environment.NewLine, task.Wildcards.Select(kvp => $"  - {kvp.Key}: {kvp.Value}"))}
 
 Prompt: {task.GenerationConfig.Prompt.Replace(",", ", ")}"
                         }
@@ -713,7 +719,7 @@ Prompt: {task.GenerationConfig.Prompt.Replace(",", ", ")}"
         cancellationTokenSource = null;
     }
 
-    private static Dictionary<string, string> getPlaceholders(PlaceholderGroup[] placeholderGroups)
+    private static Dictionary<string, string> getWildcards(Wildcard[] placeholderGroups)
     {
         var dict = new Dictionary<string, string>();
 
@@ -794,16 +800,16 @@ Prompt: {task.GenerationConfig.Prompt.Replace(",", ", ")}"
             if (Path.IsPathRooted(dir))
                 continue;
 
-            split[index] = Util.GetValidDirectoryName(ReplacePlaceHolders(dir, placeholders));
+            split[index] = Util.GetValidDirectoryName(ReplaceWildcards(dir, placeholders));
         }
 
         pathString = Path.GetFullPath(string.Join(Path.DirectorySeparatorChar, split));
         Directory.CreateDirectory(pathString);
 
-        string fileName = Util.ReplaceInvalidFileNameChars(ReplacePlaceHolders(task.OutputFilename, placeholders).TrimEnd());
+        string fileName = Util.ReplaceInvalidFileNameChars(ReplaceWildcards(task.OutputFilename, placeholders).TrimEnd());
 
         if (string.IsNullOrWhiteSpace(fileName))
-            fileName = ReplacePlaceHolders(GenerationConfig.DEFAULT_OUTPUT_FILE_NAME, placeholders);
+            fileName = ReplaceWildcards(GenerationConfig.DEFAULT_OUTPUT_FILE_NAME, placeholders);
 
         fileName = Util.GetValidFileName(Path.Combine(pathString, fileName[..Math.Min(fileName.Length, 128)] + ".png"));
         using var file1 = File.Create(fileName);
@@ -811,7 +817,7 @@ Prompt: {task.GenerationConfig.Prompt.Replace(",", ", ")}"
         return App.StorageProvider?.TryGetFileFromPathAsync(fileName).Result;
     }
     
-    protected static string ReplacePlaceHolders(string text, Dictionary<string,string> placeholders)
+    protected static string ReplaceWildcards(string text, Dictionary<string,string> placeholders)
     {
         return Regex.Replace(
             text,

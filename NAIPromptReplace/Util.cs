@@ -31,7 +31,7 @@ public static class Util
     }
 
     // https://stackoverflow.com/questions/32571057/generate-all-combinations-from-multiple-n-lists
-    public static List<List<string>> GetAllPossibleCombos(List<string[]> strings)
+    public static List<List<string>> GetAllPossibleCombos(IEnumerable<string[]> strings)
     {
         IEnumerable<List<string>> combos = [[]];
 

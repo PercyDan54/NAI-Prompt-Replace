@@ -27,10 +27,10 @@ public class AndroidMainViewModel : MainViewModel
     protected override IStorageFile? GetOutputFileForTask(GenerationConfig task, Dictionary<string, string> placeholders)
     {
         var folder = DocumentFile.FromTreeUri(MainActivity.Instance, Uri.Parse(task.StorageFolder.Path.AbsoluteUri));
-        string originalFileName = Util.ReplaceInvalidFileNameChars(ReplacePlaceHolders(task.OutputFilename, placeholders) + ".png");
+        string originalFileName = Util.ReplaceInvalidFileNameChars(ReplaceWildcards(task.OutputFilename, placeholders) + ".png");
 
         if (string.IsNullOrWhiteSpace(originalFileName))
-            originalFileName = ReplacePlaceHolders(GenerationConfig.DEFAULT_OUTPUT_FILE_NAME, placeholders);
+            originalFileName = ReplaceWildcards(GenerationConfig.DEFAULT_OUTPUT_FILE_NAME, placeholders);
 
         string fileName = Path.GetFileNameWithoutExtension(originalFileName);
         string extension = Path.GetExtension(originalFileName);

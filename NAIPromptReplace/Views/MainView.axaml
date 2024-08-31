@@ -95,22 +95,22 @@
                             </DockPanel>
                         </dialogHostAvalonia:DialogHost>
                     </TabItem>
-                    <TabItem Header="Placeholders">
+                    <TabItem Header="Wildcards">
                         <Grid RowDefinitions="*,Auto" Margin="0,5">
                             <ScrollViewer>
                                 <StackPanel Spacing="5">
-                                    <ItemsControl ItemsSource="{Binding Placeholders}">
+                                    <ItemsControl ItemsSource="{Binding Wildcards}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <StackPanel Orientation="Vertical" Spacing="5" />
                                             </ItemsPanelTemplate>
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.DataTemplates>
-                                            <DataTemplate DataType="vm:PlaceholderGroupViewModel">
+                                            <DataTemplate DataType="vm:WildcardViewModel">
                                                 <Expander HorizontalAlignment="Stretch">
                                                     <Expander.Header>
                                                         <Panel VerticalAlignment="Stretch">
-                                                            <TextBlock HorizontalAlignment="Left" Text="{Binding Group.Name}" Margin="5,0" />
+                                                            <TextBlock HorizontalAlignment="Left" Text="{Binding Wildcard.Name}" Margin="5,0" />
                                                             <Button HorizontalAlignment="Right" Content="Remove" Command="{Binding RemoveCommand}" CommandParameter="{Binding}" />
                                                         </Panel>
                                                     </Expander.Header>
@@ -121,11 +121,11 @@
                                                             </Style>
                                                         </Grid.Styles>
                                                         <TextBlock Text="Name" />
-                                                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Group.Name, TargetNullValue=''}" />
+                                                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Wildcard.Name, TargetNullValue=''}" />
                                                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Keyword" Margin="0,0,5,0" />
-                                                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Group.Keyword, TargetNullValue=''}" />
+                                                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Wildcard.Keyword, TargetNullValue=''}" />
                                                         <TextBlock Grid.Row="2" Grid.Column="0" Text="Text" />
-                                                        <TextBox Grid.Row="2" Grid.Column="1" Height="120" Text="{Binding Group.Text, TargetNullValue=''}" AcceptsReturn="True" TextWrapping="Wrap" />
+                                                        <TextBox Grid.Row="2" Grid.Column="1" Height="120" Text="{Binding Wildcard.Text, TargetNullValue=''}" AcceptsReturn="True" TextWrapping="Wrap" />
                                                         <WrapPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2">
                                                             <WrapPanel.Styles>
                                                                 <Style Selector="WrapPanel > :is(Control)">
@@ -134,27 +134,27 @@
                                                             </WrapPanel.Styles>
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Text="Shuffled" />
-                                                                <CheckBox IsChecked="{Binding Group.Shuffled}" />
+                                                                <CheckBox IsChecked="{Binding Wildcard.Shuffled}" />
                                                             </StackPanel>
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Text="Selection Method" />
-                                                                <ComboBox ItemsSource="{x:Static vm:PlaceholderGroupViewModel.SelectionMethods}" SelectedItem="{Binding Group.SelectionMethod}" />
+                                                                <ComboBox ItemsSource="{x:Static vm:WildcardViewModel.SelectionMethods}" SelectedItem="{Binding Wildcard.SelectionMethod}" />
                                                             </StackPanel>
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Text="Random Brackets" />
-                                                                <NumericUpDown Value="{Binding Group.RandomBrackets, TargetNullValue=0}" FormatString="0" />
+                                                                <NumericUpDown Value="{Binding Wildcard.RandomBrackets, TargetNullValue=0}" FormatString="0" />
                                                             </StackPanel>
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Text="Max Random Brackets" />
-                                                                <NumericUpDown Value="{Binding Group.RandomBracketsMax, TargetNullValue=0}" FormatString="0" />
+                                                                <NumericUpDown Value="{Binding Wildcard.RandomBracketsMax, TargetNullValue=0}" FormatString="0" />
                                                             </StackPanel>
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Text="MultipleNum Count" />
-                                                                <NumericUpDown Value="{Binding Group.MultipleNum, TargetNullValue=1}" Minimum="1" FormatString="0" />
+                                                                <NumericUpDown Value="{Binding Wildcard.MultipleNum, TargetNullValue=1}" Minimum="1" FormatString="0" />
                                                             </StackPanel>
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Text="MultipleProb Probability" />
-                                                                <NumericUpDown Value="{Binding Group.MultipleProb, TargetNullValue=0.5}" Minimum="0" Maximum="1" Increment="0.001" FormatString="P2" />
+                                                                <NumericUpDown Value="{Binding Wildcard.MultipleProb, TargetNullValue=0.5}" Minimum="0" Maximum="1" Increment="0.001" FormatString="P2" />
                                                             </StackPanel>
                                                         </WrapPanel>
                                                     </Grid>
@@ -163,13 +163,13 @@
                                         </ItemsControl.DataTemplates>
                                     </ItemsControl>
                                     <StackPanel Orientation="Horizontal">
-                                        <Button Content="Add Placeholder" Command="{Binding AddPlaceholderCommand}" VerticalAlignment="Center" />
-                                        <Button Content="Save Placeholders" Command="{Binding SavePlaceholderCommand}" VerticalAlignment="Center" />
+                                        <Button Content="Add Wildcard" Command="{Binding AddWildcardCommand}" VerticalAlignment="Center" />
+                                        <Button Content="Save Wildcards" Command="{Binding SaveWildcardCommand}" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </StackPanel>
                             </ScrollViewer>
                             <StackPanel Grid.Row="1">
-                                <TextBlock Text="Static Replace" />
+                                <TextBlock Text="Legacy Static Replace" />
                                 <DataGrid Height="100" ItemsSource="{Binding Replacements}" Margin="0,0,0,5" AutoGenerateColumns="True" AutoGeneratingColumn="ReplacementDataGrid_OnAutoGeneratingColumn" />
                             </StackPanel>
                         </Grid>
