@@ -96,8 +96,8 @@
                 </Grid>
             </TabItem>
             <TabItem Header="Settings">
-                <Grid RowDefinitions="Auto,Auto" Margin="0,5">
-                    <WrapPanel Orientation="Horizontal">
+                <Grid RowDefinitions="Auto,Auto,Auto" Margin="0,5">
+                    <WrapPanel Margin="0,5">
                         <WrapPanel.Styles>
                             <Style Selector="WrapPanel > StackPanel">
                                 <Setter Property="Spacing" Value="5" />
@@ -118,7 +118,11 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Seed" />
-                            <NumericUpDown FormatString="0" Value="{Binding GenerationConfig.GenerationParameter.Seed}" HorizontalContentAlignment="Center" MinWidth="150" />
+                            <NumericUpDown FormatString="0" Minimum="0" Value="{Binding GenerationConfig.GenerationParameter.Seed}" HorizontalContentAlignment="Center" MinWidth="150" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Steps" />
+                            <NumericUpDown FormatString="0" Minimum="0" Value="{Binding GenerationConfig.GenerationParameter.Steps}" HorizontalContentAlignment="Center" MinWidth="150" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Sampler" />
@@ -129,9 +133,11 @@
                             <ComboBox ItemsSource="{x:Static models:GenerationModelInfo.Models}" DisplayMemberBinding="{Binding Name, DataType='models:GenerationModelInfo'}" SelectedItem="{Binding GenerationConfig.Model}" MinWidth="120" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Scale" />
+                            <TextBlock Text="Prompt Guidance" />
                             <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.Scale}" Increment="0.1" Minimum="0" Maximum="10" />
                         </StackPanel>
+                        <CheckBox Content="Variety+" IsChecked="{Binding GenerationConfig.GenerationParameter.VarietyPlus}" />
+                        <CheckBox Content="Decrisp" IsChecked="{Binding GenerationConfig.GenerationParameter.DynamicThresholding}" />
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Prompt Guidance Rescale" />
                             <NumericUpDown ValueChanged="preventNullValue" Minimum="0" Maximum="1" FormatString="0.##" Increment="0.01" Value="{Binding GenerationConfig.GenerationParameter.CfgRescale}" MinWidth="130" HorizontalContentAlignment="Center" />
@@ -146,12 +152,32 @@
                         </StackPanel>
                         <CheckBox Content="Random All Batch Seeds" IsChecked="{Binding GenerationConfig.AllRandom}" />
                         <CheckBox Content="Fixed Batch Seeds" IsChecked="{Binding GenerationConfig.FixedSeed}" />
-                        <CheckBox Content="Legacy V3 Extend" IsChecked="{Binding GenerationConfig.GenerationParameter.LegacyV3Extend}" />
                         <CheckBox Content="Retry non-free tasks" IsChecked="{Binding GenerationConfig.RetryAll}" />
                         <CheckBox Content="Save No Metadata copy" IsChecked="{Binding GenerationConfig.SaveJpeg}" />
                         <controls:AnlasDisplay Value="{Binding AnlasCost, Converter={StaticResource AnlasCountConverter}}" Height="20" />
                     </WrapPanel>
-                    <Grid Grid.Row="1" RowDefinitions="*,*,*" ColumnDefinitions="Auto,*">
+                    <Expander Grid.Row="1" Header="Hidden Flags" IsExpanded="True" HorizontalAlignment="Stretch" Margin="0,5">
+                        <Expander.Content>
+                             <WrapPanel>
+                                 <WrapPanel.Styles>
+                                     <Style Selector="WrapPanel > StackPanel">
+                                         <Setter Property="Spacing" Value="5" />
+                                     </Style>
+                                     <Style Selector="WrapPanel > :is(Control)">
+                                         <Setter Property="Margin" Value="0,0,5,5" />
+                                     </Style>
+                                 </WrapPanel.Styles>
+                                 <CheckBox Content="Legacy V3 Extend" IsChecked="{Binding GenerationConfig.GenerationParameter.LegacyV3Extend}" />
+                                 <CheckBox Content="Deliberate Euler Ancestral Bug" IsThreeState="True" IsChecked="{Binding GenerationConfig.GenerationParameter.DeliberateEulerAncestralBug}" />
+                                 <CheckBox Content="Prefer Brownian" IsThreeState="True" IsChecked="{Binding GenerationConfig.GenerationParameter.PreferBrownian}" />
+                                 <StackPanel Orientation="Horizontal">
+                                     <TextBlock Text="Skip Cfg Above Sigma" />
+                                     <NumericUpDown Value="{Binding GenerationConfig.GenerationParameter.SkipCfgAboveSigma}" HorizontalContentAlignment="Center" />
+                                 </StackPanel>
+                             </WrapPanel>
+                        </Expander.Content>
+                    </Expander>
+                    <Grid Grid.Row="2" RowDefinitions="*,*,*" ColumnDefinitions="Auto,*">
                         <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,5,0" Text="Output Path" />
                         <DockPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,5">
                             <Button DockPanel.Dock="Right" Content="Open" Command="{Binding OpenOutputFolderCommand}" />

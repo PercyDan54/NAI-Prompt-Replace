@@ -420,12 +420,15 @@ public class MainViewModel : ReactiveObject
             cancellationTokenSource = new CancellationTokenSource();
             CurrentTask = 0;
             clearLog();
+            GC.Collect();
             Task.Factory.StartNew(_ => createAndRunTasks(generationControlViewModels, cancellationTokenSource.Token).ContinueWith(task =>
             {
                 if (task.Exception?.InnerException != null)
                 {
                     writeError($"Tasks Failed with an exception, please report this: {task.Exception.InnerException}");
                 }
+
+                GC.Collect();
             }), null, TaskCreationOptions.LongRunning);
         }
     }
@@ -433,7 +436,7 @@ public class MainViewModel : ReactiveObject
     private async Task createAndRunTasks(List<GenerationParameterControlViewModel> viewModels, CancellationToken token)
     {
         var tasks = new List<GenerationTask>();
-        var placeholderGroups = Wildcards.Select(s => s.Wildcard).ToArray();
+        var wildcards = Wildcards.Select(s => s.Wildcard).ToArray();
 
         foreach (var vm in viewModels)
         {
@@ -446,6 +449,20 @@ public class MainViewModel : ReactiveObject
             smea &= g.GenerationParameter.Sampler.AllowSmea;
             g.GenerationParameter.Smea = smea;
             g.GenerationParameter.Dyn &= smea;
+
+            bool deliberateEulerAncestralBug = g.GenerationParameter.Sampler == SamplerInfo.EulerAncestral && g.GenerationParameter.NoiseSchedule != "native";
+            g.GenerationParameter.DeliberateEulerAncestralBug ??= !deliberateEulerAncestralBug;
+            g.GenerationParameter.PreferBrownian ??= deliberateEulerAncestralBug;
+
+            if (g.GenerationParameter.VarietyPlus == true && !g.GenerationParameter.SkipCfgAboveSigma.HasValue)
+            {
+                int c1 = (int)MathF.Floor(g.GenerationParameter.Width / 8f);
+                int c2 = (int)MathF.Floor(g.GenerationParameter.Height / 8f);
+                float v = MathF.Pow((4 * c1 * c2) / 63232f, 0.5f);
+                g.GenerationParameter.SkipCfgAboveSigma = 19 * v;
+            }
+
+            g.GenerationParameter.VarietyPlus = null;
 
             for (int j = 0; j < g.GenerationParameter.ReferenceImageData.Length; j++)
             {
@@ -503,7 +520,7 @@ public class MainViewModel : ReactiveObject
                 }
             }
 
-            var usedWildcards = placeholderGroups.Where(p => containsTag(p.Keyword)).ToArray();
+            var usedWildcards = wildcards.Where(p => containsTag(p.Keyword)).ToArray();
 
             if (replaceLines.Count > 0 && replaceLines[0].Length > 1)
             {

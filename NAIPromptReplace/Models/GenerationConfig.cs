@@ -199,12 +199,12 @@ public class GenerationParameter : INotifyPropertyChanged
 {
     private bool smea;
     private bool dyn;
-    private byte steps = 28;
+    private byte steps = 23;
     private double cfgRescale;
     private short width = 832;
     private short height = 1216;
     private string negativePrompt = "lowres, jpeg artifacts, worst quality, watermark, blurry, very displeasing";
-    private SamplerInfo? sampler = SamplerInfo.Euler;
+    private SamplerInfo? sampler = SamplerInfo.EulerAncestral;
 
     public string NegativePrompt
     {
@@ -236,7 +236,7 @@ public class GenerationParameter : INotifyPropertyChanged
 
     public bool LegacyV3Extend { get; set; }
 
-    public string NoiseSchedule { get; set; } = "native";
+    public string NoiseSchedule { get; set; } = "karras";
 
     public double Scale { get; set; } = 5;
 
@@ -277,6 +277,19 @@ public class GenerationParameter : INotifyPropertyChanged
     public double? ReferenceStrength { get; set; }
 
     public double[] ReferenceStrengthMultiple { get; set; } = [];
+
+    public bool DynamicThresholding { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? VarietyPlus { get; set; } = false;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? DeliberateEulerAncestralBug { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? PreferBrownian { get; set; }
+
+    public float? SkipCfgAboveSigma { get; set; }
 
     [JsonPropertyName("sm")]
     public bool Smea

@@ -28,6 +28,11 @@ public class SamplerInfo : IEquatable<SamplerInfo>
         Name = "DPM++ SDE",
         Id = "k_dpmpp_sde"
     };
+    public static readonly SamplerInfo DpmPp2MSde = new SamplerInfo
+    {
+        Name = "DPM++ 2M SDE",
+        Id = "k_dpmpp_2m_sde"
+    };
     public static readonly SamplerInfo Dpm2 = new SamplerInfo
     {
         Name = "DPM2",
