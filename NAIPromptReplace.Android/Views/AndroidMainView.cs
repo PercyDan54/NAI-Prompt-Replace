@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.IO;
-using Android.App;
 using Android.Content.Res;
 using Android.Util;
 using Avalonia.Media;
@@ -18,9 +17,6 @@ public class AndroidMainView : MainView
         MainActivity.Instance.Stopped += delegate { SaveConfig(); };
         MainActivity.Instance.OrientationChanged += updateScale;
         updateScale(this, Orientation.Undefined);
-        new AlertDialog.Builder(MainActivity.Instance).SetMessage(@"由于安卓存储权限的限制每个任务必须选择一个输出目录
-输出目录留空会报错，暂不支持手动填写路径
-第一次写安卓程序，所以你可能会遇到包括但不限于：排版错乱，莫名报错/闪退，配置不保存，请谅解").SetNeutralButton("OK", (_, _) => {}).Show();
     }
 
     protected override void InitializeDataContext()
@@ -33,8 +29,8 @@ public class AndroidMainView : MainView
 
     private void updateScale(object? sender, Orientation orientation)
     {
-        const float minWidth = 620;
-        const float minHeight = 650;
+        const float minWidth = 700;
+        const float minHeight = 600;
         var metrics = MainActivity.Instance.Application?.Resources?.DisplayMetrics ?? new DisplayMetrics();
         float density = 1;
         float widthScaled = metrics.WidthPixels / metrics.Density;
