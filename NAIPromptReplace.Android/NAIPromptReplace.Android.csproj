@@ -6,18 +6,14 @@
         <Nullable>enable</Nullable>
         <ApplicationId>me.percydan.naipromptreplace</ApplicationId>
         <ApplicationVersion>2</ApplicationVersion>
-        <ApplicationDisplayVersion>2.1.0</ApplicationDisplayVersion>
+        <ApplicationDisplayVersion>2.1.1</ApplicationDisplayVersion>
         <AndroidPackageFormat>apk</AndroidPackageFormat>
         <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
         <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
     </PropertyGroup>
 
-    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <AndroidSupportedAbis>x86_64;armeabi-v7a;arm64-v8a</AndroidSupportedAbis>
-    </PropertyGroup>
-
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <AndroidSupportedAbis>armeabi-v7a;arm64-v8a</AndroidSupportedAbis>
+      <RuntimeIdentifiers>android-arm;android-arm64</RuntimeIdentifiers>
     </PropertyGroup>
 
     <ItemGroup>

@@ -25,6 +25,6 @@ public partial class TextToTokenCountConverter : IMultiValueConverter
 
         prompt = bracketsRegex().Replace(prompt, string.Empty);
 
-        return tokenizer.Encode(prompt).Count;
+        return (double) tokenizer.Encode(prompt).Count;
     }
 }

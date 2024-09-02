@@ -64,7 +64,7 @@ public class MainActivity : AvaloniaMainActivity<AndroidApp>
         {
             if (ContextCompat.CheckSelfPermission(ApplicationContext, permission) == Permission.Denied)
             {
-                ActivityCompat.RequestPermissions(Instance, [permission], 1337);
+                ActivityCompat.RequestPermissions(this, [permission], 1337);
             }
         }
     }
