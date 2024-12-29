@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <ApplicationId>me.percydan.naipromptreplace</ApplicationId>
         <ApplicationVersion>2</ApplicationVersion>
-        <ApplicationDisplayVersion>2.1.1</ApplicationDisplayVersion>
+        <ApplicationDisplayVersion>2.1.2</ApplicationDisplayVersion>
         <AndroidPackageFormat>apk</AndroidPackageFormat>
         <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
         <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
@@ -21,8 +21,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia.Android" Version="11.1.3" />
-        <PackageReference Include="Xamarin.AndroidX.DocumentFile" Version="1.0.1.28" />
+        <PackageReference Include="Avalonia.Android" Version="11.2.2" />
+        <PackageReference Include="Xamarin.AndroidX.DocumentFile" Version="1.0.1.30" />
     </ItemGroup>
 
     <ItemGroup>

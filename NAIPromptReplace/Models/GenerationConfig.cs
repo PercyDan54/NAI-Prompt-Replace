@@ -15,7 +15,7 @@ public class GenerationConfig : INotifyPropertyChanged
     private Dictionary<string, string> replacements = [];
     private GenerationModelInfo model = GenerationModelInfo.NaiDiffusion3;
     private string outputPath = string.Empty;
-    public const string DEFAULT_OUTPUT_FILE_NAME = "{seed}-{prompt}";
+    public const string DEFAULT_OUTPUT_FILE_NAME = "{seed}-{replace}";
     
     public static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
     {
@@ -109,6 +109,8 @@ public class GenerationConfig : INotifyPropertyChanged
             OnPropertyChanged();
         }
     }
+
+    public bool VarietyAdd { get; set; }
 
     public bool AllRandom { get; set; }
 
@@ -279,9 +281,6 @@ public class GenerationParameter : INotifyPropertyChanged
     public double[] ReferenceStrengthMultiple { get; set; } = [];
 
     public bool DynamicThresholding { get; set; }
-
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public bool? VarietyPlus { get; set; } = false;
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? DeliberateEulerAncestralBug { get; set; }

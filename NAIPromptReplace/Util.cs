@@ -80,11 +80,11 @@ public static class Util
             int finalHeight = maxHeight.Value;
             if (ratioMax > ratioBitmap)
             {
-                finalWidth = (int) (maxHeight * ratioBitmap);
+                finalWidth = (int)(maxHeight * ratioBitmap);
             }
             else
             {
-                finalHeight = (int) (maxWidth / ratioBitmap);
+                finalHeight = (int)(maxWidth / ratioBitmap);
             }
 
             image = image.CreateScaledBitmap(new PixelSize(finalWidth, finalHeight));

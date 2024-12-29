@@ -14,7 +14,7 @@ public class JsonSamplerInfoConverter : JsonConverter<SamplerInfo>
         }
 
         string? str = reader.GetString();
-        return SamplerInfo.Samplers.FirstOrDefault(m => m.Id == str, SamplerInfo.Euler);
+        return SamplerInfo.Samplers.FirstOrDefault(m => m.Id == str, SamplerInfo.EulerAncestral);
     }
 
     public override void Write(Utf8JsonWriter writer, SamplerInfo value, JsonSerializerOptions options)

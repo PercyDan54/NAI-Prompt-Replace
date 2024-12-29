@@ -157,20 +157,24 @@ public class GenerationParameterControlViewModel : ReactiveObject
         double[] referenceStrengthMultiple = GenerationConfig.GenerationParameter.ReferenceStrengthMultiple;
         double[] referenceInformationExtractedMultiple = GenerationConfig.GenerationParameter.ReferenceInformationExtractedMultiple;
 
-        for (int i = 0; i < referenceImageMultiple.Length; i++)
+        for (int i = 0; i < referenceStrengthMultiple.Length; i++)
         {
-            string referenceImage = referenceImageMultiple[i];
             var vm = addVibeTransfer();
 
             vm.ReferenceStrength = referenceStrengthMultiple[i];
             vm.ReferenceInformationExtracted = referenceInformationExtractedMultiple[i];
 
-            if (!string.IsNullOrEmpty(referenceImage))
+            if (i < referenceImageMultiple.Length)
             {
-                var file = App.StorageProvider?.TryGetFileFromPathAsync(referenceImage).Result;
+                string referenceImage = referenceImageMultiple[i];
 
-                if (file != null)
-                    vm.SetReferenceImage(file).ConfigureAwait(false);
+                if (!string.IsNullOrEmpty(referenceImage))
+                {
+                    var file = App.StorageProvider?.TryGetFileFromPathAsync(referenceImage).Result;
+
+                    if (file != null)
+                        vm.SetReferenceImage(file).ConfigureAwait(false);
+                }
             }
         }
     }

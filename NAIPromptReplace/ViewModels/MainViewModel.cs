@@ -450,19 +450,17 @@ public class MainViewModel : ReactiveObject
             g.GenerationParameter.Smea = smea;
             g.GenerationParameter.Dyn &= smea;
 
-            bool deliberateEulerAncestralBug = g.GenerationParameter.Sampler == SamplerInfo.EulerAncestral && g.GenerationParameter.NoiseSchedule != "native";
-            g.GenerationParameter.DeliberateEulerAncestralBug ??= !deliberateEulerAncestralBug;
-            g.GenerationParameter.PreferBrownian ??= deliberateEulerAncestralBug;
+            bool preferBrownianFlag = g.GenerationParameter.Sampler == SamplerInfo.EulerAncestral && g.GenerationParameter.NoiseSchedule != "native";
+            g.GenerationParameter.DeliberateEulerAncestralBug ??= !preferBrownianFlag;
+            g.GenerationParameter.PreferBrownian ??= preferBrownianFlag;
 
-            if (g.GenerationParameter.VarietyPlus == true && !g.GenerationParameter.SkipCfgAboveSigma.HasValue)
+            if (g.VarietyAdd && !g.GenerationParameter.SkipCfgAboveSigma.HasValue)
             {
                 int c1 = (int)MathF.Floor(g.GenerationParameter.Width / 8f);
                 int c2 = (int)MathF.Floor(g.GenerationParameter.Height / 8f);
                 float v = MathF.Pow((4 * c1 * c2) / 63232f, 0.5f);
                 g.GenerationParameter.SkipCfgAboveSigma = 19 * v;
             }
-
-            g.GenerationParameter.VarietyPlus = null;
 
             for (int j = 0; j < g.GenerationParameter.ReferenceImageData.Length; j++)
             {
@@ -493,31 +491,40 @@ public class MainViewModel : ReactiveObject
             }
 
             // Trim spaces between words
-            string[] tags = g.Prompt.Split(',', StringSplitOptions.TrimEntries);
+            string[] tags = g.Prompt.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
             string prompt = g.Prompt = string.Join(',', tags);
             g.Replace = string.Join(',', g.Replace.Split(',', StringSplitOptions.TrimEntries));
             List<string[]> replaceLines = [];
 
             bool containsTag(string tag) => Regex.IsMatch(prompt, $@",(?:\{{|\[)*{Regex.Escape(tag)}(?:\}}|\])*,");
 
-            using var reader = new StringReader(g.Replace);
-            using (var csv = new CsvParser(reader, csvConfiguration))
+            try
             {
-                string promptTrimmed = prompt.TrimStart('{').TrimStart('[');
-
-                while (await csv.ReadAsync())
+                using var reader = new StringReader(g.Replace);
+                using (var csv = new CsvParser(reader, csvConfiguration))
                 {
-                    string[] records = csv.Record;
-                    string toReplace = records[0];
-                    int index = promptTrimmed.IndexOf(toReplace, StringComparison.Ordinal);
-                    int end = index + toReplace.Length;
+                    string promptTrimmed = prompt.TrimStart('{').TrimStart('[');
 
-                    // Ensure the matched tag is a full word split by comma
-                    if (index >= 0 && (index == 0 || end == promptTrimmed.Length || containsTag(toReplace)))
+                    while (await csv.ReadAsync())
                     {
-                        replaceLines.Add(records);
+                        string[] records = csv.Record;
+                        string toReplace = records[0];
+                        int index = promptTrimmed.IndexOf(toReplace, StringComparison.Ordinal);
+                        int end = index + toReplace.Length;
+
+                        // Ensure the matched tag is a full word split by comma
+                        if (index >= 0 && (index == 0 || end == promptTrimmed.Length || containsTag(toReplace)))
+                        {
+                            replaceLines.Add(records);
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                writeError($"Failed to process replace: {e}");
+                runTasks();
+                return;
             }
 
             var usedWildcards = wildcards.Where(p => containsTag(p.Keyword)).ToArray();
@@ -550,7 +557,7 @@ public class MainViewModel : ReactiveObject
                         }
 
                         clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, placeholders);
-                        clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements);
+                        clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements).Replace(",", ", ");
                         clone.CurrentReplace = string.Join(',', combo);
                         tasks.Add(new GenerationTask(clone, vm) { Wildcards = placeholders });
                     }
@@ -565,7 +572,7 @@ public class MainViewModel : ReactiveObject
 
                     clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + (g.FixedSeed ? 0 : j);
                     clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, placeholders);
-                    clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements);
+                    clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements).Replace(",", ", ");
                     clone.CurrentReplace = clone.Prompt;
                     tasks.Add(new GenerationTask(clone, vm) { Wildcards = placeholders });
                 }
@@ -666,7 +673,7 @@ public class MainViewModel : ReactiveObject
 Wildcards:
 {string.Join(Environment.NewLine, task.Wildcards.Select(kvp => $"  - {kvp.Key}: {kvp.Value}"))}
 
-Prompt: {task.GenerationConfig.Prompt.Replace(",", ", ")}"
+Prompt: {task.GenerationConfig.Prompt}"
                         }
                     });
 
@@ -684,7 +691,7 @@ Prompt: {task.GenerationConfig.Prompt.Replace(",", ", ")}"
 
                             if (copyFile != null)
                             {
-                                using var outputStream = await copyFile.OpenWriteAsync();
+                                await using var outputStream = await copyFile.OpenWriteAsync();
                                 image.Encode(outputStream, SKEncodedImageFormat.Png, 100);
                             }
                         }
@@ -810,14 +817,14 @@ Prompt: {task.GenerationConfig.Prompt.Replace(",", ", ")}"
 
         string[] split = pathString.Split(Path.DirectorySeparatorChar);
 
-        for (int index = 0; index < split.Length; index++)
+        for (int i = 0; i < split.Length; i++)
         {
-            string dir = split[index];
+            string dir = split[i];
 
             if (Path.IsPathRooted(dir))
                 continue;
 
-            split[index] = Util.GetValidDirectoryName(ReplaceWildcards(dir, placeholders));
+            split[i] = Util.GetValidDirectoryName(ReplaceWildcards(dir, placeholders));
         }
 
         pathString = Path.GetFullPath(string.Join(Path.DirectorySeparatorChar, split));
