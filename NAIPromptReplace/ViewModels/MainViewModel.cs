@@ -444,11 +444,16 @@ public class MainViewModel : ReactiveObject
             g.GenerationParameter.Seed ??= random.Next();
             long seed = g.GenerationParameter.Seed.Value;
 
-            bool smea = g.GenerationParameter.Smea;
+            bool smea = g.GenerationParameter.Smea ?? false;
             g.GenerationParameter.Sampler ??= g.Model.Samplers[0];
             smea &= g.GenerationParameter.Sampler.AllowSmea;
             g.GenerationParameter.Smea = smea;
             g.GenerationParameter.Dyn &= smea;
+
+            if (g.Model.Group == ModelGroup.V4)
+            {
+                g.GenerationParameter.Smea = g.GenerationParameter.Dyn = null;
+            }
 
             bool preferBrownianFlag = g.GenerationParameter.Sampler == SamplerInfo.EulerAncestral && g.GenerationParameter.NoiseSchedule != "native";
             g.GenerationParameter.DeliberateEulerAncestralBug ??= !preferBrownianFlag;
@@ -561,6 +566,27 @@ public class MainViewModel : ReactiveObject
                         clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements).Replace(",", ", ");
                         clone.CurrentReplace = string.Join(',', combo);
 
+                        if (g.Model.Group == ModelGroup.V4)
+                        {
+                            clone.GenerationParameter.CharacterPrompts = [];
+                            clone.GenerationParameter.V4Prompt = new V4Prompt
+                            {
+                                Caption = new V4Caption
+                                {
+                                    BaseCaption = clone.Prompt,
+                                    UseOrder = true,
+                                    UseCoords = false,
+                                }
+                            };
+                            clone.GenerationParameter.V4NegativePrompt = new V4Prompt
+                            {
+                                Caption =
+                                {
+                                    BaseCaption = clone.GenerationParameter.NegativePrompt
+                                }
+                            };
+                        }
+
                         tasks.Add(new GenerationTask(clone, vm) { Wildcards = wildcardsDict });
                     }
                 }
@@ -577,6 +603,26 @@ public class MainViewModel : ReactiveObject
                     clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements).Replace(",", ", ");
                     clone.CurrentReplace = clone.Prompt;
 
+                    if (g.Model.Group == ModelGroup.V4)
+                    {
+                        clone.GenerationParameter.CharacterPrompts = [];
+                        clone.GenerationParameter.V4Prompt = new V4Prompt
+                        {
+                            Caption = new V4Caption
+                            {
+                                BaseCaption = clone.Prompt,
+                                UseOrder = true,
+                                UseCoords = false,
+                            }
+                        };
+                        clone.GenerationParameter.V4NegativePrompt = new V4Prompt
+                        {
+                            Caption =
+                            {
+                                BaseCaption = clone.GenerationParameter.NegativePrompt
+                            }
+                        };
+                    }
 
                     tasks.Add(new GenerationTask(clone, vm) { Wildcards = wildcardsDict });
                 }

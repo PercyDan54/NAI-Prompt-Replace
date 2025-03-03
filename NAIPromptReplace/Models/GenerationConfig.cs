@@ -199,8 +199,8 @@ public class GenerationConfig : INotifyPropertyChanged
 
 public class GenerationParameter : INotifyPropertyChanged
 {
-    private bool smea;
-    private bool dyn;
+    private bool? smea;
+    private bool? dyn;
     private byte steps = 23;
     private double cfgRescale;
     private short width = 832;
@@ -234,6 +234,8 @@ public class GenerationParameter : INotifyPropertyChanged
         }
     }
 
+    public int ParamsVersion => 3;
+
     public long? Seed { get; set; }
 
     public bool LegacyV3Extend { get; set; }
@@ -241,6 +243,15 @@ public class GenerationParameter : INotifyPropertyChanged
     public string NoiseSchedule { get; set; } = "karras";
 
     public double Scale { get; set; } = 5;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public V4Prompt? V4Prompt { get; set; } = null;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public V4Prompt? V4NegativePrompt { get; set; } = null;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public V4CharPrompt[]? CharacterPrompts { get; set; } = null;
 
     [JsonPropertyName("ucPreset")]
     public byte UcPreset { get; private init; } = 3;
@@ -291,7 +302,8 @@ public class GenerationParameter : INotifyPropertyChanged
     public float? SkipCfgAboveSigma { get; set; }
 
     [JsonPropertyName("sm")]
-    public bool Smea
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Smea
     {
         get => smea;
         set
@@ -302,7 +314,8 @@ public class GenerationParameter : INotifyPropertyChanged
     }
 
     [JsonPropertyName("sm_dyn")]
-    public bool Dyn
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Dyn
     {
         get => dyn;
         set

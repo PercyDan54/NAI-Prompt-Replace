@@ -303,13 +303,13 @@ public static class AnlasCostCalculator
         int batchSize = config.BatchSize;
         float v;
         float strength = parameter.ImageData == null ? 1 : (float)parameter.Strength.GetValueOrDefault();
-        bool sm = parameter.Smea && sampler.AllowSmea;
-        bool dyn = sm && parameter.Dyn;
+        bool sm = (parameter.Smea ?? false) && sampler.AllowSmea;
+        bool dyn = sm && (parameter.Dyn ?? false);
 
         if (subscription?.Tier >= SubscriptionTier.Opus && subscription.Active && steps <= 28 && imageSize <= 1048576)
             batchSize = 0;
 
-        if (model.Group == ModelGroup.StableDiffusionXL || model.Group == ModelGroup.StableDiffusionXLFurry)
+        if (model.Group >= ModelGroup.StableDiffusionXL)
         {
             v = MathF.Ceiling(2951823174884865e-21f * imageSize + 5.753298233447344e-7f * imageSize * steps) * (dyn ? 1.4f : sm ? 1.2f : 1f);
         }
