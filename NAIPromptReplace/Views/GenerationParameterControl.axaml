@@ -156,7 +156,7 @@
                         <CheckBox Content="Save No Metadata copy" IsChecked="{Binding GenerationConfig.SaveJpeg}" />
                         <controls:AnlasDisplay Value="{Binding AnlasCost, Converter={StaticResource AnlasCountConverter}}" Height="20" />
                     </WrapPanel>
-                    <Expander Grid.Row="1" Header="Hidden Flags" IsExpanded="True" HorizontalAlignment="Stretch" Margin="0,5">
+                    <Expander Grid.Row="1" Header="Hidden Flags" HorizontalAlignment="Stretch" Margin="0,5">
                         <Expander.Content>
                              <WrapPanel>
                                  <WrapPanel.Styles>

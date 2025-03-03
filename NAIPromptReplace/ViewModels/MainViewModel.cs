@@ -243,14 +243,14 @@ public class MainViewModel : ReactiveObject
                         generationConfig = jsonDocument.Deserialize<GenerationConfig>(GenerationConfig.SerializerOptions);
                     else if (jsonDocument.RootElement.ValueKind == JsonValueKind.Array)
                     {
-                        var placeholders = jsonDocument.Deserialize<Wildcard[]>(GenerationConfig.SerializerOptions);;
+                        var wildcards = jsonDocument.Deserialize<Wildcard[]>(GenerationConfig.SerializerOptions);;
 
-                        if (placeholders != null)
+                        if (wildcards != null)
                         {
-                            foreach (var placeholderGroup in placeholders)
+                            foreach (var wildcard in wildcards)
                             {
                                 var vm = addWildcard();
-                                vm.Wildcard = placeholderGroup;
+                                vm.Wildcard = wildcard;
                             }
                         }
                     }
@@ -523,6 +523,7 @@ public class MainViewModel : ReactiveObject
             catch (Exception e)
             {
                 writeError($"Failed to process replace: {e}");
+                // Cancel the tasks
                 runTasks();
                 return;
             }
@@ -537,7 +538,7 @@ public class MainViewModel : ReactiveObject
                 for (int j = 0; j < g.BatchSize; j++)
                 {
                     long batchSeed = g.AllRandom && j > 0 ? random.Next() : seed + (g.FixedSeed ? 0 : j);
-                    var placeholders = getWildcards(usedWildcards);
+                    var wildcardsDict = getWildcards(usedWildcards);
 
                     foreach (var combo in combos)
                     {
@@ -556,10 +557,11 @@ public class MainViewModel : ReactiveObject
                             clone.Prompt = clone.Prompt[..index] + combo[k] + clone.Prompt[(index + length)..];
                         }
 
-                        clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, placeholders);
+                        clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, wildcardsDict);
                         clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements).Replace(",", ", ");
                         clone.CurrentReplace = string.Join(',', combo);
-                        tasks.Add(new GenerationTask(clone, vm) { Wildcards = placeholders });
+
+                        tasks.Add(new GenerationTask(clone, vm) { Wildcards = wildcardsDict });
                     }
                 }
             }
@@ -568,13 +570,15 @@ public class MainViewModel : ReactiveObject
                 for (int j = 0; j < g.BatchSize; j++)
                 {
                     var clone = g.Clone();
-                    var placeholders = getWildcards(usedWildcards);
+                    var wildcardsDict = getWildcards(usedWildcards);
 
                     clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + (g.FixedSeed ? 0 : j);
-                    clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, placeholders);
+                    clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, wildcardsDict);
                     clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements).Replace(",", ", ");
                     clone.CurrentReplace = clone.Prompt;
-                    tasks.Add(new GenerationTask(clone, vm) { Wildcards = placeholders });
+
+
+                    tasks.Add(new GenerationTask(clone, vm) { Wildcards = wildcardsDict });
                 }
             }
 
@@ -626,9 +630,9 @@ public class MainViewModel : ReactiveObject
                     { "replace", generationConfig.CurrentReplace },
                 };
 
-                foreach (var placeholder in task.Wildcards)
+                foreach (var wildcard in task.Wildcards)
                 {
-                    placeholders.TryAdd(placeholder.Key, placeholder.Value);
+                    placeholders.TryAdd(wildcard.Key, wildcard.Value);
                 }
 
                 var storageFile = GetOutputFileForTask(generationConfig, placeholders);
@@ -734,6 +738,12 @@ Prompt: {task.GenerationConfig.Prompt}"
                 continue;
             }
 
+            if (i % 15 == 0 && i > 0)
+            {
+                writeLog("Sleeping for 5 seconds to avoid rate limit...");
+                await Task.Delay(5000, token);
+            }
+
             retry = 0;
             i++;
             CurrentTask = i;
@@ -743,14 +753,14 @@ Prompt: {task.GenerationConfig.Prompt}"
         cancellationTokenSource = null;
     }
 
-    private static Dictionary<string, string> getWildcards(Wildcard[] placeholderGroups)
+    private static Dictionary<string, string> getWildcards(Wildcard[] wildcards)
     {
         var dict = new Dictionary<string, string>();
 
-        foreach (var placeholder in placeholderGroups)
+        foreach (var wildcard in wildcards)
         {
             List<string> csvParsed = [];
-            using var stringReader = new StringReader(placeholder.Text);
+            using var stringReader = new StringReader(wildcard.Text);
             using (var csv = new CsvParser(stringReader, csvConfiguration))
             {
                 while (csv.Read())
@@ -762,32 +772,32 @@ Prompt: {task.GenerationConfig.Prompt}"
             if (csvParsed.Count == 0)
                 continue;
 
-            string[] placeholderTags = csvParsed.ToArray();
+            string[] tags = csvParsed.ToArray();
 
-            if (placeholder.Shuffled)
-                random.Shuffle(placeholderTags);
+            if (wildcard.Shuffled)
+                random.Shuffle(tags);
 
             string[] chosen = [];
 
-            switch (placeholder.SelectionMethod)
+            switch (wildcard.SelectionMethod)
             {
                 case SelectionMethod.All:
-                    chosen = placeholderTags;
+                    chosen = tags;
                     break;
                 case SelectionMethod.SingleSequential:
-                    chosen = [placeholderTags[placeholder.SingleSequentialNum]];
-                    placeholder.SingleSequentialNum = (placeholder.SingleSequentialNum + 1) % placeholderTags.Length;
+                    chosen = [tags[wildcard.SingleSequentialNum]];
+                    wildcard.SingleSequentialNum = (wildcard.SingleSequentialNum + 1) % tags.Length;
                     break;
                 case SelectionMethod.MultipleNum:
-                    chosen = random.GetItems(placeholderTags, placeholder.MultipleNum);
+                    chosen = random.GetItems(tags, wildcard.MultipleNum);
                     break;
                 case SelectionMethod.MultipleProb:
-                    chosen = placeholderTags.Where(_ => random.NextDouble() <= placeholder.MultipleProb).ToArray();
+                    chosen = tags.Where(_ => random.NextDouble() <= wildcard.MultipleProb).ToArray();
                     break;
             }
 
-            int randomBrackets = placeholder.RandomBrackets;
-            int randomBracketsMax = Math.Max(randomBrackets, placeholder.RandomBracketsMax);
+            int randomBrackets = wildcard.RandomBrackets;
+            int randomBracketsMax = Math.Max(randomBrackets, wildcard.RandomBracketsMax);
 
             for (int k = 0; k < chosen.Length; k++)
             {
@@ -805,7 +815,7 @@ Prompt: {task.GenerationConfig.Prompt}"
                 chosen[k] = $"{bracketStart}{chosen[k]}{bracketEnd}";
             }
 
-            dict.TryAdd(placeholder.Keyword, string.Join(',', chosen));
+            dict.TryAdd(wildcard.Keyword, string.Join(',', chosen));
         }
 
         return dict;
@@ -841,12 +851,12 @@ Prompt: {task.GenerationConfig.Prompt}"
         return App.StorageProvider?.TryGetFileFromPathAsync(fileName).Result;
     }
     
-    protected static string ReplaceWildcards(string text, Dictionary<string,string> placeholders)
+    protected static string ReplaceWildcards(string text, Dictionary<string,string> wildcards)
     {
         return Regex.Replace(
             text,
             @"\{(?<name>.*?)\}",
-            match => placeholders.TryGetValue(match.Groups["name"].Value, out string? value) ? value : match.Groups["name"].Value);
+            match => wildcards.TryGetValue(match.Groups["name"].Value, out string? value) ? value : match.Groups["name"].Value);
     }
 
     private async Task updateAccountInfo(bool tokenChanged = false)

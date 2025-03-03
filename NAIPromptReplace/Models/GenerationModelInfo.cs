@@ -3,6 +3,21 @@ namespace NAIPromptReplace.Models;
 public class GenerationModelInfo
 {
     #region Models
+    public static readonly GenerationModelInfo NaiDiffusion4CuratedPreview = new GenerationModelInfo
+    {
+        Name = "NAI Diffusion V4 Curated Preview",
+        Id = "nai-diffusion-4-curated-preview",
+        Group = ModelGroup.V4,
+        Samplers =
+        [
+            SamplerInfo.Euler,
+            SamplerInfo.EulerAncestral,
+            SamplerInfo.DpmPp2SAncestral,
+            SamplerInfo.DpmPp2MSde,
+            SamplerInfo.DpmPp2M,
+            SamplerInfo.DpmPpSde
+        ]
+    };
     public static readonly GenerationModelInfo NaiDiffusion3 = new GenerationModelInfo
     {
         Name = "NAI Diffusion Anime V3",
@@ -101,7 +116,7 @@ public class GenerationModelInfo
         ]
     };
 
-    public static readonly GenerationModelInfo[] Models = [NaiDiffusion3, NaiDiffusionFurry3, NaiDiffusion2, NaiDiffusion, NaiDiffusionFurry, SafeDiffusion];
+    public static readonly GenerationModelInfo[] Models = [NaiDiffusion4CuratedPreview, NaiDiffusion3, NaiDiffusionFurry3, NaiDiffusion2, NaiDiffusion, NaiDiffusionFurry, SafeDiffusion];
     public static readonly string[] Schedulers = ["native", "karras", "exponential", "polyexponential"];
 
     #endregion
@@ -137,7 +152,7 @@ public class GenerationModelInfo
             case "Stable Diffusion XL C1E1DE52":
             case "Stable Diffusion XL 8BA2AF87":
             default:
-                return NaiDiffusion3;
+                return hash.Contains("NovelAI Diffusion V4", StringComparison.Ordinal) ? NaiDiffusion4CuratedPreview : NaiDiffusion3;
         }
     }
 }
@@ -148,4 +163,5 @@ public enum ModelGroup
     StableDiffusionGroup2,
     StableDiffusionXL,
     StableDiffusionXLFurry,
+    V4,
 }
