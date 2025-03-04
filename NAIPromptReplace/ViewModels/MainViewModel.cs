@@ -498,27 +498,32 @@ public class MainViewModel : ReactiveObject
             // Trim spaces between words
             string[] tags = g.Prompt.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
             string prompt = g.Prompt = string.Join(',', tags);
+            string promptTrimmedFirstBrackets = prompt.TrimStart('{').TrimStart('[');
             g.Replace = string.Join(',', g.Replace.Split(',', StringSplitOptions.TrimEntries));
             List<string[]> replaceLines = [];
 
-            bool containsTag(string tag) => Regex.IsMatch(prompt, $@",(?:\{{|\[)*{Regex.Escape(tag)}(?:\}}|\])*,");
+            bool containsTag(string tag)
+            {
+                int index = promptTrimmedFirstBrackets.IndexOf(tag, StringComparison.Ordinal);
+                int end = index + tag.Length;
+
+                // Ensure the matched tag is a full word split by comma
+                return index >= 0 && (index == 0 || end == promptTrimmedFirstBrackets.Length ||
+                       Regex.IsMatch(prompt, $@",(?:\{{|\[)*{Regex.Escape(tag)}(?:\}}|\])*,"));
+            }
 
             try
             {
                 using var reader = new StringReader(g.Replace);
                 using (var csv = new CsvParser(reader, csvConfiguration))
                 {
-                    string promptTrimmed = prompt.TrimStart('{').TrimStart('[');
-
                     while (await csv.ReadAsync())
                     {
                         string[] records = csv.Record;
                         string toReplace = records[0];
-                        int index = promptTrimmed.IndexOf(toReplace, StringComparison.Ordinal);
-                        int end = index + toReplace.Length;
 
                         // Ensure the matched tag is a full word split by comma
-                        if (index >= 0 && (index == 0 || end == promptTrimmed.Length || containsTag(toReplace)))
+                        if (containsTag(toReplace))
                         {
                             replaceLines.Add(records);
                         }

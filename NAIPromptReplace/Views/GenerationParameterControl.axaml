@@ -134,7 +134,7 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Prompt Guidance" />
-                            <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.Scale}" Increment="0.1" Minimum="0" Maximum="10" />
+                            <NumericUpDown ValueChanged="preventNullValue" Value="{Binding GenerationConfig.GenerationParameter.Scale}" Increment="0.1" Minimum="0" Maximum="20" />
                         </StackPanel>
                         <CheckBox Content="Variety+" IsChecked="{Binding GenerationConfig.VarietyAdd}" />
                         <CheckBox Content="Decrisp" IsChecked="{Binding GenerationConfig.GenerationParameter.DynamicThresholding}" />

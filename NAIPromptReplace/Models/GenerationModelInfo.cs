@@ -165,6 +165,8 @@ public class GenerationModelInfo
                 return NaiDiffusionFurry3;
             case "Stable Diffusion XL B0BDF6C1":
             case "Stable Diffusion XL C1E1DE52":
+            case "Stable Diffusion XL 7BCCAA2C":
+            case "Stable Diffusion XL 1120E6A9":
             case "Stable Diffusion XL 8BA2AF87":
                 return NaiDiffusion3;
             case "NovelAI Diffusion V4 4F49EC75":

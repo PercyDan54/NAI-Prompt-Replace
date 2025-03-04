@@ -56,7 +56,7 @@ public class SamplerInfo : IEquatable<SamplerInfo>
         AllowSmea = false
     };
 
-    public static SamplerInfo[] Samplers = [Euler, EulerAncestral, DpmPp2SAncestral, DpmPp2M, DpmPpSde, Dpm2, DpmFast, Ddim, DdimV3];
+    public static SamplerInfo[] Samplers = [Euler, EulerAncestral, DpmPp2SAncestral, DpmPp2M, DpmPp2MSde, DpmPpSde, Dpm2, DpmFast, Ddim, DdimV3];
     #endregion
 
     public string Name { get; init; } = string.Empty;
