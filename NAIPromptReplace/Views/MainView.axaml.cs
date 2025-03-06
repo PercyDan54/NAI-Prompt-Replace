@@ -2,6 +2,7 @@ using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using NAIPromptReplace.Models;
+using NAIPromptReplace.Platform.Windows;
 using NAIPromptReplace.ViewModels;
 
 namespace NAIPromptReplace.Views;
@@ -25,10 +26,17 @@ public partial class MainView : LayoutTransformControl
 
     protected virtual void InitializeDataContext()
     {
-        DataContext = new MainViewModel
+        var vm = new MainViewModel
         {
             Config = LoadConfig()
         };
+
+        if (OperatingSystem.IsWindows())
+        {
+            vm.PlatformProgressNotifier = new WindowsProgressNotifier(TopLevel.GetTopLevel(this)?.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero);
+        }
+
+        DataContext = vm;
     }
 
     private void ReplacementDataGrid_OnAutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)

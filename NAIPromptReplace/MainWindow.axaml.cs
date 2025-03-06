@@ -12,7 +12,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         MainView.AddHandler(DragDrop.DropEvent, onDrop);
     }
-    
+
     private async void onDrop(object? sender, DragEventArgs e)
     {
         if (!e.Handled && e.Data.Contains(DataFormats.Files))

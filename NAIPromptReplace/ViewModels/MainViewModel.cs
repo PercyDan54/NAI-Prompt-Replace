@@ -10,10 +10,13 @@ using Avalonia.Controls;
 using Avalonia.Logging;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using CsvHelper;
 using CsvHelper.Configuration;
 using DynamicData;
 using NAIPromptReplace.Models;
+using NAIPromptReplace.Platform;
+using NAIPromptReplace.Platform.Windows;
 using NAIPromptReplace.Views;
 using ReactiveUI;
 using SkiaSharp;
@@ -73,6 +76,7 @@ public class MainViewModel : ReactiveObject
     public ObservableCollection<TabViewModel> TabItems { get; set; } = [];
     public ObservableCollection<WildcardViewModel> Wildcards { get; set; } = [];
     public ObservableCollection<TextReplacement> Replacements { get; set; } = [];
+    public IPlatformProgressNotifier? PlatformProgressNotifier { get; set; }
 
     private List<GenerationParameterControlViewModel> generationControlViewModels = [];
     private List<IDisposable> subscriptions = [];
@@ -425,7 +429,12 @@ public class MainViewModel : ReactiveObject
             {
                 if (task.Exception?.InnerException != null)
                 {
+                    PlatformProgressNotifier?.NotifyCompleted(true);
                     writeError($"Tasks Failed with an exception, please report this: {task.Exception.InnerException}");
+                }
+                else
+                {
+                    PlatformProgressNotifier?.NotifyCompleted(false);
                 }
 
                 GC.Collect();
@@ -450,11 +459,6 @@ public class MainViewModel : ReactiveObject
             g.GenerationParameter.Smea = smea;
             g.GenerationParameter.Dyn &= smea;
 
-            if (g.Model.Group == ModelGroup.V4)
-            {
-                g.GenerationParameter.Smea = g.GenerationParameter.Dyn = null;
-            }
-
             bool preferBrownianFlag = g.GenerationParameter.Sampler == SamplerInfo.EulerAncestral && g.GenerationParameter.NoiseSchedule != "native";
             g.GenerationParameter.DeliberateEulerAncestralBug ??= !preferBrownianFlag;
             g.GenerationParameter.PreferBrownian ??= preferBrownianFlag;
@@ -467,9 +471,18 @@ public class MainViewModel : ReactiveObject
                 g.GenerationParameter.SkipCfgAboveSigma = 19 * v;
             }
 
-            for (int j = 0; j < g.GenerationParameter.ReferenceImageData.Length; j++)
+            if (g.Model.Group == ModelGroup.V4)
             {
-                g.GenerationParameter.ReferenceImageMultiple[j] = Convert.ToBase64String(g.GenerationParameter.ReferenceImageData[j]);
+                g.GenerationParameter.Smea = g.GenerationParameter.Dyn = null;
+                g.GenerationParameter.ReferenceImageMultiple = [];
+                g.GenerationParameter.ReferenceStrengthMultiple = [];
+            }
+            else
+            {
+                for (int j = 0; j < g.GenerationParameter.ReferenceImageData.Length; j++)
+                {
+                    g.GenerationParameter.ReferenceImageMultiple[j] = Convert.ToBase64String(g.GenerationParameter.ReferenceImageData[j]);
+                }
             }
 
             byte[]? imageData = g.GenerationParameter.ImageData;
@@ -648,6 +661,8 @@ public class MainViewModel : ReactiveObject
             var generationConfig = task.GenerationConfig;
             token.ThrowIfCancellationRequested();
             var progressLog = writeLog($"Running task {i + 1} / {tasks.Count}: ");
+            PlatformProgressNotifier?.SetProgress(i, tasks.Count);
+
             HttpResponseMessage? resp = null;
 
             void writeErrorResult(string content)

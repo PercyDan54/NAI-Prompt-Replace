@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -13,7 +14,7 @@ public class GenerationConfig : INotifyPropertyChanged
     private string replace = string.Empty;
     private string prompt = "best quality, amazing quality, very aesthetic, absurdres";
     private Dictionary<string, string> replacements = [];
-    private GenerationModelInfo model = GenerationModelInfo.NaiDiffusion3;
+    private GenerationModelInfo model = GenerationModelInfo.NaiDiffusion4Full;
     private string outputPath = string.Empty;
     public const string DEFAULT_OUTPUT_FILE_NAME = "{seed}-{replace}";
     
@@ -199,8 +200,8 @@ public class GenerationConfig : INotifyPropertyChanged
 
 public class GenerationParameter : INotifyPropertyChanged
 {
-    private bool? smea;
-    private bool? dyn;
+    private bool? smea = false;
+    private bool? dyn = false;
     private byte steps = 23;
     private double cfgRescale;
     private short width = 832;
@@ -245,13 +246,13 @@ public class GenerationParameter : INotifyPropertyChanged
     public double Scale { get; set; } = 5;
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public V4Prompt? V4Prompt { get; set; } = null;
+    public V4Prompt? V4Prompt { get; set; }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public V4Prompt? V4NegativePrompt { get; set; } = null;
+    public V4Prompt? V4NegativePrompt { get; set; }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public V4CharPrompt[]? CharacterPrompts { get; set; } = null;
+    public ObservableCollection<V4CharPrompt>? CharacterPrompts { get; set; } = [];
 
     [JsonPropertyName("ucPreset")]
     public byte UcPreset { get; private init; } = 3;
