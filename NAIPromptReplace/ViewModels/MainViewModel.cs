@@ -7,7 +7,9 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Logging;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -16,7 +18,6 @@ using CsvHelper.Configuration;
 using DynamicData;
 using NAIPromptReplace.Models;
 using NAIPromptReplace.Platform;
-using NAIPromptReplace.Platform.Windows;
 using NAIPromptReplace.Views;
 using ReactiveUI;
 using SkiaSharp;
@@ -30,6 +31,7 @@ public class MainViewModel : ReactiveObject
     private string showTokenButtonText = "Show";
     private bool showToken;
     private string runButtonText = "Run";
+
 
 #if DEBUG
     private static readonly Random random = new Random(1337);
@@ -138,7 +140,7 @@ public class MainViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref subscriptionInfo, value);
     }
 
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
+    public ObservableCollection<Run> LogEntries { get; } = [];
 
     public ICommand ToggleShowTokenCommand { get; }
     public ICommand UpdateTokenCommand { get; }
@@ -303,22 +305,34 @@ public class MainViewModel : ReactiveObject
     }
 
     private void clearLog() => LogEntries.Clear();
-    
-    private LogEntry writeLog(object content, LogEventLevel logLevel = LogEventLevel.Information)
+
+    private Run writeLog(object content, LogEventLevel logLevel = LogEventLevel.Information)
     {
-        var entry = new LogEntry
+        var entry = new Run
         {
             Text = content.ToString(),
-            LogLevel = logLevel
         };
+
+        switch (logLevel)
+        {
+            case LogEventLevel.Warning:
+                entry.Foreground = Brushes.DarkGoldenrod;
+                break;
+            case LogEventLevel.Error:
+                entry.Foreground = Brushes.Red;
+                break;
+        }
+
         LogEntries.Add(entry);
 
         return entry;
     }
 
-    private LogEntry writeWarning(object content) => writeLog(content, LogEventLevel.Warning);
+    private Run writeLogLine(object content, LogEventLevel logLevel = LogEventLevel.Information) => writeLog(content + "\n", logLevel);
 
-    private LogEntry writeError(object content) => writeLog(content, LogEventLevel.Error);
+    private Run writeWarning(object content) => writeLogLine(content, LogEventLevel.Warning);
+
+    private Run writeError(object content) => writeLogLine(content, LogEventLevel.Error);
 
     private GenerationParameterControlViewModel addTab(string header, GenerationConfig generationConfig)
     {
@@ -430,7 +444,7 @@ public class MainViewModel : ReactiveObject
                 if (task.Exception?.InnerException != null)
                 {
                     PlatformProgressNotifier?.NotifyCompleted(true);
-                    writeError($"Tasks Failed with an exception, please report this: {task.Exception.InnerException}");
+                    Dispatcher.UIThread.InvokeAsync(() => writeError($"Tasks Failed with an exception, please report this: {task.Exception.InnerException}"));
                 }
                 else
                 {
@@ -499,7 +513,7 @@ public class MainViewModel : ReactiveObject
                 }
                 catch (Exception e)
                 {
-                    writeError($"Unable to load Img2Img image: {e.Message}");
+                    Dispatcher.UIThread.InvokeAsync(() => writeError($"Unable to load Img2Img image: {e.Message}"));
                     g.GenerationParameter.Strength = g.GenerationParameter.Noise = null;
                 }
             }
@@ -507,7 +521,7 @@ public class MainViewModel : ReactiveObject
             {
                 g.GenerationParameter.Strength = g.GenerationParameter.Noise = null;
             }
-
+            
             // Trim spaces between words
             string[] tags = g.Prompt.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
             string prompt = g.Prompt = string.Join(',', tags);
@@ -545,13 +559,57 @@ public class MainViewModel : ReactiveObject
             }
             catch (Exception e)
             {
-                writeError($"Failed to process replace: {e}");
+                Dispatcher.UIThread.InvokeAsync(() => writeError($"Failed to process replace: {e}"));
                 // Cancel the tasks
                 runTasks();
                 return;
             }
 
             var usedWildcards = wildcards.Where(p => containsTag(p.Keyword)).ToArray();
+
+            void finalProcess(ref GenerationConfig generationConfig, Dictionary<string, string> wildcardsDict, List<string>? combo = null)
+            {
+                generationConfig.Prompt = GenerationConfig.GetReplacedPrompt(generationConfig.Prompt, wildcardsDict);
+                generationConfig.Prompt = GenerationConfig.GetReplacedPrompt(generationConfig.Prompt, generationConfig.Replacements).Replace(",", ", ");
+                generationConfig.CurrentReplace = combo == null ? generationConfig.Prompt : string.Join(',', combo);
+
+                if (g.Model.Group == ModelGroup.V4)
+                {
+                    var v4Prompt = new V4Prompt
+                    {
+                        Caption = new V4Caption
+                        {
+                            BaseCaption = generationConfig.Prompt,
+                            UseOrder = true,
+                            UseCoords = !generationConfig.AutoCharPosition
+                        }
+                    };
+                    var v4NegativePrompt = new V4Prompt
+                    {
+                        Caption =
+                        {
+                            BaseCaption = generationConfig.GenerationParameter.NegativePrompt
+                        }
+                    };
+
+                    foreach (var charPrompt in generationConfig.GenerationParameter.CharacterPrompts)
+                    {
+                        v4Prompt.Caption.CharCaptions.Add(new V4CharCaption
+                        {
+                            CharCaption = charPrompt.Prompt,
+                            Centers = [charPrompt.Center]
+                        });
+                        v4NegativePrompt.Caption.CharCaptions.Add(new V4CharCaption
+                        {
+                            CharCaption = charPrompt.Uc,
+                            Centers = [charPrompt.Center]
+                        });
+                    }
+
+                    generationConfig.GenerationParameter.V4Prompt = v4Prompt;
+                    generationConfig.GenerationParameter.V4NegativePrompt = v4NegativePrompt;
+                }
+            }
 
             if (replaceLines.Count > 0 && replaceLines[0].Length > 1)
             {
@@ -580,30 +638,7 @@ public class MainViewModel : ReactiveObject
                             clone.Prompt = clone.Prompt[..index] + combo[k] + clone.Prompt[(index + length)..];
                         }
 
-                        clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, wildcardsDict);
-                        clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements).Replace(",", ", ");
-                        clone.CurrentReplace = string.Join(',', combo);
-
-                        if (g.Model.Group == ModelGroup.V4)
-                        {
-                            clone.GenerationParameter.CharacterPrompts = [];
-                            clone.GenerationParameter.V4Prompt = new V4Prompt
-                            {
-                                Caption = new V4Caption
-                                {
-                                    BaseCaption = clone.Prompt,
-                                    UseOrder = true,
-                                    UseCoords = false,
-                                }
-                            };
-                            clone.GenerationParameter.V4NegativePrompt = new V4Prompt
-                            {
-                                Caption =
-                                {
-                                    BaseCaption = clone.GenerationParameter.NegativePrompt
-                                }
-                            };
-                        }
+                        finalProcess(ref clone, wildcardsDict, combo);
 
                         tasks.Add(new GenerationTask(clone, vm) { Wildcards = wildcardsDict });
                     }
@@ -617,30 +652,7 @@ public class MainViewModel : ReactiveObject
                     var wildcardsDict = getWildcards(usedWildcards);
 
                     clone.GenerationParameter.Seed = g.AllRandom && j > 0 ? random.Next() : seed + (g.FixedSeed ? 0 : j);
-                    clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, wildcardsDict);
-                    clone.Prompt = GenerationConfig.GetReplacedPrompt(clone.Prompt, clone.Replacements).Replace(",", ", ");
-                    clone.CurrentReplace = clone.Prompt;
-
-                    if (g.Model.Group == ModelGroup.V4)
-                    {
-                        clone.GenerationParameter.CharacterPrompts = [];
-                        clone.GenerationParameter.V4Prompt = new V4Prompt
-                        {
-                            Caption = new V4Caption
-                            {
-                                BaseCaption = clone.Prompt,
-                                UseOrder = true,
-                                UseCoords = false,
-                            }
-                        };
-                        clone.GenerationParameter.V4NegativePrompt = new V4Prompt
-                        {
-                            Caption =
-                            {
-                                BaseCaption = clone.GenerationParameter.NegativePrompt
-                            }
-                        };
-                    }
+                    finalProcess(ref clone, wildcardsDict);
 
                     tasks.Add(new GenerationTask(clone, vm) { Wildcards = wildcardsDict });
                 }
@@ -660,16 +672,10 @@ public class MainViewModel : ReactiveObject
             var task = tasks[i];
             var generationConfig = task.GenerationConfig;
             token.ThrowIfCancellationRequested();
-            var progressLog = writeLog($"Running task {i + 1} / {tasks.Count}: ");
+            Dispatcher.UIThread.InvokeAsync(() => writeLog($"Running task {i + 1} / {tasks.Count}: "));
             PlatformProgressNotifier?.SetProgress(i, tasks.Count);
 
             HttpResponseMessage? resp = null;
-
-            void writeErrorResult(string content)
-            {
-                progressLog.Text += content;
-                progressLog.LogLevel = LogEventLevel.Error;
-            }
 
             try
             {
@@ -678,14 +684,18 @@ public class MainViewModel : ReactiveObject
             }
             catch (Exception e)
             {
-                writeErrorResult($"Error: {e.Message}");
+                Dispatcher.UIThread.InvokeAsync(() => writeError($"Error: {e.Message}"));
             }
 
             bool success = resp?.IsSuccessStatusCode ?? false;
 
             if (success)
             {
-                progressLog.Text += $"{(int)resp.StatusCode} {resp.ReasonPhrase}";
+                Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    var run = writeLogLine($"{(int)resp.StatusCode} {resp.ReasonPhrase}");
+                    run.Foreground = Brushes.LimeGreen;
+                });
                 using var zip = new ZipArchive(await resp.Content.ReadAsStreamAsync());
                 var placeholders = new Dictionary<string, string>(StringComparer.Ordinal)
                 {
@@ -792,21 +802,21 @@ Prompt: {task.GenerationConfig.Prompt}"
                     }
                 }
 
-                writeErrorResult($"Error: {statusCode} {message}");
+                Dispatcher.UIThread.InvokeAsync(() => writeError($"Error: {statusCode} {message}"));
             }
 
             token.ThrowIfCancellationRequested();
 
             if (!success && retry < maxRetries && (AnlasCostCalculator.Calculate(generationConfig, api.SubscriptionInfo) == 0 || generationConfig.RetryAll))
             {
-                writeWarning($"Failed, Retrying {++retry} / {maxRetries}");
+                Dispatcher.UIThread.InvokeAsync(() => writeWarning($"Failed, Retrying {++retry} / {maxRetries}"));
                 await Task.Delay(retry >= 3 || resp?.StatusCode == HttpStatusCode.TooManyRequests ? 5000 : 3000);
                 continue;
             }
 
             if (i % 15 == 0 && i > 0)
             {
-                writeLog("Sleeping for 5 seconds to avoid rate limit...");
+                Dispatcher.UIThread.InvokeAsync(() => writeWarning("Sleeping for 5 seconds to avoid rate limit..."));
                 await Task.Delay(5000, token);
             }
 

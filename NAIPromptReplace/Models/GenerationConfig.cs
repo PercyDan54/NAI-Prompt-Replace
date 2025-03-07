@@ -113,6 +113,8 @@ public class GenerationConfig : INotifyPropertyChanged
 
     public bool VarietyAdd { get; set; }
 
+    public bool AutoCharPosition { get; set; } = true;
+
     public bool AllRandom { get; set; }
 
     public bool RetryAll { get; set; }
@@ -251,8 +253,7 @@ public class GenerationParameter : INotifyPropertyChanged
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public V4Prompt? V4NegativePrompt { get; set; }
 
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public ObservableCollection<V4CharPrompt>? CharacterPrompts { get; set; } = [];
+    public ObservableCollection<V4CharPrompt> CharacterPrompts { get; set; } = [];
 
     [JsonPropertyName("ucPreset")]
     public byte UcPreset { get; private init; } = 3;
@@ -381,6 +382,7 @@ public class GenerationParameter : INotifyPropertyChanged
             clone.ReferenceImageMultiple = ReferenceImageMultiple.ToArray();
             clone.ReferenceStrengthMultiple = ReferenceStrengthMultiple.ToArray();
             clone.ReferenceInformationExtractedMultiple = ReferenceInformationExtractedMultiple.ToArray();
+            clone.CharacterPrompts = new ObservableCollection<V4CharPrompt>(CharacterPrompts);
         }
 
         return clone;

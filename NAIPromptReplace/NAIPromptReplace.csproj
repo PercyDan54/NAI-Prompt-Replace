@@ -5,8 +5,8 @@
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ImplicitUsings>true</ImplicitUsings>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <AssemblyVersion>2.1.2</AssemblyVersion>
-        <FileVersion>2.1.2</FileVersion>
+        <AssemblyVersion>2.2.0</AssemblyVersion>
+        <FileVersion>2.2.0</FileVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">

@@ -1,0 +1,43 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:NAIPromptReplace.Controls"
+        xmlns:converters="clr-namespace:NAIPromptReplace.Converters">
+    <Design.PreviewWith>
+        <controls:PromptInput Width="500" Height="500"/>
+    </Design.PreviewWith>
+    <Styles.Resources>
+        <converters:TextToTokenCountConverter x:Key="TextToTokenCountConverter" />
+    </Styles.Resources>
+    <Style Selector="controls|PromptInput">
+        <!-- Set Defaults -->
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" HorizontalAlignment="{TemplateBinding HorizontalAlignment}" VerticalAlignment="{TemplateBinding VerticalAlignment}">
+                        <TextBlock Text="Prompt" />
+                        <TextBox Grid.Row="0" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding Prompt, RelativeSource={RelativeSource TemplatedParent}, TargetNullValue=''}" />
+                        <ProgressBar Grid.Row="1" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
+                            <ProgressBar.Value>
+                                <MultiBinding Converter="{StaticResource TextToTokenCountConverter}">
+                                    <MultiBinding.Bindings>
+                                        <TemplateBinding Property="Prompt" />
+                                        <TemplateBinding Property="Replacements" />
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </ProgressBar.Value>
+                        </ProgressBar>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Negative" Margin="0,0,5,0" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" Text="{Binding NegativePrompt, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay, TargetNullValue=''}" />
+                        <ProgressBar Grid.Row="3" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
+                            <ProgressBar.Value>
+                                <MultiBinding Converter="{StaticResource TextToTokenCountConverter}">
+                                    <MultiBinding.Bindings>
+                                        <TemplateBinding Property="NegativePrompt" />
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </ProgressBar.Value>
+                        </ProgressBar>
+                    </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>

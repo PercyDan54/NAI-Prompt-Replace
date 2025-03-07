@@ -14,39 +14,16 @@
         <vm:GenerationParameterControlViewModel />
     </Design.DataContext>
     <UserControl.Resources>
-        <converters:TextToTokenCountConverter x:Key="TextToTokenCountConverter" />
         <converters:AnlasCountConverter x:Key="AnlasCountConverter" />
     </UserControl.Resources>
     <TabControl>
         <TabControl.Items>
             <TabItem Header="Prompt">
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" ColumnDefinitions="*" Margin="10">
-                    <Grid RowDefinitions="Auto,*,*,*,*" ColumnDefinitions="Auto,*">
-                        <TextBlock Text="Prompt" />
-                        <TextBox Grid.Row="0" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Prompt, TargetNullValue=''}" />
-                        <ProgressBar Grid.Row="1" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
-                            <ProgressBar.Value>
-                                <MultiBinding Converter="{StaticResource TextToTokenCountConverter}">
-                                    <MultiBinding.Bindings>
-                                        <Binding Path="GenerationConfig.Prompt" />
-                                        <Binding Path="GenerationConfig.Replacements" />
-                                    </MultiBinding.Bindings>
-                                </MultiBinding>
-                            </ProgressBar.Value>
-                        </ProgressBar>
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Negative" Margin="0,0,5,0" />
-                        <TextBox Grid.Row="2" Grid.Column="1" Height="100" Margin="0,0,0,5" TextWrapping="Wrap" Text="{Binding GenerationConfig.GenerationParameter.NegativePrompt, TargetNullValue=''}" />
-                        <ProgressBar Grid.Row="3" Grid.Column="1" Margin="0,0,0,5" Maximum="225" VerticalAlignment="Stretch" ShowProgressText="True" ProgressTextFormat="{}{0}/{3} Tokens Used">
-                            <ProgressBar.Value>
-                                <MultiBinding Converter="{StaticResource TextToTokenCountConverter}">
-                                    <MultiBinding.Bindings>
-                                        <Binding Path="GenerationConfig.GenerationParameter.NegativePrompt" />
-                                    </MultiBinding.Bindings>
-                                </MultiBinding>
-                            </ProgressBar.Value>
-                        </ProgressBar>
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Replace" />
-                        <TextBox Grid.Row="4" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Replace, TargetNullValue=''}" />
+                    <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,*">
+                        <controls:PromptInput Grid.ColumnSpan="2" Prompt="{Binding GenerationConfig.Prompt, Mode=TwoWay}" NegativePrompt="{Binding GenerationConfig.GenerationParameter.NegativePrompt, Mode=TwoWay}" Replacements="{Binding GenerationConfig.Replacements}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Replace" Margin="0,0,10,0" />
+                        <TextBox Grid.Row="1" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding GenerationConfig.Replace, TargetNullValue=''}" />
                     </Grid>
                     <Grid Grid.Row="5" Grid.Column="0" RowDefinitions="*,Auto" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,5">
                         <ItemsControl ItemsSource="{Binding GenerationLogs}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -94,6 +71,36 @@
                         </ItemsControl>
                     </Grid>
                 </Grid>
+            </TabItem>
+            <TabItem Header="Character Prompts">
+                <StackPanel Orientation="Vertical" Margin="0,5" Spacing="5">
+                    <CheckBox Content="Auto Character Positions" IsChecked="{Binding GenerationConfig.AutoCharPosition}" />
+                    <ItemsControl ItemsSource="{Binding GenerationConfig.GenerationParameter.CharacterPrompts}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Vertical" Spacing="5" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.DataTemplates>
+                            <DataTemplate DataType="models:V4CharPrompt">
+                                <Expander HorizontalAlignment="Stretch">
+                                    <Expander.Header>
+                                        <Panel VerticalAlignment="Stretch">
+                                            <TextBlock Text="{Binding Title}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0" />
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                <Button Content="Move Up" Command="{Binding MoveUpCommand}" CommandParameter="{Binding .}" />
+                                                <Button Content="Move Down" Command="{Binding MoveDownCommand}" CommandParameter="{Binding .}" />
+                                                <Button Content="Remove" Command="{Binding RemoveSelfCommand}" CommandParameter="{Binding .}" />
+                                            </StackPanel>
+                                        </Panel>
+                                    </Expander.Header>
+                                    <controls:PromptInput Prompt="{Binding Prompt, Mode=TwoWay}" NegativePrompt="{Binding Uc, Mode=TwoWay}" />
+                                </Expander>
+                            </DataTemplate>
+                        </ItemsControl.DataTemplates>
+                    </ItemsControl>
+                    <Button Margin="0,0,5,5" Content="Add Character" Command="{Binding AddCharacterCommand}" />
+                </StackPanel>
             </TabItem>
             <TabItem Header="Settings">
                 <Grid RowDefinitions="Auto,Auto,Auto" Margin="0,5">

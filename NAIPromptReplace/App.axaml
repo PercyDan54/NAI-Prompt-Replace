@@ -10,6 +10,7 @@
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
         <StyleInclude Source="avares://NAIPromptReplace/Controls/ReferenceImageExpander.axaml" />
         <StyleInclude Source="avares://NAIPromptReplace/Controls/AnlasDisplay.axaml" />
+        <StyleInclude Source="avares://NAIPromptReplace/Controls/PromptInput.axaml" />
         <dialogHostAvalonia:DialogHostStyles />
         <Style Selector="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center" />

@@ -3,14 +3,12 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
-using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using CsvHelper;
 using CsvHelper.Configuration;
 using NAIPromptReplace.Controls;
 using NAIPromptReplace.Models;
 using ReactiveUI;
-using SkiaSharp;
 
 namespace NAIPromptReplace.ViewModels;
 
@@ -43,6 +41,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
     public ICommand? OpenOutputFolderCommand { get; set; }
     public ICommand SaveCommand { get; }
     public ICommand AddVibeTransferCommand { get; }
+    public ICommand AddCharacterCommand { get; }
 
     public bool DisableInputFolder
     {
@@ -84,12 +83,14 @@ public class GenerationParameterControlViewModel : ReactiveObject
     private bool disableInputFolder;
     private NovelAIApi? api;
     private int nextVibeTransferId;
+    private int nextCharacterId;
 
     public GenerationParameterControlViewModel()
     {
         SaveCommand = ReactiveCommand.CreateFromTask(saveConfig);
         BrowseOutputFolderCommand = ReactiveCommand.Create(browseOutputFolder);
         AddVibeTransferCommand = ReactiveCommand.Create(addVibeTransfer);
+        AddCharacterCommand = ReactiveCommand.Create(addCharacter);
 
         var vm = new ReferenceImageViewModel
         {
@@ -124,6 +125,34 @@ public class GenerationParameterControlViewModel : ReactiveObject
 
         VibeTransferViewModels.Add(vm);
         return vm;
+    }
+
+    private void addCharacter()
+    {
+        GenerationConfig.GenerationParameter.CharacterPrompts.Add(new V4CharPrompt
+        {
+            Id = ++nextCharacterId,
+            MoveUpCommand = ReactiveCommand.Create<V4CharPrompt>(moveUpCharacter),
+            MoveDownCommand = ReactiveCommand.Create<V4CharPrompt>(moveDownCharacter),
+            RemoveSelfCommand = ReactiveCommand.Create<V4CharPrompt>(removeCharacter)
+        });
+    }
+
+    private void moveUpCharacter(V4CharPrompt charPrompt) => moveCharacter(charPrompt, -1);
+
+    private void moveDownCharacter(V4CharPrompt charPrompt) => moveCharacter(charPrompt, 1);
+
+    private void moveCharacter(V4CharPrompt charPrompt, int offset)
+    {
+        int oldIndex = GenerationConfig.GenerationParameter.CharacterPrompts.IndexOf(charPrompt);
+        int newIndex = Math.Clamp(oldIndex + offset, 0, GenerationConfig.GenerationParameter.CharacterPrompts.Count - 1);
+        GenerationConfig.GenerationParameter.CharacterPrompts.RemoveAt(oldIndex);
+        GenerationConfig.GenerationParameter.CharacterPrompts.Insert(newIndex, charPrompt);
+    }
+
+    private void removeCharacter(V4CharPrompt charPrompt)
+    {
+        GenerationConfig.GenerationParameter.CharacterPrompts.Remove(charPrompt);
     }
 
     private void removeVibeTransfer(VibeTransferViewModel vm)
