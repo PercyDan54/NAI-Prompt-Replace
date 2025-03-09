@@ -33,7 +33,10 @@ public partial class MainView : LayoutTransformControl
 
         if (OperatingSystem.IsWindows())
         {
-            vm.PlatformProgressNotifier = new WindowsProgressNotifier(TopLevel.GetTopLevel(this)?.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero);
+            IntPtr? hwnd = TopLevel.GetTopLevel(this)?.TryGetPlatformHandle()?.Handle;
+
+            if (hwnd.HasValue)
+                vm.PlatformProgressNotifier = new WindowsProgressNotifier(hwnd.Value);
         }
 
         DataContext = vm;

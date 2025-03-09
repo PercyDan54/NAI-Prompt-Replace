@@ -32,7 +32,6 @@ public class MainViewModel : ReactiveObject
     private bool showToken;
     private string runButtonText = "Run";
 
-
 #if DEBUG
     private static readonly Random random = new Random(1337);
 #else
@@ -310,13 +309,13 @@ public class MainViewModel : ReactiveObject
     {
         var entry = new Run
         {
-            Text = content.ToString(),
+            Text = content.ToString()
         };
 
         switch (logLevel)
         {
             case LogEventLevel.Warning:
-                entry.Foreground = Brushes.DarkGoldenrod;
+                entry.Foreground = Brushes.Goldenrod;
                 break;
             case LogEventLevel.Error:
                 entry.Foreground = Brushes.Red;

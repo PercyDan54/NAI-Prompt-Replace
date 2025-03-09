@@ -161,6 +161,8 @@ public class GenerationModelInfo
                 return NaiDiffusion2;
             case "Stable Diffusion XL 4BE8C60C":
             case "Stable Diffusion XL C8704949":
+            case "Stable Diffusion XL 37C2B166":
+            case "Stable Diffusion XL F306816B":
             case "Stable Diffusion XL 9CC2F394":
                 return NaiDiffusionFurry3;
             case "Stable Diffusion XL B0BDF6C1":
@@ -171,6 +173,8 @@ public class GenerationModelInfo
                 return NaiDiffusion3;
             case "NovelAI Diffusion V4 4F49EC75":
             case "NovelAI Diffusion V4 CA4B7203":
+            case "NovelAI Diffusion V4 79F47848":
+            case "NovelAI Diffusion V4 F6302A9D":
                 return NaiDiffusion4Full;
             default:
                 return hash.Contains("NovelAI Diffusion V4", StringComparison.Ordinal) ? NaiDiffusion4CuratedPreview : NaiDiffusion3;

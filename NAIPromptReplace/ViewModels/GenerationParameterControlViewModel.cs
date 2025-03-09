@@ -25,6 +25,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
             this.RaiseAndSetIfChanged(ref generationConfig, value);
             generationConfig.PropertyChanged += GenerationConfigOnPropertyChanged;
             generationConfig.GenerationParameter.PropertyChanged += GenerationConfigOnPropertyChanged;
+            loadCharacters();
             loadImages();
         }
     }
@@ -129,13 +130,9 @@ public class GenerationParameterControlViewModel : ReactiveObject
 
     private void addCharacter()
     {
-        GenerationConfig.GenerationParameter.CharacterPrompts.Add(new V4CharPrompt
-        {
-            Id = ++nextCharacterId,
-            MoveUpCommand = ReactiveCommand.Create<V4CharPrompt>(moveUpCharacter),
-            MoveDownCommand = ReactiveCommand.Create<V4CharPrompt>(moveDownCharacter),
-            RemoveSelfCommand = ReactiveCommand.Create<V4CharPrompt>(removeCharacter)
-        });
+        var c = new V4CharPrompt();
+        initCharacter(ref c);
+        GenerationConfig.GenerationParameter.CharacterPrompts.Add(c);
     }
 
     private void moveUpCharacter(V4CharPrompt charPrompt) => moveCharacter(charPrompt, -1);
@@ -159,6 +156,23 @@ public class GenerationParameterControlViewModel : ReactiveObject
     {
         vm.Subscription?.Dispose();
         VibeTransferViewModels.Remove(vm);
+    }
+
+    private void loadCharacters()
+    {
+        foreach (var c in generationConfig.GenerationParameter.CharacterPrompts)
+        {
+            var c1 = c;
+            initCharacter(ref c1);
+        }
+    }
+
+    private void initCharacter(ref V4CharPrompt charPrompt)
+    {
+        charPrompt.Id = ++nextCharacterId;
+        charPrompt.MoveUpCommand = ReactiveCommand.Create<V4CharPrompt>(moveUpCharacter);
+        charPrompt.MoveDownCommand = ReactiveCommand.Create<V4CharPrompt>(moveDownCharacter);
+        charPrompt.RemoveSelfCommand = ReactiveCommand.Create<V4CharPrompt>(removeCharacter);
     }
 
     private void loadImages()
