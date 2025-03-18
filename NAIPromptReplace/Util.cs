@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Media.Imaging;
 using SkiaSharp;
@@ -28,6 +29,17 @@ public static class Util
     public static string GetValidDirectoryName(string originalPath)
     {
         return ReplaceInvalidFileNameChars(originalPath);
+    }
+
+    public static bool ContainsTag(string prompt, string tag)
+    {
+        string promptTrimmedFirstBrackets = prompt.TrimStart('{').TrimStart('[');
+        int index = promptTrimmedFirstBrackets.IndexOf(tag, StringComparison.Ordinal);
+        int end = index + tag.Length;
+
+        // Ensure the matched tag is a full word split by comma
+        return index >= 0 && (index == 0 || end == promptTrimmedFirstBrackets.Length ||
+                              Regex.IsMatch(prompt, $@",(?:\{{|\[)*{Regex.Escape(tag)}(?:\}}|\])*,"));
     }
 
     // https://stackoverflow.com/questions/32571057/generate-all-combinations-from-multiple-n-lists

@@ -20,7 +20,7 @@ public class GenerationModelInfo
     };
     public static readonly GenerationModelInfo NaiDiffusion4CuratedPreview = new GenerationModelInfo
     {
-        Name = "NAI Diffusion V4 Curated Preview",
+        Name = "NAI Diffusion V4 Curated",
         Id = "nai-diffusion-4-curated-preview",
         Group = ModelGroup.V4,
         Samplers =

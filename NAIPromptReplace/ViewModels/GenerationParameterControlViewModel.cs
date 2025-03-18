@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
-using System.Text.RegularExpressions;
 using System.Windows.Input;
 using Avalonia.Platform.Storage;
 using CsvHelper;
@@ -67,24 +66,12 @@ public class GenerationParameterControlViewModel : ReactiveObject
         TrimOptions = TrimOptions.Trim
     };
 
-    private static readonly FilePickerSaveOptions saveConfigFilePickerOptions = new FilePickerSaveOptions
-    {
-        FileTypeChoices =
-        [
-            new FilePickerFileType("JSON")
-            {
-                Patterns = ["*.json"]
-            }
-        ]
-    };
-
     private static readonly FolderPickerOpenOptions folderPickerOpenOptions = new FolderPickerOpenOptions();
     private GenerationConfig generationConfig = new GenerationConfig();
     private int anlasCost;
     private bool disableInputFolder;
     private NovelAIApi? api;
     private int nextVibeTransferId;
-    private int nextCharacterId;
 
     public GenerationParameterControlViewModel()
     {
@@ -131,8 +118,8 @@ public class GenerationParameterControlViewModel : ReactiveObject
     private void addCharacter()
     {
         var c = new V4CharPrompt();
-        initCharacter(ref c);
         GenerationConfig.GenerationParameter.CharacterPrompts.Add(c);
+        initCharacter(ref c);
     }
 
     private void moveUpCharacter(V4CharPrompt charPrompt) => moveCharacter(charPrompt, -1);
@@ -145,6 +132,16 @@ public class GenerationParameterControlViewModel : ReactiveObject
         int newIndex = Math.Clamp(oldIndex + offset, 0, GenerationConfig.GenerationParameter.CharacterPrompts.Count - 1);
         GenerationConfig.GenerationParameter.CharacterPrompts.RemoveAt(oldIndex);
         GenerationConfig.GenerationParameter.CharacterPrompts.Insert(newIndex, charPrompt);
+        sortCharacters();
+    }
+
+    private void sortCharacters()
+    {
+        for (int i = 0; i < GenerationConfig.GenerationParameter.CharacterPrompts.Count; i++)
+        {
+            var c = GenerationConfig.GenerationParameter.CharacterPrompts[i];
+            c.Id = i + 1;
+        }
     }
 
     private void removeCharacter(V4CharPrompt charPrompt)
@@ -169,10 +166,10 @@ public class GenerationParameterControlViewModel : ReactiveObject
 
     private void initCharacter(ref V4CharPrompt charPrompt)
     {
-        charPrompt.Id = ++nextCharacterId;
         charPrompt.MoveUpCommand = ReactiveCommand.Create<V4CharPrompt>(moveUpCharacter);
         charPrompt.MoveDownCommand = ReactiveCommand.Create<V4CharPrompt>(moveDownCharacter);
         charPrompt.RemoveSelfCommand = ReactiveCommand.Create<V4CharPrompt>(removeCharacter);
+        sortCharacters();
     }
 
     private void loadImages()
@@ -266,11 +263,8 @@ public class GenerationParameterControlViewModel : ReactiveObject
             {
                 string[] records = csv.Record;
                 string toReplace = records[0];
-                int index = prompt.IndexOf(toReplace, StringComparison.Ordinal);
-                int end = index + toReplace.Length;
 
-                // Ensure the matched tag is a full word split by comma
-                if (index >= 0 && (index == 0 || end == prompt.Length || Regex.IsMatch(prompt, $@",(?:\{{|\[)*{Regex.Escape(toReplace)}(?:\}}|\])*,")))
+                if (Util.ContainsTag(prompt, toReplace))
                 {
                     replace *= records.Length;
                 }
@@ -285,7 +279,7 @@ public class GenerationParameterControlViewModel : ReactiveObject
         if (App.StorageProvider == null)
             return;
 
-        var file = await App.StorageProvider.SaveFilePickerAsync(saveConfigFilePickerOptions);
+        var file = await App.StorageProvider.SaveFilePickerAsync(MainViewModel.SaveJsonFilePickerOptions);
 
         if (file == null)
             return;

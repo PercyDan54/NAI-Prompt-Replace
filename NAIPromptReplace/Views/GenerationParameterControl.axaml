@@ -78,7 +78,7 @@
                     <ItemsControl ItemsSource="{Binding GenerationConfig.GenerationParameter.CharacterPrompts}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" Spacing="5" />
+                                <StackPanel Spacing="5" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.DataTemplates>
@@ -87,14 +87,27 @@
                                     <Expander.Header>
                                         <Panel VerticalAlignment="Stretch">
                                             <TextBlock Text="{Binding Title}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0" />
-                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="5">
+                                                <CheckBox Content="Enable" IsChecked="{Binding Enabled}" />
                                                 <Button Content="Move Up" Command="{Binding MoveUpCommand}" CommandParameter="{Binding .}" />
                                                 <Button Content="Move Down" Command="{Binding MoveDownCommand}" CommandParameter="{Binding .}" />
                                                 <Button Content="Remove" Command="{Binding RemoveSelfCommand}" CommandParameter="{Binding .}" />
                                             </StackPanel>
                                         </Panel>
                                     </Expander.Header>
-                                    <controls:PromptInput Prompt="{Binding Prompt, Mode=TwoWay}" NegativePrompt="{Binding Uc, Mode=TwoWay}" />
+                                    <StackPanel Spacing="5">
+                                        <controls:PromptInput Prompt="{Binding Prompt, Mode=TwoWay}" NegativePrompt="{Binding Uc, Mode=TwoWay}" />
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <TextBlock Text="Position X" />
+                                                <NumericUpDown Value="{Binding X}" Increment="0.2" Minimum="0" Maximum="1" />
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <TextBlock Text="Y" />
+                                                <NumericUpDown Value="{Binding Y}" Increment="0.2" Minimum="0"  Maximum="1" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
                                 </Expander>
                             </DataTemplate>
                         </ItemsControl.DataTemplates>

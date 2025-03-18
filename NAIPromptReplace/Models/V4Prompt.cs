@@ -26,10 +26,20 @@ public class V4CharPrompt : ReactiveObject, IEquatable<V4CharPrompt>
 {
     private string prompt = string.Empty;
     private string uc = string.Empty;
-    private Point center = new Point(0.5, 0.5);
+    private int id;
+    private double x = 0.5;
+    private double y = 0.5;
 
     [JsonIgnore]
-    public int Id { get; set; }
+    public int Id
+    {
+        get => id;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref id, value);
+            this.RaisePropertyChanged(nameof(Title));
+        }
+    }
 
     [JsonIgnore] 
     public string Title => $"Character {Id}";
@@ -43,6 +53,8 @@ public class V4CharPrompt : ReactiveObject, IEquatable<V4CharPrompt>
     [JsonIgnore]
     public ICommand? RemoveSelfCommand { get; set; }
 
+    public bool Enabled { get; set; } = true;
+
     public string Prompt
     {
         get => prompt;
@@ -55,10 +67,16 @@ public class V4CharPrompt : ReactiveObject, IEquatable<V4CharPrompt>
         set => this.RaiseAndSetIfChanged(ref uc, value);
     }
 
-    public Point Center
+    public double X
     {
-        get => center;
-        set => this.RaiseAndSetIfChanged(ref center, value);
+        get => x;
+        set => this.RaiseAndSetIfChanged(ref x, value);
+    }
+
+    public double Y
+    {
+        get => y;
+        set => this.RaiseAndSetIfChanged(ref y, value);
     }
 
     public bool Equals(V4CharPrompt? other)

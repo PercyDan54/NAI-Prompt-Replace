@@ -6,6 +6,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Logging;
@@ -55,12 +56,15 @@ public class MainViewModel : ReactiveObject
         ],
         AllowMultiple = true
     };
-    private static readonly FilePickerSaveOptions jsonFilePickerOptions = new FilePickerSaveOptions
+
+    public static readonly FilePickerSaveOptions SaveJsonFilePickerOptions = new FilePickerSaveOptions
     {
-        Title = "Open File",
         FileTypeChoices =
         [
-            new FilePickerFileType("JSON") { Patterns = ["*.json"] }
+            new FilePickerFileType("JSON")
+            {
+                Patterns = ["*.json"]
+            }
         ]
     };
 
@@ -179,7 +183,7 @@ public class MainViewModel : ReactiveObject
         if (App.StorageProvider == null)
             return;
 
-        var file = await App.StorageProvider.SaveFilePickerAsync(jsonFilePickerOptions);
+        var file = await App.StorageProvider.SaveFilePickerAsync(SaveJsonFilePickerOptions);
 
         if (file != null)
         {
@@ -269,7 +273,7 @@ public class MainViewModel : ReactiveObject
                 case ".csv":
                     using (var csv = new CsvReader(reader, csvConfiguration))
                     {
-                        var records = csv.GetRecords<TextReplacement>().ToList();
+                        var records = csv.GetRecords<TextReplacement>().ToArray();
                         Replacements.Clear();
                         Replacements.AddRange(records);
                         replacements = records.ToDictionary(r => r.Text, r => r.Replace);
@@ -524,19 +528,8 @@ public class MainViewModel : ReactiveObject
             // Trim spaces between words
             string[] tags = g.Prompt.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
             string prompt = g.Prompt = string.Join(',', tags);
-            string promptTrimmedFirstBrackets = prompt.TrimStart('{').TrimStart('[');
             g.Replace = string.Join(',', g.Replace.Split(',', StringSplitOptions.TrimEntries));
             List<string[]> replaceLines = [];
-
-            bool containsTag(string tag)
-            {
-                int index = promptTrimmedFirstBrackets.IndexOf(tag, StringComparison.Ordinal);
-                int end = index + tag.Length;
-
-                // Ensure the matched tag is a full word split by comma
-                return index >= 0 && (index == 0 || end == promptTrimmedFirstBrackets.Length ||
-                       Regex.IsMatch(prompt, $@",(?:\{{|\[)*{Regex.Escape(tag)}(?:\}}|\])*,"));
-            }
 
             try
             {
@@ -549,7 +542,7 @@ public class MainViewModel : ReactiveObject
                         string toReplace = records[0];
 
                         // Ensure the matched tag is a full word split by comma
-                        if (containsTag(toReplace))
+                        if (Util.ContainsTag(prompt, toReplace))
                         {
                             replaceLines.Add(records);
                         }
@@ -564,7 +557,7 @@ public class MainViewModel : ReactiveObject
                 return;
             }
 
-            var usedWildcards = wildcards.Where(p => containsTag(p.Keyword)).ToArray();
+            var usedWildcards = wildcards.Where(w => Util.ContainsTag(prompt, w.Keyword)).ToArray();
 
             void finalProcess(ref GenerationConfig generationConfig, Dictionary<string, string> wildcardsDict, List<string>? combo = null)
             {
@@ -593,15 +586,23 @@ public class MainViewModel : ReactiveObject
 
                     foreach (var charPrompt in generationConfig.GenerationParameter.CharacterPrompts)
                     {
+                        if (!charPrompt.Enabled)
+                            continue;
+
+                        var charWildcards = wildcards.Where(w => Util.ContainsTag(charPrompt.Prompt, w.Keyword)).ToArray();
+                        var charWildcardsDict = getWildcards(charWildcards);
+                        string charCaption = GenerationConfig.GetReplacedPrompt(charPrompt.Prompt, charWildcardsDict);
+                        charCaption = GenerationConfig.GetReplacedPrompt(charCaption, generationConfig.Replacements).Replace(",", ", ");
+
                         v4Prompt.Caption.CharCaptions.Add(new V4CharCaption
                         {
-                            CharCaption = charPrompt.Prompt,
-                            Centers = [charPrompt.Center]
+                            CharCaption = charCaption,
+                            Centers = [new Point(charPrompt.X, charPrompt.Y)],
                         });
                         v4NegativePrompt.Caption.CharCaptions.Add(new V4CharCaption
                         {
                             CharCaption = charPrompt.Uc,
-                            Centers = [charPrompt.Center]
+                            Centers = [new Point(charPrompt.X, charPrompt.Y)]
                         });
                     }
 
@@ -613,7 +614,7 @@ public class MainViewModel : ReactiveObject
             if (replaceLines.Count > 0 && replaceLines[0].Length > 1)
             {
                 var combos = Util.GetAllPossibleCombos(replaceLines);
-                var toReplaces = replaceLines.Select(l => l[0]).ToList();
+                var toReplaces = replaceLines.Select(l => l[0]).ToArray();
 
                 for (int j = 0; j < g.BatchSize; j++)
                 {
