@@ -14,7 +14,7 @@ public class NovelAIApi
     private readonly HttpClient httpClient = new HttpClient();
     public static readonly JsonSerializerOptions ApiSerializerOptions = new JsonSerializerOptions
     {
-        Converters = { new JsonModelInfoConverter(), new JsonSamplerInfoConverter() },
+        Converters = { new JsonModelInfoConverter(), new JsonSamplerInfoConverter(), new JsonVector2Converter() },
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
     };
     public static readonly JsonSerializerOptions CamelCaseJsonSerializerOptions = new JsonSerializerOptions

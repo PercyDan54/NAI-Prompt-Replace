@@ -3,10 +3,10 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
 using System.Net;
+using System.Numerics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Logging;
@@ -597,12 +597,12 @@ public class MainViewModel : ReactiveObject
                         v4Prompt.Caption.CharCaptions.Add(new V4CharCaption
                         {
                             CharCaption = charCaption,
-                            Centers = [new Point(charPrompt.X, charPrompt.Y)],
+                            Centers = [new Vector2(charPrompt.X, charPrompt.Y)],
                         });
                         v4NegativePrompt.Caption.CharCaptions.Add(new V4CharCaption
                         {
                             CharCaption = charPrompt.Uc,
-                            Centers = [new Point(charPrompt.X, charPrompt.Y)]
+                            Centers = [new Vector2(charPrompt.X, charPrompt.Y)]
                         });
                     }
 

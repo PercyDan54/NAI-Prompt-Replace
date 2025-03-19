@@ -1,6 +1,6 @@
+using System.Numerics;
 using System.Text.Json.Serialization;
 using System.Windows.Input;
-using Avalonia;
 using ReactiveUI;
 
 namespace NAIPromptReplace.Models;
@@ -25,10 +25,10 @@ public class V4Caption
 public class V4CharPrompt : ReactiveObject, IEquatable<V4CharPrompt>
 {
     private string prompt = string.Empty;
-    private string uc = string.Empty;
+    private string uc = "lowres, aliasing, ";
     private int id;
-    private double x = 0.5;
-    private double y = 0.5;
+    private float x = 0.5f;
+    private float y = 0.5f;
 
     [JsonIgnore]
     public int Id
@@ -67,13 +67,13 @@ public class V4CharPrompt : ReactiveObject, IEquatable<V4CharPrompt>
         set => this.RaiseAndSetIfChanged(ref uc, value);
     }
 
-    public double X
+    public float X
     {
         get => x;
         set => this.RaiseAndSetIfChanged(ref x, value);
     }
 
-    public double Y
+    public float Y
     {
         get => y;
         set => this.RaiseAndSetIfChanged(ref y, value);
@@ -100,5 +100,5 @@ public class V4CharPrompt : ReactiveObject, IEquatable<V4CharPrompt>
 public class V4CharCaption
 {
     public string CharCaption { get; set; } = string.Empty;
-    public Point[] Centers { get; set; } = [new Point(0.5, 0.5)];
+    public Vector2[] Centers { get; set; } = [new Vector2(0.5f)];
 }

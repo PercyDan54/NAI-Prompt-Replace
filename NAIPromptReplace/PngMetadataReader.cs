@@ -56,6 +56,27 @@ public static class PngMetadataReader
 
         generationConfig.GenerationParameter.LegacyV3Extend = legacy;
 
+        if (generationConfig.GenerationParameter.V4Prompt != null)
+        {
+            generationConfig.GenerationParameter.CharacterPrompts.Clear();
+
+            for (var i = 0; i < generationConfig.GenerationParameter.V4Prompt.Caption.CharCaptions.Count; i++)
+            {
+                var c = generationConfig.GenerationParameter.V4Prompt.Caption.CharCaptions[i];
+                var nc = generationConfig.GenerationParameter.V4NegativePrompt!.Caption.CharCaptions[i];
+                generationConfig.GenerationParameter.CharacterPrompts.Add(new V4CharPrompt
+                {
+                    Prompt = c.CharCaption,
+                    Uc = nc.CharCaption,
+                    X = c.Centers[0].X,
+                    Y = c.Centers[0].Y
+                });
+            }
+
+            generationConfig.GenerationParameter.V4Prompt = null;
+            generationConfig.GenerationParameter.V4NegativePrompt = null;
+        }
+
         return generationConfig;
     }
 
