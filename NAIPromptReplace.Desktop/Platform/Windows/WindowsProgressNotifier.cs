@@ -1,4 +1,6 @@
-namespace NAIPromptReplace.Platform.Windows;
+using NAIPromptReplace.Platform;
+
+namespace NAIPromptReplace.Desktop.Platform.Windows;
 
 public class WindowsProgressNotifier : IPlatformProgressNotifier
 {

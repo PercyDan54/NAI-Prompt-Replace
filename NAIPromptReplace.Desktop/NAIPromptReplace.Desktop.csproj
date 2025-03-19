@@ -4,9 +4,10 @@
         <TargetFramework>net8.0</TargetFramework>
         <Nullable>enable</Nullable>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <ImplicitUsings>true</ImplicitUsings>
         <ApplicationIcon>..\NAIPromptReplace\Assets\novelai-square.ico</ApplicationIcon>
-        <AssemblyVersion>2.2.0</AssemblyVersion>
-        <FileVersion>2.2.0</FileVersion>
+        <AssemblyVersion>2.2.1</AssemblyVersion>
+        <FileVersion>2.2.1</FileVersion>
         <PublishSingleFile>true</PublishSingleFile>
     </PropertyGroup>
 

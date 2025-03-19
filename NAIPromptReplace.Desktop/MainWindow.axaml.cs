@@ -1,9 +1,10 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
+using NAIPromptReplace.Desktop.Platform.Windows;
 using NAIPromptReplace.ViewModels;
 
-namespace NAIPromptReplace;
+namespace NAIPromptReplace.Desktop;
 
 public partial class MainWindow : Window
 {
@@ -11,6 +12,17 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         MainView.AddHandler(DragDrop.DropEvent, onDrop);
+
+        if (MainView.DataContext is MainViewModel vm)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                IntPtr? hwnd = GetTopLevel(this)?.TryGetPlatformHandle()?.Handle;
+
+                if (hwnd.HasValue)
+                    vm.PlatformProgressNotifier = new WindowsProgressNotifier(hwnd.Value);
+            }
+        }
     }
 
     private async void onDrop(object? sender, DragEventArgs e)

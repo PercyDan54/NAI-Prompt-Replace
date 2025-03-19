@@ -2,12 +2,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:views="clr-namespace:NAIPromptReplace.Views"
+        xmlns:views="clr-namespace:NAIPromptReplace.Views;assembly=NAIPromptReplace"
         mc:Ignorable="d" d:DesignWidth="1050" d:DesignHeight="700"
         Width="1050" Height="700"
-        x:Class="NAIPromptReplace.MainWindow"
+        x:Class="NAIPromptReplace.Desktop.MainWindow"
         Icon="avares://NAIPromptReplace/Assets/novelai-square.ico"
-        Title="NovelAI Prompt Replace V2.2.0"
+        Title="NovelAI Prompt Replace V2.2.1"
         Closed="TopLevel_OnClosed">
     <views:MainView Name="MainView" />
 </Window>

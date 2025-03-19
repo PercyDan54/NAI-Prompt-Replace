@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <ApplicationId>me.percydan.naipromptreplace</ApplicationId>
         <ApplicationVersion>2</ApplicationVersion>
-        <ApplicationDisplayVersion>2.2.0</ApplicationDisplayVersion>
+        <ApplicationDisplayVersion>2.2.1</ApplicationDisplayVersion>
         <AndroidPackageFormat>apk</AndroidPackageFormat>
         <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
         <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>

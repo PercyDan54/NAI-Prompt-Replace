@@ -2,7 +2,6 @@ using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using NAIPromptReplace.Models;
-using NAIPromptReplace.Platform.Windows;
 using NAIPromptReplace.ViewModels;
 
 namespace NAIPromptReplace.Views;
@@ -30,14 +29,6 @@ public partial class MainView : LayoutTransformControl
         {
             Config = LoadConfig()
         };
-
-        if (OperatingSystem.IsWindows())
-        {
-            IntPtr? hwnd = TopLevel.GetTopLevel(this)?.TryGetPlatformHandle()?.Handle;
-
-            if (hwnd.HasValue)
-                vm.PlatformProgressNotifier = new WindowsProgressNotifier(hwnd.Value);
-        }
 
         DataContext = vm;
     }

@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace NAIPromptReplace.Platform.Windows;
+namespace NAIPromptReplace.Desktop.Platform.Windows;
 
 public static class TaskbarProgress
 {
